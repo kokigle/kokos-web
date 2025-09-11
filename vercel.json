@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)", // cualquier ruta
+      "destination": "/" // redirige a la raíz
+    }
+  ]
+}
