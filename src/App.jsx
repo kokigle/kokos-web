@@ -78,49 +78,118 @@ export default function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
+        <Footer />
       </Router>
     </AuthContext.Provider>
   );
 }
 
-// ----------------------
-// Header
-// ----------------------
+
+import logo from "./assets/logo.png";
+
 function Header() {
   const { user, logout } = useAuth();
+
   return (
-    <header>
-      <div className="container navbar">
-        <Link to="/">Kokos Argentina</Link>
-        <nav>
-          <Link to="/products">Productos</Link>
-          <Link to="/cart">Carrito</Link>
+    <header className="kokos-header">
+      <div className="kokos-header-top">
+        {/* Logo */}
+        <div className="kokos-logo">
+          <Link to="/">
+            <img src={logo} alt="Kokos Logo" className="kokos-logo-img" />
+          </Link>
+        </div>
+
+        {/* Buscador */}
+        <div className="kokos-search">
+          <form>
+            <input type="text" placeholder="BUSCAR" />
+            <button type="submit">🔍</button>
+          </form>
+        </div>
+
+        {/* Cuenta y carrito */}
+        <div className="kokos-account">
+          <Link to="/cart" className="cart-link">MI CARRITO 🛒</Link>
           {user ? (
-            <span>
+            <div>
               {user.email} (Estado {user.state}){" "}
-              <button onClick={logout} className="btn">Cerrar sesión</button>
-            </span>
+              <button onClick={logout} className="logout-btn">
+                Cerrar sesión
+              </button>
+            </div>
           ) : (
-            <Link to="/login" className="btn">Iniciar sesión</Link>
+            <Link to="/login" className="login-link">
+              CREAR CUENTA / INICIAR SESIÓN
+            </Link>
           )}
-        </nav>
+        </div>
       </div>
+
+      {/* Menú */}
+      <nav className="kokos-menu">
+        <Link to="/products">JUGUETERÍA</Link>
+        <Link to="/nosotros">NOSOTROS</Link>
+        <Link to="/novedades">NOVEDADES</Link>
+        <Link to="/contacto">CONTACTO</Link>
+      </nav>
     </header>
   );
 }
 
-// ----------------------
-// Home
-// ----------------------
+
+
+import banner from "./assets/banner.png";
+
 function Home() {
   return (
-    <div>
-      <h1>Tienda Mayorista</h1>
-      <p>Bienvenido. Inicia sesión para ver precios según el estado que te asigne el administrador.</p>
-      <Link to="/products" className="btn">Ver productos</Link>
+    <div className="kokos-home">
+      <section className="home-banner">
+        <img src={banner} alt="Banner Kokos" className="banner-img" />
+      </section>
     </div>
   );
 }
+
+import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
+
+function Footer() {
+  return (
+    <footer className="kokos-footer">
+      <div className="footer-container">
+        {/* Logo */}
+        <div className="footer-logo">
+          <img src={logo} alt="Kokos Logo" className="kokos-logo-img" />
+        </div>
+
+        {/* Contacto */}
+        <div className="footer-col">
+          <h4>Contacto</h4>
+          <p><FaWhatsapp /> 1145457891</p>
+          <p><FaEnvelope /> infokokos@gmail.com</p>
+          <p><FaMapMarkerAlt /> Buenos Aires, Argentina</p>
+        </div>
+
+        {/* Mi Cuenta */}
+        <div className="footer-col">
+          <h4>Mi Cuenta</h4>
+          <p>Registro / Login</p>
+          <p>Mi Cuenta</p>
+          <p>Mi Carrito</p>
+        </div>
+
+        {/* Sobre Nosotros */}
+        <div className="footer-col">
+          <h4>Sobre Nosotros</h4>
+          <p>KOKOS Argentina</p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+
+
 
 // ----------------------
 // Login
