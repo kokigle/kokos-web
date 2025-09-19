@@ -85,3 +85,196 @@ label {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
 }
+
+/* =========================
+   HEADER KOKOS
+   ========================= */
+.kokos-header {
+  background: #fff;
+  border-bottom: 1px solid #ccc;
+  font-family: "Arial", sans-serif;
+}
+
+.kokos-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+}
+
+/* Logo */
+.kokos-logo .logo-main {
+  font-size: 32px;
+  font-weight: bold;
+  color: #009CA6;
+}
+.kokos-logo .logo-sub {
+  font-size: 22px;
+  color: #7a7a7a;
+  margin-left: 5px;
+}
+.kokos-logo .logo-desc {
+  font-size: 14px;
+  color: #7a7a7a;
+  margin-top: -5px;
+}
+
+/* Search */
+.kokos-search form {
+  display: flex;
+  border: 1px solid #ccc;
+  height: 36px;
+}
+.kokos-search input {
+  border: none;
+  padding: 0 10px;
+  flex: 1;
+  font-size: 14px;
+  outline: none;
+  color: #7a7a7a;
+}
+.kokos-search button {
+  background: #009CA6;
+  color: white;
+  border: none;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+/* Account / carrito */
+.kokos-account {
+  text-align: right;
+  font-size: 14px;
+  color: #7a7a7a;
+}
+.kokos-account .cart-link {
+  display: block;
+  margin-bottom: 4px;
+  color: #7a7a7a;
+  text-decoration: none;
+}
+.kokos-account .login-link,
+.kokos-account .logout-btn {
+  color: #7a7a7a;
+  text-decoration: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+.kokos-account .login-link:hover,
+.kokos-account .logout-btn:hover {
+  color: #009CA6;
+}
+
+/* Menú */
+.kokos-menu {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  padding: 10px 0;
+  font-weight: bold;
+  color: #7a7a7a;
+  font-size: 16px;
+}
+.kokos-menu a {
+  color: #7a7a7a;
+  text-decoration: none;
+}
+.kokos-menu a:hover {
+  color: #009CA6;
+}
+
+/* --------------------
+   Footer KOKOS
+-------------------- */
+.kokos-footer {
+  background: #fff;
+  border-top: 1px solid #ddd;
+  padding: 40px 20px;
+  font-family: Arial, sans-serif;
+  color: #666;
+}
+
+.kokos-footer .footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.footer-logo {
+  font-size: 22px;
+  font-weight: bold;
+  color: #009999; /* color verde-agua de KOKOS */
+}
+.footer-logo .logo-sub {
+  font-weight: normal;
+  color: #666;
+  margin-left: 4px;
+}
+
+.footer-col h4 {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.footer-col p {
+  margin: 6px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.footer-col p svg {
+  margin-right: 8px;
+  font-size: 16px;
+  color: #999;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .kokos-footer .footer-container {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kokos-footer .footer-container {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .footer-col p {
+    justify-content: center;
+  }
+}
+
+.kokos-home {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.home-banner {
+  text-align: center;
+}
+
+.banner-img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px; /* opcional */
+  display: block;
+  margin: 0 auto;
+}
+
+.kokos-logo-img {
+  max-height: 100px;
+  width: auto;
+  display: block;
+}
+.footer-logo img {
+  max-height: 100px;
+}
