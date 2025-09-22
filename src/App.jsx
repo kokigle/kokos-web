@@ -1620,8 +1620,5 @@ function AdminPanel() {
 // ----------------------
 function NotFound() {
   return <div>404 - Not Found</div>;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> bb4d5c2 (jeje)
+
