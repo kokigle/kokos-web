@@ -1,14 +1,23 @@
 // App.jsx
 import React, { useEffect, useState, createContext, useContext } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore, collection, doc, getDoc, getDocs,
-  query, where, addDoc, updateDoc, onSnapshot,arrayUnion,
-  arrayRemove,
-  deleteDoc} from "firebase/firestore";
+  query, where, addDoc, updateDoc, onSnapshot, arrayUnion,
+  arrayRemove, deleteDoc
+} from "firebase/firestore";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword 
+} from "firebase/auth";
 import emailjs from "@emailjs/browser";
 import { uploadImage } from "./cloudinary";
+import logo from "./assets/logo.png";
+import banner from "./assets/banner.png";
+import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt, FaLock } from "react-icons/fa";
+
 // ----------------------
 // CONFIG
 // ----------------------
@@ -44,23 +53,57 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const login = async (email) => {
-    setLoading(true);
-    const clientsRef = collection(db, "clients");
-    const q = query(clientsRef, where("email", "==", email));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const docu = snap.docs[0];
-      const data = docu.data();
-      setUser({ id: docu.id, email: data.email, state: data.state || 1 });
-    } else {
-      setUser(null);
+  // Restaurar usuario de localStorage al iniciar
+  useEffect(() => {
+    const savedUser = localStorage.getItem("kokos_user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem("kokos_user");
+      }
     }
-    setLoading(false);
-    return !snap.empty;
-  };
+  }, []);
 
-  const logout = () => setUser(null);
+  const login = async (email, password) => {
+  setLoading(true);
+  const clientsRef = collection(db, "clients");
+  const q = query(clientsRef, where("email", "==", email));
+  const snap = await getDocs(q);
+
+  if (!snap.empty) {
+    const docu = snap.docs[0];
+    const data = docu.data();
+    const client = { id: docu.id, ...data };
+
+    if (!data.hasPassword) {
+      setLoading(false);
+      return { success: false, setPassword: true, client };
+    } else {
+      try {
+        const auth = getAuth();
+        await signInWithEmailAndPassword(auth, email, password);
+
+        setUser(client);
+        localStorage.setItem("kokos_user", JSON.stringify(client));
+        setLoading(false);
+        return { success: true, client };
+      } catch {
+        setLoading(false);
+        return { success: false, message: "Contraseña incorrecta." };
+      }
+    }
+  }
+
+  setLoading(false);
+  return { success: false, message: "No estás registrado." };
+};
+
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("kokos_user"); // ✅ limpio localStorage
+  };
 
   const value = { user, login, logout, loading, setUser };
 
@@ -77,6 +120,7 @@ export default function App() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="*" element={<NotFound />} />
+            <Route path="/set-password" element={<SetPassword />} />
           </Routes>
         </main>
         <Footer />
@@ -85,15 +129,14 @@ export default function App() {
   );
 }
 
-
-import logo from "./assets/logo.png";
-
+// ----------------------
+// Header
+// ----------------------
 function Header() {
   const { user, logout } = useAuth();
   const [subcategories, setSubcategories] = useState([]);
 
   useEffect(() => {
-    // Traemos todas las subcategorías de productos donde category = "jugueteria"
     const col = collection(db, "products");
     const q = query(col, where("category", "==", "jugueteria"));
     const unsub = onSnapshot(q, (snap) => {
@@ -110,44 +153,32 @@ function Header() {
   return (
     <header className="kokos-header">
       <div className="kokos-header-top">
-        {/* Logo */}
         <div className="kokos-logo">
           <Link to="/">
             <img src={logo} alt="Kokos Logo" className="kokos-logo-img" />
           </Link>
         </div>
-
-        {/* Buscador */}
-        <div className="kokos-search">
-          <form>
-            <input type="text" placeholder="BUSCAR" />
-            <button type="submit">🔍</button>
-          </form>
-        </div>
-
-        {/* Cuenta y carrito */}
         <div className="kokos-account">
           <Link to="/cart" className="cart-link">MI CARRITO 🛒</Link>
           {user ? (
             <div>
               {user.email}{" "}
-              <button onClick={logout} className="logout-btn">
-                Cerrar sesión
-              </button>
+              <button onClick={logout} className="logout-btn">Cerrar sesión</button>
             </div>
           ) : (
-            <Link to="/login" className="login-link">
-              CREAR CUENTA / INICIAR SESIÓN
-            </Link>
+            <Link to="/login" className="login-link">CREAR CUENTA / INICIAR SESIÓN</Link>
           )}
+          <div className="kokos-search">
+            <form>
+              <input type="text" placeholder="BUSCAR" />
+              <button type="submit">🔍</button>
+            </form>
+          </div>
         </div>
       </div>
-
-      {/* Menú */}
       <nav className="kokos-menu">
         <div className="menu-item">
           <Link to="/products?category=jugueteria">JUGUETERÍA</Link>
-          {/* Submenú */}
           <div className="submenu">
             {subcategories.map((sub) => (
               <Link key={sub} to={`/products?category=jugueteria&subcategory=${sub}`}>
@@ -164,8 +195,9 @@ function Header() {
   );
 }
 
-import banner from "./assets/banner.png";
-
+// ----------------------
+// Home
+// ----------------------
 function Home() {
   return (
     <div className="kokos-home">
@@ -176,138 +208,501 @@ function Home() {
   );
 }
 
-import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
-
+// ----------------------
+// Footer
+// ----------------------
 function Footer() {
   return (
     <footer className="kokos-footer">
       <div className="footer-container">
-        {/* Logo */}
         <div className="footer-logo">
           <img src={logo} alt="Kokos Logo" className="kokos-logo-img" />
         </div>
-
-        {/* Contacto */}
         <div className="footer-col">
           <h4>Contacto</h4>
           <p><FaWhatsapp /> 1145457891</p>
           <p><FaEnvelope /> infokokos@gmail.com</p>
           <p><FaMapMarkerAlt /> Buenos Aires, Argentina</p>
         </div>
-
-        {/* Mi Cuenta */}
         <div className="footer-col">
           <h4>Mi Cuenta</h4>
-          <p>Registro / Login</p>
-          <p>Mi Cuenta</p>
-          <p>Mi Carrito</p>
+          <p><Link to="/login">Registro / Login</Link></p>
+          <p><Link to="/cart">Mi Carrito</Link></p>
+          
         </div>
-
-        {/* Sobre Nosotros */}
         <div className="footer-col">
           <h4>Sobre Nosotros</h4>
-          <p>KOKOS Argentina</p>
+          <p><Link to="/nosotros">KOKOS Argentina</Link></p>
         </div>
       </div>
     </footer>
   );
 }
 
-
-
-
-// ----------------------
-// Login
-// ----------------------
 function Login() {
   const { login, loading } = useAuth();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState(null);
+  const [stepCompleted, setStepCompleted] = useState([false, false]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setStepCompleted([!!email, !!password]);
+  }, [email, password]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage(null);
-    const found = await login(email.trim().toLowerCase());
-    if (found) navigate("/");
-    else setMessage("No estás registrado. Si quieres registrarte completa el formulario de registro.");
+
+    const result = await login(email.trim().toLowerCase(), password);
+
+    if (result.success) {
+      navigate("/");
+    } else if (result.setPassword) {
+      navigate("/set-password", { state: { email, clientId: result.client.id } });
+    } else {
+      setMessage(result.message || "Correo o contraseña incorrectos.");
+    }
   };
 
   return (
-    <div className="card" style={{ maxWidth: "400px", margin: "20px auto" }}>
+    <div className="auth-card">
       <h2>Iniciar sesión</h2>
+      <p className="info">Sigue estos pasos para acceder a tu cuenta</p>
+
+      <div className={`step ${stepCompleted[0] ? "completed" : ""}`}>
+        <span>1</span> Ingresa tu correo registrado
+      </div>
+      <div className={`step ${stepCompleted[1] ? "completed" : ""}`}>
+        <span>2</span> Ingresa tu contraseña
+      </div>
+
       <form onSubmit={handleLogin}>
-        <label>Email</label>
-        <input
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          type="email"
-        />
+        <div className="input-group">
+          <FaEnvelope />
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tuemail@ejemplo.com"
+          />
+        </div>
+
+        <div className="input-group">
+          <FaLock />
+          <input
+            required
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="********"
+          />
+        </div>
+
         <button className="btn" disabled={loading}>
-          {loading ? "Buscando..." : "Entrar"}
+          {loading ? "Verificando..." : "Entrar"}
         </button>
       </form>
 
-      {message && (
-        <div className="card" style={{ background: "#fffbe6" }}>
-          <p>{message}</p>
-          <a href={GOOGLE_FORM_LINK} target="_blank" rel="noreferrer">
-            Ir al formulario de registro
-          </a>
-        </div>
-      )}
+      {message && <div className="alert">{message}</div>}
+
+      <div style={{ marginTop: "25px", textAlign: "center" }}>
+        <p>
+          <span>SI QUERÉS CREAR TU CUENTA LLENA FORMULARIO: </span>
+          <p><a href={GOOGLE_FORM_LINK} target="_blank" rel="noreferrer" className="link-text">
+            CLICK AQUI PARA IR AL FORMULARIO
+          </a></p>
+        </p>
+        <p>
+          <span>SI YA FUISTE ACEPTADO Y NO TENES CONTRASEÑA: </span>
+          <p><Link to="/set-password" className="link-text">
+            CLICK AQUI PARA CREAR TU CONTRASEÑA
+          </Link></p>
+        </p>
+      </div>
     </div>
   );
 }
 
-// ----------------------
-// Products list
-// ----------------------
-import { useLocation } from "react-router-dom";
+function SetPassword() {
+  const { setUser } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { email: locationEmail } = location.state || {};
+  const [email, setEmail] = useState(locationEmail || "");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [stepCompleted, setStepCompleted] = useState([!!email, !!password, !!confirm]);
+
+  useEffect(() => {
+    setStepCompleted([!!email, !!password, !!confirm]);
+  }, [email, password, confirm]);
+
+  const validatePassword = (pwd) =>
+    pwd.length >= 8 &&
+    /[A-Z]/.test(pwd) &&
+    /[a-z]/.test(pwd) &&
+    /[0-9]/.test(pwd) &&
+    /[^A-Za-z0-9]/.test(pwd);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!email) return setError("Debes ingresar tu correo registrado.");
+
+    // Validar existencia en Firestore
+    const q = query(collection(db, "clients"), where("email", "==", email.toLowerCase()));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      return setError("Este correo no está registrado en nuestro sistema.");
+    }
+
+    if (password !== confirm) return setError("Las contraseñas no coinciden.");
+    if (!validatePassword(password))
+      return setError(
+        "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo."
+      );
+
+    setLoading(true);
+    try {
+      const auth = getAuth();
+      await createUserWithEmailAndPassword(auth, email, password);
+
+      const clientDoc = querySnapshot.docs[0];
+      await updateDoc(doc(db, "clients", clientDoc.id), { hasPassword: true });
+
+      const client = { id: clientDoc.id, ...clientDoc.data() };
+      setUser(client);
+      localStorage.setItem("kokos_user", JSON.stringify(client));
+
+      navigate("/");
+    } catch (err) {
+      setError("Error al guardar contraseña: " + err.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-card">
+      <h2>Crear tu contraseña</h2>
+      <p className="info">Sigue estos pasos para asegurar tu cuenta</p>
+
+      <div className={`step ${stepCompleted[0] ? "completed" : ""}`}>
+        <span>1</span> Ingresa tu correo registrado
+      </div>
+      <div className={`step ${stepCompleted[1] ? "completed" : ""}`}>
+        <span>2</span> Crea una contraseña segura
+      </div>
+      <div className={`step ${stepCompleted[2] ? "completed" : ""}`}>
+        <span>3</span> Confirma tu contraseña
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="input-group">
+          <FaEnvelope />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="tuemail@ejemplo.com"
+          />
+        </div>
+
+        <div className="input-group">
+          <FaLock />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="********"
+          />
+        </div>
+
+        <div className="input-group">
+          <FaLock />
+          <input
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+            placeholder="********"
+          />
+        </div>
+
+        <button className="btn" disabled={loading}>
+          {loading ? "Guardando..." : "Crear Contraseña"}
+        </button>
+      </form>
+
+      {error && <div className="error">{error}</div>}
+    </div>
+  );
+}
+
+
+// ===============================
+// Products List
+// ===============================
 
 function ProductsList() {
   const [products, setProducts] = useState([]);
-  const location = useLocation();
+  const [filtered, setFiltered] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [pendingFilters, setPendingFilters] = useState({
+    search: "",
+    minStock: "",
+    sub: "",
+    minPrice: "",
+    maxPrice: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    minStock: "",
+    sub: "",
+    minPrice: "",
+    maxPrice: "",
+  });
 
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [categoryTitle, setCategoryTitle] = useState("Productos");
+  const { user } = useAuth();
+
+  // 🔹 Leer parámetros desde la URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const category = params.get("category");
     const subcategory = params.get("subcategory");
 
+    // Setear título dinámico
+    setCategoryTitle(
+      subcategory
+        ? subcategory.replace(/_/g, " ").toUpperCase()
+        : category
+        ? category.replace(/_/g, " ").toUpperCase()
+        : "Productos"
+    );
+
+    // Traer productos de Firestore
     let q = collection(db, "products");
     if (category && subcategory) {
-      q = query(q, where("category", "==", category), where("subcategory", "==", subcategory));
+      q = query(
+        q,
+        where("category", "==", category),
+        where("subcategory", "==", subcategory)
+      );
     } else if (category) {
       q = query(q, where("category", "==", category));
     }
 
     const unsub = onSnapshot(q, (snap) => {
-      setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const prods = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setProducts(prods);
     });
+
     return () => unsub();
   }, [location.search]);
 
+  // 🔹 Traer subcategorías
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get("category");
+
+    if (!category) {
+      setSubcategories([]);
+      return;
+    }
+
+    const q = query(collection(db, "categories"), where("name", "==", category));
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        const catData = snap.docs[0].data();
+        setSubcategories(catData.subcategories || []);
+      }
+    });
+
+    return () => unsub();
+  }, [location.search]);
+
+  // 🔹 Aplicar filtros
+  useEffect(() => {
+    let result = [...products];
+    const { subcategory, search, minStock, minPrice, maxPrice } = appliedFilters;
+
+    if (subcategory) {
+      result = result.filter((p) => p.subcategory === subcategory);
+    }
+    if (search.trim()) {
+      result = result.filter((p) =>
+        p.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    if (minStock) {
+      result = result.filter((p) => p.cant_min <= parseInt(minStock));
+    }
+    if (user) {
+      result = result.filter((p) => {
+        const price = user.state === 2 ? p.price_state2 : p.price_state1;
+        if (!price) return false;
+        if (minPrice && price < parseInt(minPrice)) return false;
+        if (maxPrice && price > parseInt(maxPrice)) return false;
+        return true;
+      });
+    }
+
+    setFiltered(result);
+  }, [products, appliedFilters, user]);
+
+  // 🔹 Aplicar filtros y actualizar URL
+  const handleSearch = () => {
+    setAppliedFilters({ ...pendingFilters });
+
+    const params = new URLSearchParams(location.search);
+    Object.entries(pendingFilters).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
+    navigate({ search: params.toString() });
+  };
+
   return (
-    <div>
-      <h2>Productos</h2>
-      <div className="grid">
-        {products.map((p) => (
-          <div key={p.id} className="card">
-            <img
-              src={(p.multimedia && p.multimedia[0]) || "https://via.placeholder.com/300"}
-              alt={p.name}
-              style={{ width: "100%", height: "160px", objectFit: "cover" }}
-            />
-            <h3>{p.name}</h3>
-            <p>{p.description?.slice(0, 70)}</p>
-            <Link to={`/product/${p.id}`}>Ver producto</Link>
-          </div>
-        ))}
+    <div className="products-page">
+      <h2 className="category-title">{categoryTitle}</h2>
+
+      {/* 🔹 Filtros */}
+      <div className="filters">
+        <div className="filter-group">
+          <h4>Subcategorías</h4>
+          <select
+            value={pendingFilters.subcategory}
+            onChange={(e) =>
+              setPendingFilters({ ...pendingFilters, subcategory: e.target.value })
+            }
+          >
+            <option value="">-- todas las subcategorías --</option>
+            {subcategories.map((subcategory) => (
+              <option key={subcategory} value={subcategory}>
+                {subcategory}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <h4>Buscar</h4>
+          <input
+            type="text"
+            placeholder="Buscar por nombre..."
+            value={pendingFilters.search}
+            onChange={(e) =>
+              setPendingFilters({ ...pendingFilters, search: e.target.value })
+            }
+          />
+        </div>
+
+        <div className="filter-group">
+          <h4>Cantidad mínima</h4>
+          <input
+            type="number"
+            placeholder="Ej: 5"
+            value={pendingFilters.minStock}
+            onChange={(e) =>
+              setPendingFilters({ ...pendingFilters, minStock: e.target.value })
+            }
+          />
+        </div>
+
+        <div className="filter-group">
+          <h4>Precio</h4>
+          <input
+            type="number"
+            placeholder="Mínimo"
+            value={pendingFilters.minPrice}
+            onChange={(e) =>
+              setPendingFilters({ ...pendingFilters, minPrice: e.target.value })
+            }
+          />
+          <input
+            type="number"
+            placeholder="Máximo"
+            value={pendingFilters.maxPrice}
+            onChange={(e) =>
+              setPendingFilters({ ...pendingFilters, maxPrice: e.target.value })
+            }
+          />
+        </div>
+
+        <div className="filter-group" style={{ alignSelf: "flex-end" }}>
+          <button onClick={handleSearch} className="btn">
+            BUSCAR
+          </button>
+        </div>
+      </div>
+
+      {/* 🔹 Grid fija 4 columnas */}
+      <div className="products-grid-4">
+        {filtered.map((p) => {
+          let priceContent;
+          if (!user) {
+            priceContent = (
+              <p>
+                <em>Inicia sesión para ver el precio</em>
+              </p>
+            );
+          } else {
+            const price = user.state === 2 ? p.price_state2 : p.price_state1;
+            priceContent = (
+              <p className="product-price">${price?.toLocaleString()}</p>
+            );
+          }
+
+          return (
+            <div key={p.id} className="product-card">
+              <div className="product-img-wrapper">
+                <Link to={`/product/${p.id}`}>
+                  <img
+                    src={
+                      (p.multimedia && p.multimedia[0]) ||
+                      "https://via.placeholder.com/300"
+                    }
+                    alt={p.name}
+                  />
+                </Link>
+                {p.stock === 0 && (
+                  <div className="out-of-stock">SIN STOCK</div>
+                )}
+              </div>
+              <h3 className="product-name">
+                <Link to={`/product/${p.id}`}>{p.name}</Link>
+              </h3>
+              <p className="product-code">Código: {p.code}</p>
+              {priceContent}
+              <Link
+                to={`/product/${p.id}`}
+                className={`btn ${p.stock === 0 ? "disabled" : ""}`}
+              >
+                {p.stock === 0 ? "SIN STOCK" : "COMPRAR"}
+              </Link>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
+
+
+
 
 
 // ----------------------
@@ -426,26 +821,49 @@ function ProductPage() {
       </div>
 
       {/* Productos relacionados */}
-      {related.length > 0 && (
-        <div className="related-section">
-          <h2>Productos en la misma categoría</h2>
-          <div className="related-scroll">
-            {related.map((p) => (
-              <div key={p.id} className="related-card">
-                <img
-                  src={(p.multimedia && p.multimedia[0]) || "https://via.placeholder.com/200"}
-                  alt={p.name}
-                />
-                <h3>{p.name}</h3>
-                <p className="price">${p.price_state1?.toLocaleString()}</p>
-                <Link to={`/product/${p.id}`} className="btn-small">
-                  Ver producto
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+{related.length > 0 && (
+  <div className="related-section">
+    <h2>Productos en la misma categoría</h2>
+    <div className="related-grid">
+      {related
+        .sort(() => 0.5 - Math.random()) // random
+        .slice(0, 4) // solo 4
+        .map((p) => {
+          let priceContent;
+          if (!user) {
+            priceContent = (
+              <p>
+                <em>Inicia sesión para ver el precio</em>
+              </p>
+            );
+          } else {
+            const price = user.state === 2 ? p.price_state2 : p.price_state1;
+            priceContent = (
+              <p className="product-price">${price?.toLocaleString()}</p>
+            );
+          }
+
+          return (
+            <div key={p.id} className="related-card">
+              <img
+                src={
+                  (p.multimedia && p.multimedia[0]) ||
+                  "https://via.placeholder.com/200"
+                }
+                alt={p.name}
+              />
+              <h3>{p.name}</h3>
+              {priceContent}
+              <Link to={`/product/${p.id}`} className="btn-small">
+                Ver producto
+              </Link>
+            </div>
+          );
+        })}
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
