@@ -1,22 +1,46 @@
 // App.jsx
 import React, { useEffect, useState, createContext, useContext } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  useParams,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import {
-  getFirestore, collection, doc, getDoc, getDocs,
-  query, where, addDoc, updateDoc, onSnapshot, arrayUnion,
-  arrayRemove, deleteDoc
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  onSnapshot,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc,
 } from "firebase/firestore";
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
 } from "firebase/auth";
 import emailjs from "@emailjs/browser";
 import { uploadImage } from "./cloudinary";
 import logo from "./assets/logo.png";
 import banner from "./assets/banner.png";
+import smallImg from "./assets/smallImg.png";
+import bigImg from "./assets/bigImg.png";
+import img1 from "./assets/img1.png";
+import img2 from "./assets/img2.png";
+import img3 from "./assets/img3.png";
 import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt, FaLock } from "react-icons/fa";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // ----------------------
 // CONFIG
@@ -28,7 +52,7 @@ const firebaseConfig = {
   storageBucket: "kokos-web.firebasestorage.app",
   messagingSenderId: "714849880120",
   appId: "1:714849880120:web:ce985c1ce79ab668b33ecd",
-  measurementId: "G-SX009W4G8Z"
+  measurementId: "G-SX009W4G8Z",
 };
 
 const GOOGLE_FORM_LINK = "https://forms.gle/YOUR_FORM_LINK";
@@ -44,7 +68,9 @@ const AuthContext = createContext();
 function useAuth() {
   return useContext(AuthContext);
 }
-const formatMoney = (n) => `${Number(n).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
+
+const formatMoney = (n) =>
+  `${Number(n).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
 
 // ----------------------
 // App principal
@@ -66,39 +92,38 @@ export default function App() {
   }, []);
 
   const login = async (email, password) => {
-  setLoading(true);
-  const clientsRef = collection(db, "clients");
-  const q = query(clientsRef, where("email", "==", email));
-  const snap = await getDocs(q);
+    setLoading(true);
+    const clientsRef = collection(db, "clients");
+    const q = query(clientsRef, where("email", "==", email));
+    const snap = await getDocs(q);
 
-  if (!snap.empty) {
-    const docu = snap.docs[0];
-    const data = docu.data();
-    const client = { id: docu.id, ...data };
+    if (!snap.empty) {
+      const docu = snap.docs[0];
+      const data = docu.data();
+      const client = { id: docu.id, ...data };
 
-    if (!data.hasPassword) {
-      setLoading(false);
-      return { success: false, setPassword: true, client };
-    } else {
-      try {
-        const auth = getAuth();
-        await signInWithEmailAndPassword(auth, email, password);
-
-        setUser(client);
-        localStorage.setItem("kokos_user", JSON.stringify(client));
+      if (!data.hasPassword) {
         setLoading(false);
-        return { success: true, client };
-      } catch {
-        setLoading(false);
-        return { success: false, message: "Contraseña incorrecta." };
+        return { success: false, setPassword: true, client };
+      } else {
+        try {
+          const auth = getAuth();
+          await signInWithEmailAndPassword(auth, email, password);
+
+          setUser(client);
+          localStorage.setItem("kokos_user", JSON.stringify(client));
+          setLoading(false);
+          return { success: true, client };
+        } catch {
+          setLoading(false);
+          return { success: false, message: "Contraseña incorrecta." };
+        }
       }
     }
-  }
 
-  setLoading(false);
-  return { success: false, message: "No estás registrado." };
-};
-
+    setLoading(false);
+    return { success: false, message: "No estás registrado." };
+  };
 
   const logout = () => {
     setUser(null);
@@ -111,16 +136,65 @@ export default function App() {
     <AuthContext.Provider value={value}>
       <Router>
         <Header />
-        <main className="container">
+        <main>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/products" element={<ProductsList />} />
-            <Route path="/product/:id" element={<ProductPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="*" element={<NotFound />} />
-            <Route path="/set-password" element={<SetPassword />} />
+            <Route
+              path="/login"
+              element={
+                <div className="container">
+                  <Login />
+                </div>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <div className="container">
+                  <ProductsList />
+                </div>
+              }
+            />
+            <Route
+              path="/product/:id"
+              element={
+                <div className="container">
+                  <ProductPage />
+                </div>
+              }
+            />
+            <Route
+              path="/cart"
+              element={
+                <div className="container">
+                  <CartPage />
+                </div>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <div className="container">
+                  <AdminPanel />
+                </div>
+              }
+            />
+            <Route
+              path="*"
+              element={
+                <div className="container">
+                  <NotFound />
+                </div>
+              }
+            />
+            <Route
+              path="/set-password"
+              element={
+                <div className="container">
+                  <SetPassword />
+                </div>
+              }
+            />
           </Routes>
         </main>
         <Footer />
@@ -159,14 +233,20 @@ function Header() {
           </Link>
         </div>
         <div className="kokos-account">
-          <Link to="/cart" className="cart-link">MI CARRITO 🛒</Link>
+          <Link to="/cart" className="cart-link">
+            MI CARRITO 🛒
+          </Link>
           {user ? (
             <div>
               {user.email}{" "}
-              <button onClick={logout} className="logout-btn">Cerrar sesión</button>
+              <button onClick={logout} className="logout-btn">
+                Cerrar sesión
+              </button>
             </div>
           ) : (
-            <Link to="/login" className="login-link">CREAR CUENTA / INICIAR SESIÓN</Link>
+            <Link to="/login" className="login-link">
+              CREAR CUENTA / INICIAR SESIÓN
+            </Link>
           )}
           <div className="kokos-search">
             <form>
@@ -181,7 +261,10 @@ function Header() {
           <Link to="/products?category=jugueteria">JUGUETERÍA</Link>
           <div className="submenu">
             {subcategories.map((sub) => (
-              <Link key={sub} to={`/products?category=jugueteria&subcategory=${sub}`}>
+              <Link
+                key={sub}
+                to={`/products?category=jugueteria&subcategory=${sub}`}
+              >
                 {sub.replace(/_/g, " ").toUpperCase()}
               </Link>
             ))}
@@ -195,14 +278,31 @@ function Header() {
   );
 }
 
-// ----------------------
-// Home
-// ----------------------
 function Home() {
   return (
     <div className="kokos-home">
+      {/* Fila 1: Banner */}
       <section className="home-banner">
         <img src={banner} alt="Banner Kokos" className="banner-img" />
+      </section>
+
+      {/* Fila 2: Imagen pequeña centrada */}
+      <section className="home-row2">
+        <img src={smallImg} alt="Imagen pequeña" className="small-img" />
+      </section>
+
+      {/* Fila 3: 3 columnas con imágenes */}
+      <section className="home-row3">
+        <div className="img-grid">
+          <img src={img1} alt="Imagen 1" />
+          <img src={img2} alt="Imagen 2" />
+          <img src={img3} alt="Imagen 3" />
+        </div>
+      </section>
+
+      {/* Fila 4: Imagen centrada */}
+      <section className="home-row4">
+        <img src={bigImg} alt="Imagen grande" className="big-img" />
       </section>
     </div>
   );
@@ -220,19 +320,30 @@ function Footer() {
         </div>
         <div className="footer-col">
           <h4>Contacto</h4>
-          <p><FaWhatsapp /> 1145457891</p>
-          <p><FaEnvelope /> infokokos@gmail.com</p>
-          <p><FaMapMarkerAlt /> Buenos Aires, Argentina</p>
+          <p>
+            <FaWhatsapp /> 1145457891
+          </p>
+          <p>
+            <FaEnvelope /> infokokos@gmail.com
+          </p>
+          <p>
+            <FaMapMarkerAlt /> Buenos Aires, Argentina
+          </p>
         </div>
         <div className="footer-col">
           <h4>Mi Cuenta</h4>
-          <p><Link to="/login">Registro / Login</Link></p>
-          <p><Link to="/cart">Mi Carrito</Link></p>
-          
+          <p>
+            <Link to="/login">Registro / Login</Link>
+          </p>
+          <p>
+            <Link to="/cart">Mi Carrito</Link>
+          </p>
         </div>
         <div className="footer-col">
           <h4>Sobre Nosotros</h4>
-          <p><Link to="/nosotros">KOKOS Argentina</Link></p>
+          <p>
+            <Link to="/nosotros">KOKOS Argentina</Link>
+          </p>
         </div>
       </div>
     </footer>
@@ -260,7 +371,9 @@ function Login() {
     if (result.success) {
       navigate("/");
     } else if (result.setPassword) {
-      navigate("/set-password", { state: { email, clientId: result.client.id } });
+      navigate("/set-password", {
+        state: { email, clientId: result.client.id },
+      });
     } else {
       setMessage(result.message || "Correo o contraseña incorrectos.");
     }
@@ -311,15 +424,24 @@ function Login() {
       <div style={{ marginTop: "25px", textAlign: "center" }}>
         <p>
           <span>SI QUERÉS CREAR TU CUENTA LLENA FORMULARIO: </span>
-          <p><a href={GOOGLE_FORM_LINK} target="_blank" rel="noreferrer" className="link-text">
-            CLICK AQUI PARA IR AL FORMULARIO
-          </a></p>
+          <p>
+            <a
+              href={GOOGLE_FORM_LINK}
+              target="_blank"
+              rel="noreferrer"
+              className="link-text"
+            >
+              CLICK AQUI PARA IR AL FORMULARIO
+            </a>
+          </p>
         </p>
         <p>
           <span>SI YA FUISTE ACEPTADO Y NO TENES CONTRASEÑA: </span>
-          <p><Link to="/set-password" className="link-text">
-            CLICK AQUI PARA CREAR TU CONTRASEÑA
-          </Link></p>
+          <p>
+            <Link to="/set-password" className="link-text">
+              CLICK AQUI PARA CREAR TU CONTRASEÑA
+            </Link>
+          </p>
         </p>
       </div>
     </div>
@@ -336,7 +458,11 @@ function SetPassword() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [stepCompleted, setStepCompleted] = useState([!!email, !!password, !!confirm]);
+  const [stepCompleted, setStepCompleted] = useState([
+    !!email,
+    !!password,
+    !!confirm,
+  ]);
 
   useEffect(() => {
     setStepCompleted([!!email, !!password, !!confirm]);
@@ -356,7 +482,10 @@ function SetPassword() {
     if (!email) return setError("Debes ingresar tu correo registrado.");
 
     // Validar existencia en Firestore
-    const q = query(collection(db, "clients"), where("email", "==", email.toLowerCase()));
+    const q = query(
+      collection(db, "clients"),
+      where("email", "==", email.toLowerCase())
+    );
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
       return setError("Este correo no está registrado en nuestro sistema.");
@@ -446,7 +575,6 @@ function SetPassword() {
   );
 }
 
-
 // ===============================
 // Products List
 // ===============================
@@ -520,7 +648,10 @@ function ProductsList() {
       return;
     }
 
-    const q = query(collection(db, "categories"), where("name", "==", category));
+    const q = query(
+      collection(db, "categories"),
+      where("name", "==", category)
+    );
     const unsub = onSnapshot(q, (snap) => {
       if (!snap.empty) {
         const catData = snap.docs[0].data();
@@ -534,7 +665,8 @@ function ProductsList() {
   // 🔹 Aplicar filtros
   useEffect(() => {
     let result = [...products];
-    const { subcategory, search, minStock, minPrice, maxPrice } = appliedFilters;
+    const { subcategory, search, minStock, minPrice, maxPrice } =
+      appliedFilters;
 
     if (subcategory) {
       result = result.filter((p) => p.subcategory === subcategory);
@@ -586,7 +718,10 @@ function ProductsList() {
           <select
             value={pendingFilters.subcategory}
             onChange={(e) =>
-              setPendingFilters({ ...pendingFilters, subcategory: e.target.value })
+              setPendingFilters({
+                ...pendingFilters,
+                subcategory: e.target.value,
+              })
             }
           >
             <option value="">-- todas las subcategorías --</option>
@@ -678,9 +813,7 @@ function ProductsList() {
                     alt={p.name}
                   />
                 </Link>
-                {p.stock === 0 && (
-                  <div className="out-of-stock">SIN STOCK</div>
-                )}
+                {p.stock === 0 && <div className="out-of-stock">SIN STOCK</div>}
               </div>
               <h3 className="product-name">
                 <Link to={`/product/${p.id}`}>{p.name}</Link>
@@ -700,10 +833,6 @@ function ProductsList() {
     </div>
   );
 }
-
-
-
-
 
 // ----------------------
 // Product page
@@ -766,7 +895,9 @@ function ProductPage() {
           )}
           {mainMedia?.type === "video" && (
             <iframe
-              src={`https://www.youtube.com/embed/${mainMedia.url.split("v=")[1]}`}
+              src={`https://www.youtube.com/embed/${
+                mainMedia.url.split("v=")[1]
+              }`}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -812,62 +943,65 @@ function ProductPage() {
             {inStock ? (
               <AddToCart product={product} />
             ) : (
-              <button disabled className="btn">Sin stock</button>
+              <button disabled className="btn">
+                Sin stock
+              </button>
             )}
           </>
         ) : (
-          <p><em>Inicia sesión para ver el precio</em></p>
+          <p>
+            <em>Inicia sesión para ver el precio</em>
+          </p>
         )}
       </div>
 
       {/* Productos relacionados */}
-{related.length > 0 && (
-  <div className="related-section">
-    <h2>Productos en la misma categoría</h2>
-    <div className="related-grid">
-      {related
-        .sort(() => 0.5 - Math.random()) // random
-        .slice(0, 4) // solo 4
-        .map((p) => {
-          let priceContent;
-          if (!user) {
-            priceContent = (
-              <p>
-                <em>Inicia sesión para ver el precio</em>
-              </p>
-            );
-          } else {
-            const price = user.state === 2 ? p.price_state2 : p.price_state1;
-            priceContent = (
-              <p className="product-price">${price?.toLocaleString()}</p>
-            );
-          }
-
-          return (
-            <div key={p.id} className="related-card">
-              <img
-                src={
-                  (p.multimedia && p.multimedia[0]) ||
-                  "https://via.placeholder.com/200"
+      {related.length > 0 && (
+        <div className="related-section">
+          <h2>Productos en la misma categoría</h2>
+          <div className="related-grid">
+            {related
+              .sort(() => 0.5 - Math.random()) // random
+              .slice(0, 4) // solo 4
+              .map((p) => {
+                let priceContent;
+                if (!user) {
+                  priceContent = (
+                    <p>
+                      <em>Inicia sesión para ver el precio</em>
+                    </p>
+                  );
+                } else {
+                  const price =
+                    user.state === 2 ? p.price_state2 : p.price_state1;
+                  priceContent = (
+                    <p className="product-price">${price?.toLocaleString()}</p>
+                  );
                 }
-                alt={p.name}
-              />
-              <h3>{p.name}</h3>
-              {priceContent}
-              <Link to={`/product/${p.id}`} className="btn-small">
-                Ver producto
-              </Link>
-            </div>
-          );
-        })}
-    </div>
-  </div>
-)}
 
+                return (
+                  <div key={p.id} className="related-card">
+                    <img
+                      src={
+                        (p.multimedia && p.multimedia[0]) ||
+                        "https://via.placeholder.com/200"
+                      }
+                      alt={p.name}
+                    />
+                    <h3>{p.name}</h3>
+                    {priceContent}
+                    <Link to={`/product/${p.id}`} className="btn-small">
+                      Ver producto
+                    </Link>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 
 // ----------------------
 // Carrito
@@ -888,7 +1022,8 @@ function CartPage() {
   }, [cart]);
 
   const remove = (id) => setCart((c) => c.filter((x) => x.id !== id));
-  const changeQty = (id, qty) => setCart((c) => c.map((x) => (x.id === id ? { ...x, qty } : x)));
+  const changeQty = (id, qty) =>
+    setCart((c) => c.map((x) => (x.id === id ? { ...x, qty } : x)));
 
   const checkout = async () => {
     if (!user) return alert("Debes iniciar sesión para comprar.");
@@ -903,12 +1038,17 @@ function CartPage() {
     const docRef = await addDoc(ordersRef, order);
 
     try {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email: user.email,
-        order_id: docRef.id,
-        client_email: user.email,
-        order_json: JSON.stringify(cart, null, 2),
-      }, EMAILJS_USER_ID);
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          to_email: user.email,
+          order_id: docRef.id,
+          client_email: user.email,
+          order_json: JSON.stringify(cart, null, 2),
+        },
+        EMAILJS_USER_ID
+      );
     } catch (e) {
       console.warn("EmailJS send failed: ", e);
     }
@@ -924,23 +1064,42 @@ function CartPage() {
     <div>
       <h2>Carrito</h2>
       {cart.length === 0 ? (
-        <div>El carrito está vacío. <Link to="/products">Ver productos</Link></div>
+        <div>
+          El carrito está vacío. <Link to="/products">Ver productos</Link>
+        </div>
       ) : (
         <div>
           {cart.map((it) => (
-            <div key={it.id} className="card" style={{ display: "flex", justifyContent: "space-between" }}>
+            <div
+              key={it.id}
+              className="card"
+              style={{ display: "flex", justifyContent: "space-between" }}
+            >
               <div>
                 <div>{it.name}</div>
-                <div>${formatMoney(it.price)} x {it.qty}</div>
+                <div>
+                  ${formatMoney(it.price)} x {it.qty}
+                </div>
               </div>
               <div>
-                <input type="number" min="1" value={it.qty} onChange={(e) => changeQty(it.id, Number(e.target.value))} />
-                <button onClick={() => remove(it.id)} className="btn">Quitar</button>
+                <input
+                  type="number"
+                  min="1"
+                  value={it.qty}
+                  onChange={(e) => changeQty(it.id, Number(e.target.value))}
+                />
+                <button onClick={() => remove(it.id)} className="btn">
+                  Quitar
+                </button>
               </div>
             </div>
           ))}
-          <div><strong>Total: ${formatMoney(total)}</strong></div>
-          <button onClick={checkout} className="btn">Finalizar compra</button>
+          <div>
+            <strong>Total: ${formatMoney(total)}</strong>
+          </div>
+          <button onClick={checkout} className="btn">
+            Finalizar compra
+          </button>
         </div>
       )}
     </div>
@@ -958,7 +1117,8 @@ function AddToCart({ product }) {
   const add = () => {
     const raw = localStorage.getItem("wh_cart");
     const cart = raw ? JSON.parse(raw) : [];
-    const price = user?.state === 2 ? product.price_state2 : product.price_state1;
+    const price =
+      user?.state === 2 ? product.price_state2 : product.price_state1;
     const existing = cart.find((c) => c.id === product.id);
     if (existing) existing.qty += qty;
     else cart.push({ id: product.id, name: product.name, price, qty });
@@ -969,8 +1129,15 @@ function AddToCart({ product }) {
   return (
     <div>
       <label>Cantidad:</label>
-      <input value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value)))} type="number" min="1" />
-      <button onClick={add} className="btn">Agregar al carrito</button>
+      <input
+        value={qty}
+        onChange={(e) => setQty(Math.max(1, Number(e.target.value)))}
+        type="number"
+        min="1"
+      />
+      <button onClick={add} className="btn">
+        Agregar al carrito
+      </button>
     </div>
   );
 }
@@ -978,7 +1145,209 @@ function AddToCart({ product }) {
 // ----------------------
 // Admin Panel
 // ----------------------
-//
+
+function ProductForm({
+  initialData = {},
+  categories,
+  uploadedUrls,
+  setUploadedUrls,
+  selectedFiles,
+  setSelectedFiles,
+  selectedCategory,
+  setSelectedCategory,
+  onSubmit,
+  loading,
+  onCancel,
+}) {
+  const isEdit = !!initialData.id;
+
+  // 👇 Limpia automáticamente si no hay producto en edición (modo "Agregar")
+  useEffect(() => {
+    if (!isEdit) {
+      setUploadedUrls([]);
+      setSelectedFiles([]);
+      setSelectedCategory("");
+    }
+  }, [isEdit, setUploadedUrls, setSelectedFiles, setSelectedCategory]);
+
+  return (
+    <form onSubmit={onSubmit} className="stack">
+      <label>Código del producto</label>
+      <input name="code" defaultValue={initialData.code || ""} required />
+
+      <label>Nombre del producto</label>
+      <input name="name" defaultValue={initialData.name || ""} required />
+
+      <label>Descripción</label>
+      <textarea
+        name="description"
+        defaultValue={initialData.description || ""}
+      />
+
+      <label>Imágenes actuales (arrastra para reordenar)</label>
+      <DragDropContext
+        onDragEnd={(result) => {
+          if (!result.destination) return;
+          const reordered = Array.from(uploadedUrls);
+          const [removed] = reordered.splice(result.source.index, 1);
+          reordered.splice(result.destination.index, 0, removed);
+          setUploadedUrls(reordered);
+        }}
+      >
+        <Droppable droppableId="images" direction="horizontal">
+          {(provided) => (
+            <div
+              style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
+              {uploadedUrls.map((url, idx) => (
+                <Draggable key={url} draggableId={url} index={idx}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      style={{
+                        position: "relative",
+                        ...provided.draggableProps.style,
+                      }}
+                    >
+                      <img src={url} alt="preview" width="100" />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setUploadedUrls(
+                            uploadedUrls.filter((_, i) => i !== idx)
+                          )
+                        }
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          background: "red",
+                          color: "white",
+                        }}
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+
+      <label>Subir nuevas imágenes</label>
+      <input
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={(e) => {
+          const files = [...e.target.files];
+          setSelectedFiles(files);
+          const previews = files.map((f) => URL.createObjectURL(f));
+          setUploadedUrls((prev) => [...prev, ...previews]);
+        }}
+      />
+
+      <label>Videos de YouTube (uno por línea)</label>
+      <textarea
+        name="videos"
+        defaultValue={(initialData.videos || []).join("\n")}
+        placeholder="https://www.youtube.com/watch?v=xxxxxx"
+      />
+
+      <label>Precio para clientes en estado 1</label>
+      <input name="price1" defaultValue={initialData.price_state1 || ""} />
+
+      <label>Precio para clientes en estado 2</label>
+      <input name="price2" defaultValue={initialData.price_state2 || ""} />
+
+      <label>Cantidad mínima de compra</label>
+      <input
+        name="cant_min"
+        defaultValue={initialData.cant_min || 1}
+        placeholder="Cantidad mínima de compra"
+      />
+
+      <label>EAN (13 números)</label>
+      <input
+        name="ean"
+        pattern="\d{13}"
+        defaultValue={initialData.ean || ""}
+        placeholder="EAN (13 números)"
+      />
+
+      <label>Stock disponible (1 = Sí, 0 = No)</label>
+      <input name="stock" defaultValue={initialData.stock || ""} />
+
+      <label>Categoría</label>
+      <select
+        name="category"
+        required
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+      >
+        <option value="" disabled>
+          -- seleccionar --
+        </option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+
+      <label>Subcategoría</label>
+      <select name="subcategory" defaultValue={initialData.subcategory || ""}>
+        <option value="">-- sin subcategoría --</option>
+        {categories
+          .find((c) => c.id === selectedCategory)
+          ?.subcategories?.map((s) => (
+            <option key={`${selectedCategory}_${s}`} value={s}>
+              {s}
+            </option>
+          ))}
+      </select>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn" disabled={loading}>
+          {loading
+            ? isEdit
+              ? "Guardando..."
+              : "Agregando..."
+            : isEdit
+            ? "Guardar cambios"
+            : "Agregar"}
+        </button>
+
+        {onCancel && (
+          <button type="button" className="btn outline" onClick={onCancel}>
+            Cancelar
+          </button>
+        )}
+
+        {!isEdit && (
+          <button
+            type="button"
+            className="btn outline"
+            onClick={() => {
+              setUploadedUrls([]);
+              setSelectedFiles([]);
+              setSelectedCategory("");
+            }}
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
 
 function AdminPanel() {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -987,31 +1356,37 @@ function AdminPanel() {
   const [authed, setAuthed] = useState(false);
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]); // {id,name,subcategories:[]}
+  const [categories, setCategories] = useState([]);
   const [view, setView] = useState("dashboard");
   const [loading, setLoading] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState("");
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // filtros
   const [clientSearch, setClientSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterSubcategory, setFilterSubcategory] = useState("");
 
+  // Reset cuando entro a agregar
+  useEffect(() => {
+    if (view === "addProduct" && !editingProduct) {
+      setUploadedUrls([]);
+      setSelectedFiles([]);
+      setSelectedCategory("");
+    }
+  }, [view, editingProduct]);
+
+  // Firestore listeners
   useEffect(() => {
     if (!authed) return;
-    const ccol = collection(db, "clients");
-    const pcol = collection(db, "products");
-    const unsubC = onSnapshot(ccol, (snap) =>
+    const unsubC = onSnapshot(collection(db, "clients"), (snap) =>
       setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
-    const unsubP = onSnapshot(pcol, (snap) =>
+    const unsubP = onSnapshot(collection(db, "products"), (snap) =>
       setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
-    const catCol = collection(db, "categories");
-    const unsubCat = onSnapshot(catCol, (snap) =>
+    const unsubCat = onSnapshot(collection(db, "categories"), (snap) =>
       setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
     return () => {
@@ -1020,188 +1395,122 @@ function AdminPanel() {
       unsubCat();
     };
   }, [authed]);
+
+  // Cargar datos al editar
   useEffect(() => {
     if (editingProduct) {
-      // Si estamos editando un producto, cargamos sus imágenes en el estado
       setUploadedUrls(editingProduct.multimedia || []);
-      setSelectedCategory(
-        categories.find((c) => c.name === editingProduct.category)?.id || ""
-      );
+      setSelectedFiles([]); // 👈 muy importante
+      const cat = categories.find((c) => c.name === editingProduct.category);
+      setSelectedCategory(cat?.id || "");
     }
   }, [editingProduct, categories]);
 
-
+  // --- Auth ---
   const loginAdmin = () => {
     if (secret === "admin123") setAuthed(true);
     else alert("Clave admin incorrecta");
   };
 
-  const toggleState = async (clientId, newState) => {
-    const ref = doc(db, "clients", clientId);
-    await updateDoc(ref, { state: newState });
+  // --- Clientes ---
+  const toggleState = (id, state) =>
+    updateDoc(doc(db, "clients", id), { state });
+
+  const deleteClient = async (id) => {
+    if (confirm("¿Eliminar cliente?")) await deleteDoc(doc(db, "clients", id));
   };
 
-  const deleteClient = async (clientId) => {
-    if (!confirm("¿Eliminar cliente?")) return;
-    await deleteDoc(doc(db, "clients", clientId));
-  };
-
-  const deleteProduct = async (prodId) => {
-    if (!confirm("¿Eliminar producto?")) return;
-    await deleteDoc(doc(db, "products", prodId));
-  };
-
-  const toggleStock = async (prodId, newStock) => {
-    const ref = doc(db, "products", prodId);
-    try {
-      await updateDoc(ref, { stock: newStock });
-    } catch (e) {
-      console.error(e);
-      alert("Error actualizando stock");
-    }
-  };
-
-  // --------- Productos ----------
-  const addProduct = async (ev) => {
-  ev.preventDefault();
-  setLoading(true);
-
-  try {
-    // Subimos las imágenes a Cloudinary
-    const urls = [];
-    for (let file of selectedFiles) {
-      const url = await uploadImage(file);
-      urls.push(url);
-    }
-
-    const data = new FormData(ev.target);
-    const videos = (data.get("videos") || "")
-      .split("\n")
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0);
-
-    const product = {
-      code: data.get("code"),
-      name: data.get("name"),
-      description: data.get("description"),
-      multimedia: urls,
-      videos,
-      price_state1: Number(data.get("price1")) || 0,
-      price_state2: Number(data.get("price2")) || 0,
-      stock: Number(data.get("stock")) || 0,
-      cant_min: Number(data.get("cant_min")) || 1,
-      ean: data.get("ean"),
-      category: categories.find((c) => c.id === selectedCategory)?.name || "",
-      subcategory: data.get("subcategory") || "",
-    };
-
-    await addDoc(collection(db, "products"), product);
-    alert("Producto agregado");
-    setSelectedFiles([]);
-    setUploadedUrls([]);
-    ev.target.reset();
-    setSelectedCategory("");
-    setView("products");
-  } catch (err) {
-    console.error(err);
-    alert("Error subiendo producto");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
-  const updateProduct = async (ev) => {
-  ev.preventDefault();
-  setLoading(true);
-
-  try {
-    const newUrls = [...uploadedUrls];
-    for (let file of selectedFiles) {
-      const url = await uploadImage(file);
-      newUrls.push(url);
-    }
-
-    const data = new FormData(ev.target);
-    const videos = (data.get("videos") || "")
-      .split("\n")
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0);
-
-    const product = {
-      code: data.get("code"),
-      name: data.get("name"),
-      description: data.get("description"),
-      multimedia: newUrls,
-      videos, // 👈 nuevo campo
-      price_state1: Number(data.get("price1")) || 0,
-      price_state2: Number(data.get("price2")) || 0,
-      stock: Number(data.get("stock")) || 0,
-      cant_min: Number(data.get("cant_min")) || 1,
-      ean: data.get("ean"),
-      category: categories.find((c) => c.id === selectedCategory)?.name || "",
-      subcategory: data.get("subcategory") || "",
-    };
-
-    const ref = doc(db, "products", editingProduct.id);
-    await updateDoc(ref, product);
-
-    alert("Producto actualizado");
-    setEditingProduct(null);
-    setSelectedFiles([]);
-    setUploadedUrls([]);
-    setSelectedCategory("");
-    setView("products");
-  } catch (err) {
-    console.error(err);
-    alert("Error actualizando producto");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  // --------- Clientes ----------
   const addClient = async (ev) => {
     ev.preventDefault();
     const data = new FormData(ev.target);
-    const client = {
+    await addDoc(collection(db, "clients"), {
       email: data.get("email"),
       state: Number(data.get("state")) || 1,
-    };
-    await addDoc(collection(db, "clients"), client);
+    });
     ev.target.reset();
     alert("Cliente agregado");
   };
 
-  // --------- Categorías ----------
-  const addSubcategory = async (catId, subName) => {
-    if (!subName) return alert("Nombre de subcategoría vacío");
+  // --- Productos ---
+  const handleSubmitProduct = async (ev) => {
+    ev.preventDefault();
+    setLoading(true);
+    try {
+      const urls = [...uploadedUrls];
+      for (let file of selectedFiles) {
+        const url = await uploadImage(file);
+        urls.push(url);
+      }
+
+      const data = new FormData(ev.target);
+      const videos = (data.get("videos") || "")
+        .split("\n")
+        .map((v) => v.trim())
+        .filter(Boolean);
+      const cat = categories.find((c) => c.id === selectedCategory);
+
+      const product = {
+        code: data.get("code"),
+        name: data.get("name"),
+        description: data.get("description"),
+        multimedia: urls,
+        videos,
+        price_state1: Number(data.get("price1")) || 0,
+        price_state2: Number(data.get("price2")) || 0,
+        stock: Number(data.get("stock")) || 0,
+        cant_min: Number(data.get("cant_min")) || 1,
+        ean: data.get("ean"),
+        category: cat?.name || "",
+        categoryId: cat?.id || "",
+        subcategory: data.get("subcategory") || "",
+      };
+
+      if (editingProduct) {
+        await updateDoc(doc(db, "products", editingProduct.id), product);
+        alert("Producto actualizado");
+        setEditingProduct(null);
+      } else {
+        await addDoc(collection(db, "products"), product);
+        alert("Producto agregado");
+      }
+
+      setSelectedFiles([]);
+      setUploadedUrls([]);
+      setSelectedCategory("");
+      setView("products");
+    } catch (err) {
+      console.error(err);
+      alert("Error guardando producto");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleStock = (id, stock) =>
+    updateDoc(doc(db, "products", id), { stock });
+
+  const deleteProduct = async (id) => {
+    if (confirm("¿Eliminar producto?"))
+      await deleteDoc(doc(db, "products", id));
+  };
+
+  // --- Categorías ---
+  const addSubcategory = (catId, subName) => {
+    if (!subName) return alert("Nombre vacío");
     const normalized = subName.trim().toLowerCase().replace(/\s+/g, "_");
-    const ref = doc(db, "categories", catId);
-    try {
-      await updateDoc(ref, { subcategories: arrayUnion(normalized) });
-      alert(`Subcategoría "${normalized}" añadida`);
-    } catch (e) {
-      console.error(e);
-      alert("Error añadiendo subcategoría");
-    }
+    return updateDoc(doc(db, "categories", catId), {
+      subcategories: arrayUnion(normalized),
+    });
   };
 
-  const removeSubcategory = async (catId, subName) => {
-    if (!confirm(`Eliminar subcategoría "${subName}"?`)) return;
-    const ref = doc(db, "categories", catId);
-    try {
-      await updateDoc(ref, { subcategories: arrayRemove(subName) });
-      alert("Subcategoría eliminada");
-    } catch (e) {
-      console.error(e);
-      alert("Error eliminando subcategoría.");
-    }
+  const removeSubcategory = (catId, subName) => {
+    if (confirm(`Eliminar subcategoría "${subName}"?`))
+      updateDoc(doc(db, "categories", catId), {
+        subcategories: arrayRemove(subName),
+      });
   };
 
-  // --- filtros ---
+  // --- Filtros ---
   const filteredClients = clients.filter((c) =>
     c.email.toLowerCase().includes(clientSearch.toLowerCase())
   );
@@ -1213,13 +1522,12 @@ function AdminPanel() {
         .toLowerCase()
         .includes(productSearch.toLowerCase()) ||
       (p.code || "").toLowerCase().includes(productSearch.toLowerCase());
-
     const matchCategory = !filterCategory || p.category === filterCategory;
     const matchSub = !filterSubcategory || p.subcategory === filterSubcategory;
-
     return matchSearch && matchCategory && matchSub;
   });
 
+  // --- Render ---
   if (!authed) {
     return (
       <div className="admin-card login-card">
@@ -1246,11 +1554,39 @@ function AdminPanel() {
         </div>
         <nav>
           <ul>
-            <li className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>Dashboard</li>
-            <li className={view === "clients" ? "active" : ""} onClick={() => setView("clients")}>Clientes</li>
-            <li className={view === "products" ? "active" : ""} onClick={() => setView("products")}>Productos</li>
-            <li className={view === "addProduct" ? "active" : ""} onClick={() => { setEditingProduct(null); setView("addProduct"); }}>Agregar Producto</li>
-            <li className={view === "categories" ? "active" : ""} onClick={() => setView("categories")}>Categorías / Subcategorías</li>
+            <li
+              className={view === "dashboard" ? "active" : ""}
+              onClick={() => setView("dashboard")}
+            >
+              Dashboard
+            </li>
+            <li
+              className={view === "clients" ? "active" : ""}
+              onClick={() => setView("clients")}
+            >
+              Clientes
+            </li>
+            <li
+              className={view === "products" ? "active" : ""}
+              onClick={() => setView("products")}
+            >
+              Productos
+            </li>
+            <li
+              className={view === "addProduct" ? "active" : ""}
+              onClick={() => {
+                setEditingProduct(null);
+                setView("addProduct");
+              }}
+            >
+              Agregar Producto
+            </li>
+            <li
+              className={view === "categories" ? "active" : ""}
+              onClick={() => setView("categories")}
+            >
+              Categorías / Subcategorías
+            </li>
           </ul>
         </nav>
       </aside>
@@ -1280,32 +1616,44 @@ function AdminPanel() {
         {view === "clients" && (
           <div className="card">
             <h2>Clientes</h2>
-
             <input
               placeholder="Buscar cliente por email"
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
             />
-
             {filteredClients.map((c) => (
               <div key={c.id} className="row-between">
                 <div>
-                  <div><strong>{c.email}</strong></div>
+                  <div>
+                    <strong>{c.email}</strong>
+                  </div>
                   <div>Estado: {c.state}</div>
                 </div>
                 <div>
-                  <button onClick={() => toggleState(c.id, 1)} className="btn">Estado 1</button>
-                  <button onClick={() => toggleState(c.id, 2)} className="btn">Estado 2</button>
-                  <button onClick={() => deleteClient(c.id)} className="btn danger">Eliminar</button>
+                  <button onClick={() => toggleState(c.id, 1)} className="btn">
+                    Estado 1
+                  </button>
+                  <button onClick={() => toggleState(c.id, 2)} className="btn">
+                    Estado 2
+                  </button>
+                  <button
+                    onClick={() => deleteClient(c.id)}
+                    className="btn danger"
+                  >
+                    Eliminar
+                  </button>
                 </div>
               </div>
             ))}
-
             <hr />
             <h4>Agregar cliente</h4>
             <form onSubmit={addClient} className="stack">
               <input name="email" placeholder="Email del cliente" required />
-              <input name="state" placeholder="Estado (1 o 2)" defaultValue="1" />
+              <input
+                name="state"
+                placeholder="Estado (1 o 2)"
+                defaultValue="1"
+              />
               <button className="btn">Agregar</button>
             </form>
           </div>
@@ -1315,13 +1663,11 @@ function AdminPanel() {
         {view === "products" && (
           <div className="card">
             <h2>Productos existentes</h2>
-
             <input
               placeholder="Buscar producto por nombre/desc/código"
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
             />
-
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <select
                 value={filterCategory}
@@ -1332,25 +1678,32 @@ function AdminPanel() {
               >
                 <option value="">-- todas las categorías --</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
-
               <select
                 value={filterSubcategory}
                 onChange={(e) => setFilterSubcategory(e.target.value)}
               >
                 <option value="">-- todas las subcategorías --</option>
-                {categories.find((c) => c.name === filterCategory)?.subcategories?.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
+                {categories
+                  .find((c) => c.name === filterCategory)
+                  ?.subcategories?.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
               </select>
             </div>
-
             {filteredProducts.map((p) => (
               <div key={p.id} className="product-row row-between">
                 <div>
-                  <strong>{p.name}</strong> <span style={{ fontSize: 12, color: "#555" }}>({p.code})</span>
+                  <strong>{p.name}</strong>{" "}
+                  <span style={{ fontSize: 12, color: "#555" }}>
+                    ({p.code})
+                  </span>
                   <div style={{ fontSize: 13 }}>
                     {p.category} / {p.subcategory}
                   </div>
@@ -1361,10 +1714,35 @@ function AdminPanel() {
                 <div>
                   <div>Stock: {p.stock}</div>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button onClick={() => toggleStock(p.id, 1)} className="btn small">Stock Sí</button>
-                    <button onClick={() => toggleStock(p.id, 0)} className="btn small">Stock No</button>
-                    <button onClick={() => { setEditingProduct(p); setSelectedCategory(categories.find(c => c.name === p.category)?.id || ""); setView("editProduct"); }} className="btn small">Editar</button>
-                    <button onClick={() => deleteProduct(p.id)} className="btn danger small">
+                    <button
+                      onClick={() => toggleStock(p.id, 1)}
+                      className="btn small"
+                    >
+                      Stock Sí
+                    </button>
+                    <button
+                      onClick={() => toggleStock(p.id, 0)}
+                      className="btn small"
+                    >
+                      Stock No
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingProduct(p);
+                        setSelectedCategory(
+                          categories.find((c) => c.name === p.category)?.id ||
+                            ""
+                        );
+                        setView("editProduct");
+                      }}
+                      className="btn small"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => deleteProduct(p.id)}
+                      className="btn danger small"
+                    >
                       Eliminar
                     </button>
                   </div>
@@ -1374,195 +1752,31 @@ function AdminPanel() {
           </div>
         )}
 
-        {/* AGREGAR PRODUCTO */}
-{view === "addProduct" && (
-  <div className="card">
-    <h2>Agregar producto</h2>
-    <form onSubmit={addProduct} className="stack">
-      <label>Código del producto</label>
-      <input name="code" placeholder="Código" required />
-
-      <label>Nombre del producto</label>
-      <input name="name" placeholder="Nombre" required />
-
-      <label>Descripción</label>
-      <textarea name="description" placeholder="Descripción" />
-
-      <label>Imágenes del producto</label>
-      <input
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={(e) => setSelectedFiles([...e.target.files])}
-      />
-      <label>Videos de YouTube (uno por línea)</label>
-      <textarea
-        name="videos"
-        placeholder="https://www.youtube.com/watch?v=xxxxxx"
-      />
-      <label>Precio para clientes en estado 1</label>
-      <input name="price1" placeholder="Precio estado 1" />
-
-      <label>Precio para clientes en estado 2</label>
-      <input name="price2" placeholder="Precio estado 2" />
-
-      <label>Cantidad mínima de compra</label>
-      <input name="cant_min" placeholder="Cantidad mínima de compra" defaultValue="1" />
-
-      <label>EAN (13 números)</label>
-      <input name="ean" placeholder="EAN (13 números)" pattern="\d{13}" />
-
-      <label>Stock disponible (1 = Sí, 0 = No)</label>
-      <input name="stock" placeholder="Stock (1 o 0)" />
-
-      <label>Categoría</label>
-      <select
-        name="category"
-        required
-        value={selectedCategory}
-        onChange={(e) => setSelectedCategory(e.target.value)}
-      >
-        <option value="" disabled>-- seleccionar --</option>
-        {categories.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-      </select>
-
-      <label>Subcategoría</label>
-      <select name="subcategory" defaultValue="">
-        <option value="">-- sin subcategoría --</option>
-        {categories.find((c) => c.id === selectedCategory)?.subcategories?.map((s) => (
-          <option key={`${selectedCategory}_${s}`} value={s}>{s}</option>
-        ))}
-      </select>
-
-      <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn" disabled={loading}>
-          {loading ? "Agregando..." : "Agregar"}
-        </button>
-        <button
-          type="button"
-          className="btn outline"
-          onClick={() => {
-            ev.target.reset(); // dentro del addProduct
-            setSelectedCategory("");
-          }}
-        >
-          Limpiar
-        </button>
-      </div>
-    </form>
-  </div>
-)}
-
-        {/* EDITAR PRODUCTO */}
-{view === "editProduct" && editingProduct && (
-  <div className="card">
-    <h2>Editar producto</h2>
-    <form onSubmit={updateProduct} className="stack">
-      <label>Código del producto</label>
-      <input name="code" defaultValue={editingProduct.code} required />
-
-      <label>Nombre del producto</label>
-      <input name="name" defaultValue={editingProduct.name} required />
-
-      <label>Descripción</label>
-      <textarea name="description" defaultValue={editingProduct.description} />
-
-      <label>Imágenes actuales</label>
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        {uploadedUrls.map((url, idx) => (
-          <div key={idx} style={{ position: "relative" }}>
-            <img src={url} alt="preview" width="100" />
-            <button
-              type="button"
-              onClick={() =>
-                setUploadedUrls(uploadedUrls.filter((_, i) => i !== idx))
-              }
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                background: "red",
-                color: "white",
-                }}
-              >
-              ❌
-            </button>
+        {/* AGREGAR / EDITAR PRODUCTO */}
+        {(view === "addProduct" ||
+          (view === "editProduct" && editingProduct)) && (
+          <div className="card">
+            <h2>{editingProduct ? "Editar producto" : "Agregar producto"}</h2>
+            <ProductForm
+              initialData={editingProduct || {}}
+              categories={categories}
+              uploadedUrls={uploadedUrls}
+              setUploadedUrls={setUploadedUrls}
+              selectedFiles={selectedFiles}
+              setSelectedFiles={setSelectedFiles}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              onSubmit={handleSubmitProduct}
+              loading={loading}
+              onCancel={() => {
+                setEditingProduct(null);
+                setSelectedCategory("");
+                setSelectedFiles([]); // 👈 limpiar acá también
+                setView("products");
+              }}
+            />
           </div>
-        ))}
-      </div>
-
-<label>Subir nuevas imágenes</label>
-<input
-  type="file"
-  multiple
-  accept="image/*"
-  onChange={(e) => setSelectedFiles([...e.target.files])}
-/>
-      <label>Videos de YouTube (uno por línea)</label>
-      <textarea
-        name="videos"
-        defaultValue={(editingProduct.videos || []).join("\n")}
-        placeholder="https://www.youtube.com/watch?v=xxxxxx"
-      />
-
-      <label>Precio para clientes en estado 1</label>
-      <input name="price1" defaultValue={editingProduct.price_state1} />
-
-      <label>Precio para clientes en estado 2</label>
-      <input name="price2" defaultValue={editingProduct.price_state2} />
-
-      <label>Cantidad mínima de compra</label>
-      <input name="cant_min" defaultValue={editingProduct.cant_min || 1} />
-
-      <label>EAN (13 números)</label>
-      <input name="ean" pattern="\d{13}" defaultValue={editingProduct.ean} />
-
-      <label>Stock disponible (1 = Sí, 0 = No)</label>
-      <input name="stock" defaultValue={editingProduct.stock} />
-
-      <label>Categoría</label>
-      <select
-        name="category"
-        required
-        value={selectedCategory}
-        onChange={(e) => setSelectedCategory(e.target.value)}
-      >
-        <option value="" disabled>-- seleccionar --</option>
-        {categories.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-      </select>
-
-      <label>Subcategoría</label>
-      <select name="subcategory" defaultValue={editingProduct.subcategory || ""}>
-        <option value="">-- sin subcategoría --</option>
-        {categories.find((c) => c.id === selectedCategory)?.subcategories?.map((s) => (
-          <option key={`${selectedCategory}_${s}`} value={s}>{s}</option>
-        ))}
-      </select>
-
-      <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn" disabled={loading}>
-          {loading ? "Guardando..." : "Guardar cambios"}
-        </button>
-        <button
-          type="button"
-          className="btn outline"
-          onClick={() => {
-            setEditingProduct(null);
-            setSelectedCategory("");
-            setView("products");
-          }}
-        >
-          Cancelar
-        </button>
-      </div>
-    </form>
-  </div>
-)}
-
+        )}
 
         {/* CATEGORÍAS */}
         {view === "categories" && (
@@ -1594,8 +1808,7 @@ function AdminPanel() {
                   <form
                     onSubmit={(ev) => {
                       ev.preventDefault();
-                      const sub = ev.target.sub.value;
-                      addSubcategory(c.id, sub);
+                      addSubcategory(c.id, ev.target.sub.value);
                       ev.target.reset();
                     }}
                     className="row"
@@ -1613,12 +1826,9 @@ function AdminPanel() {
   );
 }
 
-
-
 // ----------------------
 // NotFound
 // ----------------------
 function NotFound() {
   return <div>404 - Not Found</div>;
 }
-
