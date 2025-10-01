@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import banner from "./assets/banner.jpg";
 import serviciosEnvios from "./assets/servicio y envios-08.jpg";
 import destacadoKokos from "./assets/Destacado Cuadrado kokos.jpg";
-import destacadoMusicales from "./assets/Destacado Cuadrado Kokos musicales.jpg";
-import destacadoVehiculos from "./assets/Destacado Cuadrado Kokos vehiculos.jpg";
+import destacadoMusicales from "./assets/Destacado Cuadrado kokos musicales.jpg";
+import destacadoVehiculos from "./assets/Destacado Cuadrado kokos vehiculos.jpg";
 import envioAtencion from "./assets/Envio y Atencion-08.jpg";
 
 export default function Home() {
