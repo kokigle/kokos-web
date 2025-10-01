@@ -2,11 +2,11 @@ import "./styles/home-page.css";
 import { Link } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import banner from "./assets/banner.jpg";
-import serviciosEnvios from "./assets/servicio y envios-08.jpg";
-import destacadoKokos from "./assets/Destacado Cuadrado kokos.jpg";
-import destacadoMusicales from "./assets/Destacado Cuadrado kokos musicales.jpg";
-import destacadoVehiculos from "./assets/Destacado Cuadrado kokos vehiculos.jpg";
-import envioAtencion from "./assets/Envio y Atencion-08.jpg";
+import serviciosEnvios from "./assets/servicio_y_envios-08.jpg";
+import destacadoKokos from "./assets/Destacado_Cuadrado_kokos.jpg";
+import destacadoMusicales from "./assets/Destacado_Cuadrado_kokos_musicales.jpg";
+import destacadoVehiculos from "./assets/Destacado_Cuadrado_kokos_vehiculos.jpg";
+import envioAtencion from "./assets/Envio_y_Atencion-08.jpg";
 
 export default function Home() {
   const valuesRef = useRef(null);
