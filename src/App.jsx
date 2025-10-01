@@ -1,5 +1,6 @@
 //TODO: Separar en ProductsList.jsx, ProductPage.jsx, CartPage.jsx, AdminPanel.jsx, SetPassword.jsx, Login.jsx, NotFound.jsx, Header.jsx, Footer.jsx.
 // App.jsx
+import "./index.css";
 import React, { useEffect, useState, createContext, useContext } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
