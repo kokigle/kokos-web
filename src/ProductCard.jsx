@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "./App";
-
+import "./styles/products-list.css";
+import "./styles/product-page.css";
 export default function ProductCard({ p }) {
   const [hovered, setHovered] = useState(null);
   const { user } = useAuth();

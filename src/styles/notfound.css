@@ -1,0 +1,416 @@
+/* =========================
+   NOT FOUND PAGE - KOKOS
+========================= */
+
+.notfound-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #e9ecef 100%);
+  position: relative;
+  overflow: hidden;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.notfound-content {
+  max-width: 800px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+/* ===== ANIMACIÓN DEL ERROR CODE ===== */
+.notfound-animation {
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.error-code {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.digit {
+  font-size: 120px;
+  font-weight: 800;
+  color: #17a2b8;
+  text-shadow: 4px 4px 0px rgba(23, 162, 184, 0.2);
+  animation: bounce 2s infinite;
+  line-height: 1;
+}
+
+.digit:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.digit:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.digit:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.digit.special {
+  color: #868e96;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== ICONO DE JUGUETE ===== */
+.toy-icon {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  animation: float 3s ease-in-out infinite;
+}
+
+.toy-icon svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+/* ===== TEXTO ===== */
+.notfound-text {
+  animation: fadeIn 1s ease-out 0.3s backwards;
+  margin-top: -30px;
+}
+
+.notfound-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: #495057;
+  margin: 0 0 20px 0;
+  letter-spacing: -1px;
+}
+
+.notfound-description {
+  font-size: 18px;
+  color: #6c757d;
+  line-height: 1.6;
+  margin: 0 0 40px 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===== BOTONES ===== */
+.notfound-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 50px;
+}
+
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary svg,
+.btn-secondary svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(23, 162, 184, 0.3);
+}
+
+.btn-secondary {
+  background: white;
+  color: #17a2b8;
+  border: 2px solid #17a2b8;
+}
+
+.btn-secondary:hover {
+  background: #17a2b8;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(23, 162, 184, 0.3);
+}
+
+/* ===== SUGERENCIAS ===== */
+.notfound-suggestions {
+  padding-top: 40px;
+  border-top: 2px solid #e9ecef;
+  animation: fadeIn 1.2s ease-out 0.6s backwards;
+}
+
+.suggestions-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #868e96;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 20px 0;
+}
+
+.suggestions-links {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.suggestions-links a {
+  font-size: 15px;
+  color: #6c757d;
+  text-decoration: none;
+  position: relative;
+  padding-bottom: 4px;
+  transition: all 0.3s ease;
+}
+
+.suggestions-links a::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #17a2b8;
+  transition: width 0.3s ease;
+}
+
+.suggestions-links a:hover {
+  color: #17a2b8;
+}
+
+.suggestions-links a:hover::after {
+  width: 100%;
+}
+
+/* ===== FORMAS FLOTANTES DE FONDO ===== */
+.notfound-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.floating-shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.08;
+  animation: floatRandom 20s infinite ease-in-out;
+}
+
+.shape-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #868e96, #6c757d);
+  top: 60%;
+  right: 15%;
+  animation-delay: 5s;
+}
+
+.shape-3 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  bottom: 15%;
+  left: 20%;
+  animation-delay: 10s;
+}
+
+.shape-4 {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, #868e96, #6c757d);
+  top: 30%;
+  right: 20%;
+  animation-delay: 15s;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-15px) rotate(5deg);
+  }
+  66% {
+    transform: translateY(-10px) rotate(-5deg);
+  }
+}
+
+@keyframes floatRandom {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(30px, -30px) rotate(90deg);
+  }
+  50% {
+    transform: translate(-20px, -60px) rotate(180deg);
+  }
+  75% {
+    transform: translate(-40px, -20px) rotate(270deg);
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .notfound-container {
+    padding: 30px 20px;
+  }
+
+  .error-code {
+    gap: 10px;
+  }
+
+  .digit {
+    font-size: 80px;
+  }
+
+  .toy-icon {
+    width: 80px;
+    height: 80px;
+  }
+
+  .notfound-title {
+    font-size: 32px;
+  }
+
+  .notfound-description {
+    font-size: 16px;
+  }
+
+  .notfound-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    max-width: 300px;
+    justify-content: center;
+  }
+
+  .suggestions-links {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .floating-shape {
+    opacity: 0.05;
+  }
+
+  .shape-1 {
+    width: 200px;
+    height: 200px;
+  }
+
+  .shape-2,
+  .shape-3 {
+    width: 150px;
+    height: 150px;
+  }
+
+  .shape-4 {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .digit {
+    font-size: 60px;
+  }
+
+  .notfound-title {
+    font-size: 26px;
+  }
+
+  .notfound-description {
+    font-size: 15px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 14px 28px;
+    font-size: 14px;
+  }
+
+  .toy-icon {
+    width: 70px;
+    height: 70px;
+  }
+}

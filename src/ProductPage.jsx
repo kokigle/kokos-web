@@ -1,6 +1,7 @@
 // ProductPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   doc,
   getDoc,
@@ -12,7 +13,7 @@ import {
 import { useAuth } from "./App";
 import { db } from "./App";
 import ProductCard from "./ProductCard";
-
+import "./styles/product-page.css";
 export default function ProductPage() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);

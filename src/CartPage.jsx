@@ -5,6 +5,9 @@ import { useAuth } from "./App";
 import { db, formatMoney } from "./App";
 import emailjs from "@emailjs/browser";
 import { collection, addDoc } from "firebase/firestore";
+const EMAILJS_SERVICE_ID = "service_igan4yb";
+const EMAILJS_TEMPLATE_ID = "template_e8kdsrp";
+const EMAILJS_USER_ID = "WlrKNrL1f219RpOwO";
 
 export default function CartPage() {
   const [cart, setCart] = useState(() => {

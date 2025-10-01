@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-
+import "./styles/products-list.css";
+import "./styles/product-page.css";
 export default function ProductForm({
   initialData = {},
   categories,

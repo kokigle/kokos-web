@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "./App";
 import { db } from "./App";
-
+import "./styles/products-list.css";
 export default function ProductsList() {
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);

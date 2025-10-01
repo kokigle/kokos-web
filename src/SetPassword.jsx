@@ -13,7 +13,7 @@ import {
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { db } from "./App";
 import { FaEnvelope, FaLock } from "react-icons/fa";
-
+import "./styles/login-setpassword.css";
 export default function SetPassword() {
   const { setUser } = useAuth();
   const location = useLocation();

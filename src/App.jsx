@@ -1,7 +1,8 @@
-//TODO: Separar en ProductsList.jsx, ProductPage.jsx, CartPage.jsx, AdminPanel.jsx, SetPassword.jsx, Login.jsx, NotFound.jsx, Header.jsx, Footer.jsx.
 // App.jsx
-import "./index.css";
+import "./styles/reset-y-base.css";
+
 import React, { useEffect, useState, createContext, useContext } from "react";
+import { WhatsappIcon } from "./icons/WhatsappIcon";
 import Header from "./Header";
 import Footer from "./Footer";
 import Login from "./Login";
@@ -11,47 +12,17 @@ import ProductPage from "./ProductPage";
 import CartPage from "./CartPage";
 import AdminPanel from "./AdminPanel";
 import NotFound from "./NotFound";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-  useParams,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
+import Home from "./Home";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   collection,
-  doc,
-  getDoc,
   getDocs,
   query,
   where,
-  addDoc,
-  updateDoc,
-  onSnapshot,
-  arrayUnion,
-  arrayRemove,
-  deleteDoc,
 } from "firebase/firestore";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-} from "firebase/auth";
-import emailjs from "@emailjs/browser";
-import { uploadImage } from "./cloudinary";
-import logo from "./assets/logo.png";
-import banner from "./assets/banner.png";
-import smallImg from "./assets/smallImg.png";
-import bigImg from "./assets/bigImg.png";
-import img1 from "./assets/img1.png";
-import img2 from "./assets/img2.png";
-import img3 from "./assets/img3.png";
-import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt, FaLock } from "react-icons/fa";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
 // ----------------------
 // CONFIG
@@ -65,11 +36,6 @@ const firebaseConfig = {
   appId: "1:714849880120:web:ce985c1ce79ab668b33ecd",
   measurementId: "G-SX009W4G8Z",
 };
-
-const GOOGLE_FORM_LINK = "https://forms.gle/YOUR_FORM_LINK";
-const EMAILJS_SERVICE_ID = "service_igan4yb";
-const EMAILJS_TEMPLATE_ID = "template_e8kdsrp";
-const EMAILJS_USER_ID = "WlrKNrL1f219RpOwO";
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
@@ -207,39 +173,19 @@ export default function App() {
               }
             />
           </Routes>
+          {/* Botón de WhatsApp siempre fijo */}
+          <a
+            href="https://wa.me/5491145457891?text=Hola!%20Quisiera%20consultar%20sobre%20sus%20productos."
+            className="whatsapp-fab"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WhatsApp"
+          >
+            <WhatsappIcon style={{ width: 32, height: 32 }} />
+          </a>
         </main>
         <Footer />
       </Router>
     </AuthContext.Provider>
-  );
-}
-
-function Home() {
-  return (
-    <div className="kokos-home">
-      {/* Fila 1: Banner */}
-      <section className="home-banner">
-        <img src={banner} alt="Banner Kokos" className="banner-img" />
-      </section>
-
-      {/* Fila 2: Imagen pequeña centrada */}
-      <section className="home-row2">
-        <img src={smallImg} alt="Imagen pequeña" className="small-img" />
-      </section>
-
-      {/* Fila 3: 3 columnas con imágenes */}
-      <section className="home-row3">
-        <div className="img-grid">
-          <img src={img1} alt="Imagen 1" />
-          <img src={img2} alt="Imagen 2" />
-          <img src={img3} alt="Imagen 3" />
-        </div>
-      </section>
-
-      {/* Fila 4: Imagen centrada */}
-      <section className="home-row4">
-        <img src={bigImg} alt="Imagen grande" className="big-img" />
-      </section>
-    </div>
   );
 }

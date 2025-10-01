@@ -12,6 +12,7 @@ import {
 import { uploadImage } from "./cloudinary";
 import { db } from "./App";
 import ProductForm from "./ProductForm";
+import "./styles/admin-panel.css";
 
 export default function AdminPanel() {
   // Estados de autenticación

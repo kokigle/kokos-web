@@ -1,0 +1,256 @@
+/* =========================
+   PRODUCT PAGE
+========================= */
+.product-page {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  margin: 2rem;
+}
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-media {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: #fff;
+  position: relative;
+}
+
+.main-media .main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.video-normal {
+  width: 100%;
+  height: 100%;
+}
+
+.short-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.short-container .short-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(20px);
+  transform: scale(1.2);
+}
+
+.short-container iframe {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 9/16;
+  margin: 0 auto;
+  display: block;
+  z-index: 1;
+  border: none;
+}
+
+.thumbnails {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 0.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.thumbnails img,
+.thumbnails .video-thumb {
+  width: 100px;
+  height: 80px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  object-fit: contain;
+  background: #fff;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.thumbnails img:hover,
+.thumbnails .video-thumb:hover {
+  border-color: #007bff;
+}
+
+.thumb-carousel {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.thumb-grid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: nowrap;
+  transition: transform 0.5s ease;
+}
+
+.thumb-grid img,
+.thumb-grid .video-thumb {
+  width: 100px;
+  height: 80px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  object-fit: contain;
+  background: #fff;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.thumb-grid img:hover,
+.thumb-grid .video-thumb:hover {
+  border-color: #007bff;
+  transform: scale(1.05);
+}
+
+.video-thumb img {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.play-icon {
+  position: absolute;
+  top: 30%;
+  left: 35%;
+  font-size: 2rem;
+  color: white;
+  text-shadow: 0px 0px 5px black;
+  pointer-events: none;
+}
+
+.info h1 {
+  margin: 0 0 1rem;
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #28a745;
+}
+
+.related-section {
+  margin-top: 3rem;
+}
+
+.related-section h2 {
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #0aa;
+  padding-bottom: 0.5rem;
+}
+
+.carousel {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.related-grid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: nowrap;
+  transition: transform 0.5s ease;
+}
+
+.related-card {
+  flex: 0 0 auto;
+  width: 200px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.5rem;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.related-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.related-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  background: #fff;
+  margin-bottom: 0.5rem;
+  transition: transform 0.3s ease;
+}
+
+.related-card:hover img {
+  transform: scale(1.05);
+}
+
+.related-card h3 {
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+.related-card .price {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #28a745;
+  margin: 0.5rem 0;
+}
+
+.arrow {
+  background: transparent;
+  color: #000;
+  border: none;
+  font-size: 1.2rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  margin: 0 0.5rem;
+  transition: all 0.3s ease;
+  z-index: 10;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.arrow:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1);
+}
+
+.arrow:active {
+  transform: scale(0.95);
+}
+
+.arrow:focus {
+  outline: none;
+}
