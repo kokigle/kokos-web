@@ -1,18 +1,131 @@
 import "./styles/home-page.css";
 import { Link } from "react-router-dom";
-import { useEffect, useRef } from "react";
-import banner from "./assets/banner.jpg";
+import { useEffect, useRef, useState } from "react";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "./App";
 import serviciosEnvios from "./assets/servicio_y_envios-08.jpg";
-import destacadoKokos from "./assets/Destacado_Cuadrado_kokos.jpg";
-import destacadoMusicales from "./assets/Destacado_Cuadrado_kokos_musicales.jpg";
-import destacadoVehiculos from "./assets/Destacado_Cuadrado_kokos_vehiculos.jpg";
 import envioAtencion from "./assets/Envio_y_Atencion-08.jpg";
+
+const Previous = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      d="M17 2L7 12l10 10"
+    ></path>
+  </svg>
+);
+
+const Next = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      d="m7 2l10 10L7 22"
+    ></path>
+  </svg>
+);
 
 export default function Home() {
   const valuesRef = useRef(null);
   const productsRef = useRef(null);
   const footerRef = useRef(null);
+  const autoPlayTimerRef = useRef(null);
 
+  const [bannerImages, setBannerImages] = useState([]);
+  const [categoryImages, setCategoryImages] = useState({
+    img1: { url: "", redirect: "" },
+    img2: { url: "", redirect: "" },
+    img3: { url: "", redirect: "" },
+  });
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [showBannerText, setShowBannerText] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [previousBannerIndex, setPreviousBannerIndex] = useState(null);
+  useEffect(() => {
+    // Cargar imágenes del banner
+    const unsubBanner = onSnapshot(
+      collection(db, "images/banner_images/urls"),
+      (snap) => {
+        const images = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (a.pos || 0) - (b.pos || 0));
+        setBannerImages(images);
+      }
+    );
+
+    // Cargar imágenes de categorías
+    const loadCategoryImages = async () => {
+      const unsubscribers = [];
+      ["img1", "img2", "img3"].forEach((key) => {
+        const unsub = onSnapshot(collection(db, "images"), (snap) => {
+          snap.docs.forEach((doc) => {
+            if (doc.id === key) {
+              setCategoryImages((prev) => ({
+                ...prev,
+                [key]: doc.data(),
+              }));
+            }
+          });
+        });
+        unsubscribers.push(unsub);
+      });
+
+      return () => unsubscribers.forEach((unsub) => unsub());
+    };
+    loadCategoryImages();
+
+    return () => {
+      unsubBanner();
+    };
+  }, []);
+
+  // Timer para ocultar texto del banner
+  useEffect(() => {
+    if (!hasInteracted) {
+      const timer = setTimeout(() => {
+        setShowBannerText(false);
+      }, 10000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasInteracted]);
+
+  // Auto-play del carrusel cada 15 segundos
+  useEffect(() => {
+    if (bannerImages.length > 1) {
+      const startAutoPlay = () => {
+        autoPlayTimerRef.current = setInterval(() => {
+          handleNextBanner(true);
+        }, 15000);
+      };
+
+      startAutoPlay();
+
+      return () => {
+        if (autoPlayTimerRef.current) {
+          clearInterval(autoPlayTimerRef.current);
+        }
+      };
+    }
+  }, [bannerImages.length, currentBannerIndex]);
+
+  // Animaciones de scroll
   useEffect(() => {
     const observerOptions = {
       threshold: 0.2,
@@ -39,24 +152,175 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
+  const changeBanner = (newIndex) => {
+    if (isTransitioning) return;
+
+    setIsTransitioning(true);
+    setPreviousBannerIndex(currentBannerIndex);
+    setCurrentBannerIndex(newIndex);
+
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setPreviousBannerIndex(null);
+    }, 800); // Debe coincidir con la duración de la transición CSS
+  };
+
+  const handlePrevBanner = () => {
+    setHasInteracted(true);
+    setShowBannerText(false);
+
+    // Reiniciar el timer de auto-play
+    if (autoPlayTimerRef.current) {
+      clearInterval(autoPlayTimerRef.current);
+    }
+
+    const newIndex =
+      currentBannerIndex === 0
+        ? bannerImages.length - 1
+        : currentBannerIndex - 1;
+    changeBanner(newIndex);
+  };
+
+  const handleNextBanner = (isAutoPlay = false) => {
+    if (!isAutoPlay) {
+      setHasInteracted(true);
+      setShowBannerText(false);
+
+      // Reiniciar el timer de auto-play
+      if (autoPlayTimerRef.current) {
+        clearInterval(autoPlayTimerRef.current);
+      }
+    }
+
+    const newIndex =
+      currentBannerIndex === bannerImages.length - 1
+        ? 0
+        : currentBannerIndex + 1;
+    changeBanner(newIndex);
+  };
+
+  const handleIndicatorClick = (index) => {
+    setHasInteracted(true);
+    setShowBannerText(false);
+
+    // Reiniciar el timer de auto-play
+    if (autoPlayTimerRef.current) {
+      clearInterval(autoPlayTimerRef.current);
+    }
+
+    changeBanner(index);
+  };
+
+  const getRedirectPath = (redirect) => {
+    if (!redirect || redirect === "ninguno") return null;
+    if (redirect === "novedades") return "/novedades";
+    return `/products?category=jugueteria&subcategory=${redirect}`;
+  };
+
+  const handleBannerClick = () => {
+    if (bannerImages.length === 0) return;
+    const redirect = bannerImages[currentBannerIndex]?.redirect;
+    const path = getRedirectPath(redirect);
+    if (path) {
+      window.location.href = path;
+    }
+  };
+
+  const currentBanner = bannerImages[currentBannerIndex];
+
   return (
     <div className="kokos-home">
-      {/* Banner Principal */}
+      {/* Banner Principal con Carrusel */}
       <section className="home-banner">
-        <img
-          src={banner}
-          alt="Banner Kokos - Venta Mayorista de Vehículos"
-          className="banner-img"
-        />
-        <div className="banner-overlay">
-          <div className="banner-content">
-            <h1 className="banner-title">BIENVENIDOS A KOKOS</h1>
-            <p className="banner-subtitle">Calidad y variedad en juguetes</p>
-            <Link to="/products" className="banner-cta">
-              Ver Productos
-            </Link>
+        {bannerImages.length > 0 ? (
+          <>
+            {/* Banner anterior (en transición de salida) */}
+            {previousBannerIndex !== null &&
+              bannerImages[previousBannerIndex] && (
+                <div className="banner-slide">
+                  <img
+                    src={bannerImages[previousBannerIndex].url}
+                    alt={`Banner ${previousBannerIndex + 1}`}
+                    className="banner-img"
+                  />
+                </div>
+              )}
+
+            {/* Banner actual (en transición de entrada) */}
+            {currentBanner && (
+              <div
+                className="banner-slide active"
+                onClick={handleBannerClick}
+                style={{
+                  cursor:
+                    currentBanner.redirect !== "ninguno"
+                      ? "pointer"
+                      : "default",
+                }}
+              >
+                <img
+                  src={currentBanner.url}
+                  alt={`Banner ${currentBannerIndex + 1}`}
+                  className="banner-img"
+                />
+                <div
+                  className={`banner-overlay ${
+                    !showBannerText ? "hide-text" : ""
+                  }`}
+                >
+                  <div className="banner-content">
+                    <h1 className="banner-title">BIENVENIDOS A KOKOS</h1>
+                    <p className="banner-subtitle">
+                      Calidad y variedad en juguetes
+                    </p>
+                    <Link to="/products" className="banner-cta">
+                      Ver Productos
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {bannerImages.length > 1 && (
+              <>
+                <button
+                  className="banner-nav banner-nav-prev"
+                  onClick={handlePrevBanner}
+                  aria-label="Imagen anterior"
+                  disabled={isTransitioning}
+                >
+                  <Previous />
+                </button>
+                <button
+                  className="banner-nav banner-nav-next"
+                  onClick={() => handleNextBanner(false)}
+                  aria-label="Imagen siguiente"
+                  disabled={isTransitioning}
+                >
+                  <Next />
+                </button>
+
+                <div className="banner-indicators">
+                  {bannerImages.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`banner-indicator ${
+                        index === currentBannerIndex ? "active" : ""
+                      }`}
+                      onClick={() => handleIndicatorClick(index)}
+                      aria-label={`Ir a imagen ${index + 1}`}
+                      disabled={isTransitioning}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="banner-loading">
+            <p>Cargando...</p>
           </div>
-        </div>
+        )}
       </section>
 
       {/* Sección de Servicios y Envíos - Imagen Principal */}
@@ -77,53 +341,37 @@ export default function Home() {
           <p>Descubrí nuestra selección de productos</p>
         </div>
         <div className="products-grid">
-          <div className="product-item">
-            <div className="product-image-container">
-              <img
-                src={destacadoKokos}
-                alt="Novedades Kokos"
-                className="product-image"
-              />
-              <div className="product-hover-overlay">
-                <Link to="/novedades" className="product-btn">
-                  Ver Novedades
-                </Link>
-              </div>
-            </div>
-          </div>
+          {["img1", "img2", "img3"].map((key, index) => {
+            const category = categoryImages[key];
+            const redirectPath = getRedirectPath(category?.redirect);
 
-          <div className="product-item">
-            <div className="product-image-container">
-              <img
-                src={destacadoMusicales}
-                alt="Musicales Kokos"
-                className="product-image"
-              />
-              <div className="product-hover-overlay">
-                <Link
-                  to="/products?category=jugueteria&subcategory=musicales"
-                  className="product-btn"
-                >
-                  Ver Musicales
-                </Link>
+            return (
+              <div key={key} className="product-item">
+                {category?.url ? (
+                  <div className="product-image-container">
+                    <img
+                      src={category.url}
+                      alt={`Categoría ${index + 1}`}
+                      className="product-image"
+                    />
+                    <div className="product-hover-overlay">
+                      {redirectPath ? (
+                        <Link to={redirectPath} className="product-btn">
+                          Ver Más
+                        </Link>
+                      ) : (
+                        <span className="product-btn disabled">Ver Más</span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="product-image-placeholder">
+                    <p>Categoría {index + 1}</p>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          <div className="product-item">
-            <div className="product-image-container">
-              <img
-                src={destacadoVehiculos}
-                alt="Vehículos Kokos"
-                className="product-image"
-              />
-              <div className="product-hover-overlay">
-                <Link to="/products?category=vehiculos" className="product-btn">
-                  Ver Vehículos
-                </Link>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </section>
 

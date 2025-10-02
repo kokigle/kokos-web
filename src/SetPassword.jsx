@@ -1,5 +1,5 @@
 // SetPassword.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "./App";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -12,8 +12,14 @@ import {
 } from "firebase/firestore";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { db } from "./App";
-import { FaEnvelope, FaLock } from "react-icons/fa";
-import "./styles/login-setpassword.css";
+import {
+  FaEnvelope,
+  FaLock,
+  FaCheckCircle,
+  FaTimesCircle,
+} from "react-icons/fa";
+import "./styles/setpassword.css";
+
 export default function SetPassword() {
   const { setUser } = useAuth();
   const location = useLocation();
@@ -24,15 +30,14 @@ export default function SetPassword() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [stepCompleted, setStepCompleted] = useState([
-    !!email,
-    !!password,
-    !!confirm,
-  ]);
 
-  useEffect(() => {
-    setStepCompleted([!!email, !!password, !!confirm]);
-  }, [email, password, confirm]);
+  const passwordRequirements = [
+    { text: "8+ caracteres", test: (pwd) => pwd.length >= 8 },
+    { text: "Mayúscula", test: (pwd) => /[A-Z]/.test(pwd) },
+    { text: "Minúscula", test: (pwd) => /[a-z]/.test(pwd) },
+    { text: "Número", test: (pwd) => /[0-9]/.test(pwd) },
+    { text: "Símbolo", test: (pwd) => /[^A-Za-z0-9]/.test(pwd) },
+  ];
 
   const validatePassword = (pwd) =>
     pwd.length >= 8 &&
@@ -47,7 +52,6 @@ export default function SetPassword() {
 
     if (!email) return setError("Debes ingresar tu correo registrado.");
 
-    // Validar existencia en Firestore
     const q = query(
       collection(db, "clients"),
       where("email", "==", email.toLowerCase())
@@ -60,7 +64,7 @@ export default function SetPassword() {
     if (password !== confirm) return setError("Las contraseñas no coinciden.");
     if (!validatePassword(password))
       return setError(
-        "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo."
+        "La contraseña no cumple con los requisitos de seguridad."
       );
 
     setLoading(true);
@@ -82,61 +86,137 @@ export default function SetPassword() {
     setLoading(false);
   };
 
+  const allRequirementsMet =
+    password && passwordRequirements.every((req) => req.test(password));
+  const passwordsMatch = password && confirm && password === confirm;
+
   return (
-    <div className="auth-card">
-      <h2>Crear tu contraseña</h2>
-      <p className="info">Sigue estos pasos para asegurar tu cuenta</p>
+    <div className="setpassword-container">
+      <div className="setpassword-card">
+        <div className="setpassword-split">
+          {/* Left side - Form */}
+          <div className="setpassword-form-section">
+            <div className="form-header">
+              <h1>Crear Contraseña</h1>
+              <p>Configura tu contraseña de acceso</p>
+            </div>
 
-      <div className={`step ${stepCompleted[0] ? "completed" : ""}`}>
-        <span>1</span> Ingresa tu correo registrado
-      </div>
-      <div className={`step ${stepCompleted[1] ? "completed" : ""}`}>
-        <span>2</span> Crea una contraseña segura
-      </div>
-      <div className={`step ${stepCompleted[2] ? "completed" : ""}`}>
-        <span>3</span> Confirma tu contraseña
-      </div>
+            <form onSubmit={handleSubmit} className="setpassword-form">
+              <div className="form-group">
+                <label htmlFor="email">
+                  <FaEnvelope /> Correo registrado
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="tu@email.com"
+                />
+              </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="input-group">
-          <FaEnvelope />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="tuemail@ejemplo.com"
-          />
+              <div className="form-group">
+                <label htmlFor="password">
+                  <FaLock /> Nueva contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="confirm">
+                  <FaLock /> Confirmar contraseña
+                </label>
+                <input
+                  id="confirm"
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                />
+                {confirm && (
+                  <div
+                    className={`match-indicator ${
+                      passwordsMatch ? "match" : "no-match"
+                    }`}
+                  >
+                    {passwordsMatch ? (
+                      <>
+                        <FaCheckCircle /> Coinciden
+                      </>
+                    ) : (
+                      <>
+                        <FaTimesCircle /> No coinciden
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={loading || !allRequirementsMet || !passwordsMatch}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Guardando...
+                  </>
+                ) : (
+                  "Crear Contraseña"
+                )}
+              </button>
+            </form>
+
+            {error && (
+              <div className="error-message">
+                <span>⚠️</span>
+                {error}
+              </div>
+            )}
+          </div>
+
+          {/* Right side - Requirements */}
+          <div className="setpassword-requirements-section">
+            <div className="requirements-header">
+              <h2>Requisitos</h2>
+              <p>Tu contraseña debe incluir:</p>
+            </div>
+
+            <div className="requirements-grid">
+              {passwordRequirements.map((req, index) => (
+                <div
+                  key={index}
+                  className={`requirement-chip ${
+                    password && req.test(password) ? "met" : ""
+                  }`}
+                >
+                  {password && req.test(password) ? (
+                    <FaCheckCircle />
+                  ) : (
+                    <FaTimesCircle />
+                  )}
+                  <span>{req.text}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="security-badge">
+              <div className="badge-icon">🔒</div>
+              <p>Encriptación segura garantizada</p>
+            </div>
+          </div>
         </div>
-
-        <div className="input-group">
-          <FaLock />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="********"
-          />
-        </div>
-
-        <div className="input-group">
-          <FaLock />
-          <input
-            type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-            placeholder="********"
-          />
-        </div>
-
-        <button className="btn" disabled={loading}>
-          {loading ? "Guardando..." : "Crear Contraseña"}
-        </button>
-      </form>
-
-      {error && <div className="error">{error}</div>}
+      </div>
     </div>
   );
 }

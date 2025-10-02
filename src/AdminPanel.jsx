@@ -8,6 +8,8 @@ import {
   deleteDoc,
   arrayUnion,
   arrayRemove,
+  setDoc,
+  getDoc,
 } from "firebase/firestore";
 import { uploadImage } from "./cloudinary";
 import { db } from "./App";
@@ -28,12 +30,45 @@ export default function AdminPanel() {
   const [view, setView] = useState("dashboard");
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   // Estados de filtros
   const [clientSearch, setClientSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterSubcategory, setFilterSubcategory] = useState("");
+
+  // Estados para editar inicio
+  const [bannerImages, setBannerImages] = useState([]);
+  const [homeCategories, setHomeCategories] = useState({
+    img1: { url: "", redirect: "" },
+    img2: { url: "", redirect: "" },
+    img3: { url: "", redirect: "" },
+  });
+  const [draggedIndex, setDraggedIndex] = useState(null);
+
+  // Función para mostrar notificaciones
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // Función para mostrar diálogo de confirmación
+  const showConfirm = (message, onConfirm) => {
+    setConfirmDialog({ message, onConfirm });
+  };
+
+  const handleConfirm = () => {
+    if (confirmDialog?.onConfirm) {
+      confirmDialog.onConfirm();
+    }
+    setConfirmDialog(null);
+  };
+
+  const handleCancel = () => {
+    setConfirmDialog(null);
+  };
 
   // Función para resetear el formulario completamente
   const resetProductForm = () => {
@@ -63,10 +98,38 @@ export default function AdminPanel() {
       setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
+    // Cargar banner images
+    const unsubBanner = onSnapshot(
+      collection(db, "images/banner_images/urls"),
+      (snap) => {
+        const images = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (a.pos || 0) - (b.pos || 0));
+        setBannerImages(images);
+      }
+    );
+
+    // Cargar categorías de inicio
+    const loadHomeCategories = async () => {
+      const cats = { img1: {}, img2: {}, img3: {} };
+      for (let i = 1; i <= 3; i++) {
+        const docRef = doc(db, "images", `img${i}`);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          cats[`img${i}`] = docSnap.data();
+        } else {
+          cats[`img${i}`] = { url: "", redirect: "" };
+        }
+      }
+      setHomeCategories(cats);
+    };
+    loadHomeCategories();
+
     return () => {
       unsubClients();
       unsubProducts();
       unsubCategories();
+      unsubBanner();
     };
   }, [authed]);
 
@@ -75,18 +138,24 @@ export default function AdminPanel() {
     if (secret === "admin123") {
       setAuthed(true);
     } else {
-      alert("Clave admin incorrecta");
+      showNotification("Clave admin incorrecta", "error");
     }
   };
 
   // Funciones de clientes
-  const toggleState = (id, state) =>
-    updateDoc(doc(db, "clients", id), { state });
+  const toggleState = async (id, state) => {
+    await updateDoc(doc(db, "clients", id), { state });
+    showNotification(`Estado actualizado a ${state}`);
+  };
 
   const deleteClient = async (id) => {
-    if (confirm("¿Eliminar cliente?")) {
-      await deleteDoc(doc(db, "clients", id));
-    }
+    showConfirm(
+      "¿Estás seguro de que deseas eliminar este cliente?",
+      async () => {
+        await deleteDoc(doc(db, "clients", id));
+        showNotification("Cliente eliminado");
+      }
+    );
   };
 
   const addClient = async (ev) => {
@@ -97,30 +166,30 @@ export default function AdminPanel() {
       state: Number(data.get("state")) || 1,
     });
     ev.target.reset();
-    alert("Cliente agregado exitosamente");
+    showNotification("Cliente agregado exitosamente");
   };
 
   // Funciones de productos
   const handleSubmitProduct = async (productData) => {
     setLoading(true);
     try {
-      // Filtrar URLs existentes (no blob URLs)
       const existingUrls = (productData.multimedia || []).filter(
         (u) => typeof u === "string" && !u.startsWith("blob:")
       );
 
       const urls = [...existingUrls];
 
-      // Subir archivos nuevos
-      for (let file of productData.files || []) {
-        const url = await uploadImage(file);
-        if (url) urls.push(url);
+      // Subir imágenes en paralelo para mayor velocidad
+      if (productData.files && productData.files.length > 0) {
+        const uploadPromises = productData.files.map((file) =>
+          uploadImage(file)
+        );
+        const uploadedUrls = await Promise.all(uploadPromises);
+        urls.push(...uploadedUrls.filter((url) => url));
       }
 
-      // Eliminar duplicados
       const uniqueUrls = Array.from(new Set(urls));
 
-      // Obtener categoría
       const cat = categories.find(
         (c) => String(c.id) === String(productData.category)
       );
@@ -145,29 +214,39 @@ export default function AdminPanel() {
 
       if (productData.id) {
         await updateDoc(doc(db, "products", productData.id), product);
-        alert("Producto actualizado exitosamente");
+        showNotification("Producto actualizado exitosamente");
       } else {
         await addDoc(collection(db, "products"), product);
-        alert("Producto agregado exitosamente");
+        showNotification("Producto agregado exitosamente");
       }
 
       resetProductForm();
       setView("products");
     } catch (err) {
       console.error(err);
-      alert("Error al guardar producto: " + err.message);
+      showNotification("Error al guardar producto: " + err.message, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleStock = (id, stock) =>
-    updateDoc(doc(db, "products", id), { stock });
+  const toggleStock = async (id, stock) => {
+    await updateDoc(doc(db, "products", id), { stock });
+    showNotification(
+      stock === 1
+        ? "Producto marcado como disponible"
+        : "Producto marcado sin stock"
+    );
+  };
 
   const deleteProduct = async (id) => {
-    if (confirm("¿Eliminar producto?")) {
-      await deleteDoc(doc(db, "products", id));
-    }
+    showConfirm(
+      "¿Estás seguro de que deseas eliminar este producto?",
+      async () => {
+        await deleteDoc(doc(db, "products", id));
+        showNotification("Producto eliminado");
+      }
+    );
   };
 
   const editProduct = (product) => {
@@ -177,19 +256,190 @@ export default function AdminPanel() {
 
   // Funciones de categorías
   const addSubcategory = async (catId, subName) => {
-    if (!subName) return alert("Nombre vacío");
+    if (!subName) {
+      showNotification("Nombre vacío", "error");
+      return;
+    }
     const normalized = subName.trim().toLowerCase().replace(/\s+/g, "_");
     await updateDoc(doc(db, "categories", catId), {
       subcategories: arrayUnion(normalized),
     });
+    showNotification("Subcategoría agregada");
   };
 
   const removeSubcategory = async (catId, subName) => {
-    if (confirm(`¿Eliminar subcategoría "${subName}"?`)) {
-      await updateDoc(doc(db, "categories", catId), {
-        subcategories: arrayRemove(subName),
+    showConfirm(
+      `¿Estás seguro de que deseas eliminar la subcategoría "${subName}"?`,
+      async () => {
+        await updateDoc(doc(db, "categories", catId), {
+          subcategories: arrayRemove(subName),
+        });
+        showNotification("Subcategoría eliminada");
+      }
+    );
+  };
+
+  // Funciones para editar inicio - Banner
+  const handleBannerUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    setLoading(true);
+    try {
+      const currentMaxPos =
+        bannerImages.length > 0
+          ? Math.max(...bannerImages.map((img) => img.pos || 0))
+          : 0;
+
+      // Subir todas las imágenes en paralelo
+      const uploadPromises = files.map(async (file, index) => {
+        const url = await uploadImage(file);
+        if (url) {
+          const nextPos = currentMaxPos + index + 1;
+          const nextId = `banner_images${Date.now()}_${index}`;
+          await setDoc(doc(db, "images/banner_images/urls", nextId), {
+            url,
+            redirect: "novedades",
+            pos: nextPos,
+          });
+        }
       });
+
+      await Promise.all(uploadPromises);
+      showNotification("Imágenes subidas exitosamente");
+    } catch (err) {
+      showNotification("Error al subir imágenes: " + err.message, "error");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const updateBannerRedirect = async (id, redirect) => {
+    await updateDoc(doc(db, "images/banner_images/urls", id), { redirect });
+    showNotification("Redirección actualizada");
+  };
+
+  const deleteBannerImage = async (id) => {
+    showConfirm(
+      "¿Estás seguro de que deseas eliminar esta imagen del banner?",
+      async () => {
+        await deleteDoc(doc(db, "images/banner_images/urls", id));
+        // Reordenar posiciones
+        await reorderBannerPositions();
+        showNotification("Imagen eliminada");
+      }
+    );
+  };
+
+  const reorderBannerPositions = async () => {
+    const remainingImages = bannerImages.filter((img) => img.id);
+    const updatePromises = remainingImages.map((img, index) =>
+      updateDoc(doc(db, "images/banner_images/urls", img.id), {
+        pos: index + 1,
+      })
+    );
+    await Promise.all(updatePromises);
+  };
+
+  const handleDragStart = (index) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (dropIndex) => {
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+
+    const newImages = [...bannerImages];
+    const [draggedItem] = newImages.splice(draggedIndex, 1);
+    newImages.splice(dropIndex, 0, draggedItem);
+
+    setBannerImages(newImages);
+    setDraggedIndex(null);
+
+    // Guardar nuevo orden en Firebase
+    try {
+      const updatePromises = newImages.map((img, index) =>
+        updateDoc(doc(db, "images/banner_images/urls", img.id), {
+          pos: index + 1,
+        })
+      );
+      await Promise.all(updatePromises);
+      showNotification("Orden actualizado");
+    } catch (err) {
+      showNotification("Error al reordenar: " + err.message, "error");
+    }
+  };
+
+  // Funciones para categorías de inicio
+  const handleHomeCategoryUpload = async (categoryKey, file) => {
+    setLoading(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        const newData = {
+          url,
+          redirect: homeCategories[categoryKey]?.redirect || "novedades",
+        };
+        await setDoc(doc(db, "images", categoryKey), newData);
+
+        // Actualizar estado local inmediatamente
+        setHomeCategories((prev) => ({
+          ...prev,
+          [categoryKey]: newData,
+        }));
+
+        showNotification("Imagen subida exitosamente");
+      }
+    } catch (err) {
+      showNotification("Error al subir imagen: " + err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateHomeCategoryRedirect = async (categoryKey, redirect) => {
+    await updateDoc(doc(db, "images", categoryKey), { redirect });
+
+    // Actualizar estado local inmediatamente
+    setHomeCategories((prev) => ({
+      ...prev,
+      [categoryKey]: {
+        ...prev[categoryKey],
+        redirect: redirect,
+      },
+    }));
+
+    showNotification("Redirección actualizada");
+  };
+
+  const deleteHomeCategoryImage = async (categoryKey) => {
+    showConfirm(
+      "¿Estás seguro de que deseas eliminar esta imagen?",
+      async () => {
+        const newData = { url: "", redirect: "" };
+        await setDoc(doc(db, "images", categoryKey), newData);
+
+        // Actualizar estado local inmediatamente
+        setHomeCategories((prev) => ({
+          ...prev,
+          [categoryKey]: newData,
+        }));
+
+        showNotification("Imagen eliminada");
+      }
+    );
+  };
+
+  // Obtener todas las opciones de redirección
+  const getRedirectOptions = () => {
+    const options = ["ninguno", "novedades"];
+    categories.forEach((cat) => {
+      (cat.subcategories || []).forEach((sub) => {
+        options.push(sub);
+      });
+    });
+    return options;
   };
 
   // Filtros
@@ -237,6 +487,40 @@ export default function AdminPanel() {
   // Panel principal
   return (
     <div className="admin-layout">
+      {/* Notificaciones */}
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
+
+      {/* Diálogo de Confirmación */}
+      {confirmDialog && (
+        <div className="confirm-overlay">
+          <div className="confirm-dialog">
+            <div className="confirm-icon">⚠️</div>
+            <h3>Confirmación</h3>
+            <p>{confirmDialog.message}</p>
+            <div className="confirm-actions">
+              <button onClick={handleCancel} className="btn-confirm-cancel">
+                Cancelar
+              </button>
+              <button onClick={handleConfirm} className="btn-confirm-ok">
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Procesando...</p>
+        </div>
+      )}
+
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <h3>KOKOS Admin</h3>
@@ -274,6 +558,12 @@ export default function AdminPanel() {
             onClick={() => setView("categories")}
           >
             🏷️ Categorías
+          </button>
+          <button
+            className={view === "editHome" ? "active" : ""}
+            onClick={() => setView("editHome")}
+          >
+            🏠 Editar inicio
           </button>
         </nav>
       </aside>
@@ -556,6 +846,120 @@ export default function AdminPanel() {
                   </form>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {view === "editHome" && (
+          <div className="admin-card">
+            <h2 className="admin-title">Editar Página de Inicio</h2>
+
+            {/* Banner del inicio */}
+            <div className="home-section">
+              <h3 className="section-title">Banner del Inicio</h3>
+              <div className="banner-upload-section">
+                <label className="btn-upload">
+                  📤 Subir imágenes al banner
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                    style={{ display: "none" }}
+                    disabled={loading}
+                  />
+                </label>
+              </div>
+
+              <div className="banner-images-list">
+                {bannerImages.map((img, index) => (
+                  <div
+                    key={img.id}
+                    className="banner-image-item"
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(index)}
+                  >
+                    <div className="drag-handle">⋮⋮</div>
+                    <img src={img.url} alt={`Banner ${index + 1}`} />
+                    <div className="banner-controls">
+                      <select
+                        value={img.redirect}
+                        onChange={(e) =>
+                          updateBannerRedirect(img.id, e.target.value)
+                        }
+                        className="redirect-select"
+                      >
+                        {getRedirectOptions().map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => deleteBannerImage(img.id)}
+                        className="btn-remove-inline"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Categorías del inicio */}
+            <div className="home-section">
+              <h3 className="section-title">Categorías del Inicio (3)</h3>
+              <div className="home-categories-grid">
+                {["img1", "img2", "img3"].map((key, index) => (
+                  <div key={key} className="home-category-card">
+                    <h4>Categoría {index + 1}</h4>
+                    {homeCategories[key]?.url ? (
+                      <div className="home-category-preview">
+                        <img src={homeCategories[key].url} alt={key} />
+                        <button
+                          onClick={() => deleteHomeCategoryImage(key)}
+                          className="btn-remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="home-category-empty">
+                        <label className="btn-upload-small">
+                          📤 Subir imagen
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              e.target.files[0] &&
+                              handleHomeCategoryUpload(key, e.target.files[0])
+                            }
+                            style={{ display: "none" }}
+                            disabled={loading}
+                          />
+                        </label>
+                      </div>
+                    )}
+                    <select
+                      value={homeCategories[key]?.redirect || "novedades"}
+                      onChange={(e) =>
+                        updateHomeCategoryRedirect(key, e.target.value)
+                      }
+                      className="redirect-select-full"
+                      disabled={!homeCategories[key]?.url}
+                    >
+                      {getRedirectOptions().map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

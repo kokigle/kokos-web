@@ -2,20 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./App";
 import { useNavigate, Link } from "react-router-dom";
-import { FaEnvelope, FaLock } from "react-icons/fa";
-import "./styles/login-setpassword.css";
+import { FaEnvelope, FaLock, FaUserPlus, FaKey } from "react-icons/fa";
+import "./styles/login.css";
+
 const GOOGLE_FORM_LINK = "https://forms.gle/YOUR_FORM_LINK";
+
 export default function Login() {
   const { login, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState(null);
-  const [stepCompleted, setStepCompleted] = useState([false, false]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    setStepCompleted([!!email, !!password]);
-  }, [email, password]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -35,69 +32,100 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-card">
-      <h2>Iniciar sesión</h2>
-      <p className="info">Sigue estos pasos para acceder a tu cuenta</p>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-split">
+          {/* Left side - Form */}
+          <div className="login-form-section">
+            <div className="form-header">
+              <h1>Bienvenido</h1>
+              <p>Ingresa a tu cuenta</p>
+            </div>
 
-      <div className={`step ${stepCompleted[0] ? "completed" : ""}`}>
-        <span>1</span> Ingresa tu correo registrado
-      </div>
-      <div className={`step ${stepCompleted[1] ? "completed" : ""}`}>
-        <span>2</span> Ingresa tu contraseña
-      </div>
+            <form onSubmit={handleLogin} className="login-form">
+              <div className="form-group">
+                <label htmlFor="email">
+                  <FaEnvelope /> Correo electrónico
+                </label>
+                <input
+                  id="email"
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                />
+              </div>
 
-      <form onSubmit={handleLogin}>
-        <div className="input-group">
-          <FaEnvelope />
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tuemail@ejemplo.com"
-          />
+              <div className="form-group">
+                <label htmlFor="password">
+                  <FaLock /> Contraseña
+                </label>
+                <input
+                  id="password"
+                  required
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Verificando...
+                  </>
+                ) : (
+                  "Iniciar Sesión"
+                )}
+              </button>
+            </form>
+
+            {message && (
+              <div className="alert-message">
+                <span>⚠️</span>
+                {message}
+              </div>
+            )}
+          </div>
+
+          {/* Right side - Actions */}
+          <div className="login-actions-section">
+            <div className="actions-header">
+              <h2>¿No tienes cuenta?</h2>
+              <p>Elige una opción para comenzar</p>
+            </div>
+
+            <div className="action-cards">
+              <a
+                href={GOOGLE_FORM_LINK}
+                target="_blank"
+                rel="noreferrer"
+                className="action-card"
+              >
+                <div className="action-icons">
+                  <FaUserPlus />
+                </div>
+                <div className="action-content">
+                  <h3>Crear Nueva Cuenta</h3>
+                  <p>Completa el formulario de registro</p>
+                </div>
+              </a>
+
+              <Link to="/set-password" className="action-card">
+                <div className="action-icons">
+                  <FaKey />
+                </div>
+                <div className="action-content">
+                  <h3>Configurar Contraseña</h3>
+                  <p>Ya fuiste aceptado? Crea tu contraseña aquí</p>
+                </div>
+              </Link>
+            </div>
+          </div>
         </div>
-
-        <div className="input-group">
-          <FaLock />
-          <input
-            required
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="********"
-          />
-        </div>
-
-        <button className="btn" disabled={loading}>
-          {loading ? "Verificando..." : "Entrar"}
-        </button>
-      </form>
-
-      {message && <div className="alert">{message}</div>}
-
-      <div style={{ marginTop: "25px", textAlign: "center" }}>
-        <p>
-          <span>SI QUERÉS CREAR TU CUENTA LLENA FORMULARIO: </span>
-          <p>
-            <a
-              href={GOOGLE_FORM_LINK}
-              target="_blank"
-              rel="noreferrer"
-              className="link-text"
-            >
-              CLICK AQUI PARA IR AL FORMULARIO
-            </a>
-          </p>
-        </p>
-        <p>
-          <span>SI YA FUISTE ACEPTADO Y NO TENES CONTRASEÑA: </span>
-          <p>
-            <Link to="/set-password" className="link-text">
-              CLICK AQUI PARA CREAR TU CONTRASEÑA
-            </Link>
-          </p>
-        </p>
       </div>
     </div>
   );
