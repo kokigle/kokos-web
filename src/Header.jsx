@@ -8,6 +8,7 @@ import logo from "./assets/logo.png";
 import { Search } from "./icons/SearchIcon.jsx";
 import "./styles/header-kokos.css";
 import { ProfileIcon } from "./icons/ProfileIcon";
+import { CartIcon } from "./icons/CartIcon.jsx";
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -73,7 +74,9 @@ export default function Header() {
             className="action-btn cart-btn"
             onClick={() => setMobileMenuOpen(false)}
           >
-            <span className="action-icon">🛒</span>
+            <span className="action-icon">
+              <CartIcon />
+            </span>
             <span className="action-text">Carrito</span>
           </Link>
 
@@ -110,7 +113,9 @@ export default function Header() {
               className="action-btn login-btn"
               onClick={() => setMobileMenuOpen(false)}
             >
-              <span className="action-icon">👤</span>
+              <span className="action-icon">
+                <ProfileIcon />
+              </span>
               <span className="action-text">Iniciar Sesión</span>
             </Link>
           )}

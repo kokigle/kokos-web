@@ -4,7 +4,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "./App";
 import { db } from "./App";
+import { ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import "./styles/products-list.css";
+
 export default function ProductsList() {
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -23,11 +25,14 @@ export default function ProductsList() {
     minPrice: "",
     maxPrice: "",
   });
+  const [sortBy, setSortBy] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9; // 3 filas de 3 productos
 
   const location = useLocation();
   const navigate = useNavigate();
-  const [categoryTitle, setCategoryTitle] = useState("Productos");
   const { user } = useAuth();
+  const [hovered, setHovered] = useState(null);
 
   // 🔹 Leer parámetros desde la URL
   useEffect(() => {
@@ -35,14 +40,11 @@ export default function ProductsList() {
     const category = params.get("category");
     const subcategory = params.get("subcategory");
 
-    // Setear título dinámico
-    setCategoryTitle(
-      subcategory
-        ? subcategory.replace(/_/g, " ").toUpperCase()
-        : category
-        ? category.replace(/_/g, " ").toUpperCase()
-        : "Productos"
-    );
+    // Si hay subcategoría en URL, ponerla en el filtro
+    if (subcategory) {
+      setPendingFilters((prev) => ({ ...prev, sub: subcategory }));
+      setAppliedFilters((prev) => ({ ...prev, sub: subcategory }));
+    }
 
     // Traer productos de Firestore
     let q = collection(db, "products");
@@ -88,14 +90,13 @@ export default function ProductsList() {
     return () => unsub();
   }, [location.search]);
 
-  // 🔹 Aplicar filtros
+  // 🔹 Aplicar filtros y ordenamiento
   useEffect(() => {
     let result = [...products];
-    const { subcategory, search, minStock, minPrice, maxPrice } =
-      appliedFilters;
+    const { sub, search, minStock, minPrice, maxPrice } = appliedFilters;
 
-    if (subcategory) {
-      result = result.filter((p) => p.subcategory === subcategory);
+    if (sub) {
+      result = result.filter((p) => p.subcategory === sub);
     }
     if (search.trim()) {
       result = result.filter((p) =>
@@ -115,8 +116,28 @@ export default function ProductsList() {
       });
     }
 
+    // Aplicar ordenamiento
+    if (sortBy === "az") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "za") {
+      result.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortBy === "price-asc" && user) {
+      result.sort((a, b) => {
+        const priceA = user.state === 2 ? a.price_state2 : a.price_state1;
+        const priceB = user.state === 2 ? b.price_state2 : b.price_state1;
+        return priceA - priceB;
+      });
+    } else if (sortBy === "price-desc" && user) {
+      result.sort((a, b) => {
+        const priceA = user.state === 2 ? a.price_state2 : a.price_state1;
+        const priceB = user.state === 2 ? b.price_state2 : b.price_state1;
+        return priceB - priceA;
+      });
+    }
+
     setFiltered(result);
-  }, [products, appliedFilters, user]);
+    setCurrentPage(1);
+  }, [products, appliedFilters, user, sortBy]);
 
   // 🔹 Aplicar filtros y actualizar URL
   const handleSearch = () => {
@@ -133,257 +154,321 @@ export default function ProductsList() {
     navigate({ search: params.toString() });
   };
 
-  // Estado para hover de imagen
-  const [hovered, setHovered] = useState(null);
+  // Limpiar filtros
+  const handleClearFilters = () => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get("category");
+
+    setPendingFilters({
+      search: "",
+      minStock: "",
+      sub: "",
+      minPrice: "",
+      maxPrice: "",
+    });
+    setAppliedFilters({
+      search: "",
+      minStock: "",
+      sub: "",
+      minPrice: "",
+      maxPrice: "",
+    });
+
+    navigate({ search: category ? `category=${category}` : "" });
+  };
+
+  // Paginación
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = filtered.slice(startIndex, endIndex);
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
-    <div
-      className="products-page"
-      style={{
-        background: "#f8f9fa",
-        borderRadius: 16,
-        boxShadow: "0 6px 24px rgba(27,31,56,0.08)",
-        padding: "32px 24px",
-        margin: "32px auto",
-        maxWidth: 1200,
-      }}
-    >
-      <h2
-        className="category-title"
-        style={{
-          fontSize: 32,
-          fontWeight: 700,
-          color: "#009ca6",
-          marginBottom: 24,
-        }}
-      >
-        {categoryTitle}
-      </h2>
-      <div className="filters" style={{ marginBottom: 32 }}>
-        {/* ...filtros igual... */}
-        <div className="filter-group">
-          <h4>Subcategorías</h4>
-          <select
-            value={pendingFilters.subcategory}
-            onChange={(e) =>
-              setPendingFilters({
-                ...pendingFilters,
-                subcategory: e.target.value,
-              })
-            }
-          >
-            <option value="">-- todas las subcategorías --</option>
-            {subcategories.map((subcategory) => (
-              <option key={subcategory} value={subcategory}>
-                {subcategory}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-group">
-          <h4>Buscar</h4>
-          <input
-            type="text"
-            placeholder="Buscar por nombre..."
-            value={pendingFilters.search}
-            onChange={(e) =>
-              setPendingFilters({ ...pendingFilters, search: e.target.value })
-            }
-          />
-        </div>
-        <div className="filter-group">
-          <h4>Cantidad mínima</h4>
-          <input
-            type="number"
-            placeholder="Ej: 5"
-            value={pendingFilters.minStock}
-            onChange={(e) =>
-              setPendingFilters({ ...pendingFilters, minStock: e.target.value })
-            }
-          />
-        </div>
-        <div className="filter-group">
-          <h4>Precio</h4>
-          <input
-            type="number"
-            placeholder="Mínimo"
-            value={pendingFilters.minPrice}
-            onChange={(e) =>
-              setPendingFilters({ ...pendingFilters, minPrice: e.target.value })
-            }
-          />
-          <input
-            type="number"
-            placeholder="Máximo"
-            value={pendingFilters.maxPrice}
-            onChange={(e) =>
-              setPendingFilters({ ...pendingFilters, maxPrice: e.target.value })
-            }
-          />
-        </div>
-        <div className="filter-group" style={{ alignSelf: "flex-end" }}>
-          <button
-            onClick={handleSearch}
-            className="btn"
-            style={{
-              background: "#009ca6",
-              color: "#fff",
-              borderRadius: 8,
-              fontWeight: 700,
-            }}
-          >
-            BUSCAR
-          </button>
-        </div>
+    <div className="products-list-page">
+      {/* Header */}
+      <div className="products-list-header">
+        <h1 className="products-list-title">Catálogo de Productos</h1>
+        <p className="products-list-subtitle">
+          Explora nuestra selección completa
+        </p>
       </div>
-      <div className="products-grid-4" style={{ gap: 32 }}>
-        {filtered.map((p) => {
-          let priceContent;
-          if (!user) {
-            priceContent = (
-              <p style={{ fontSize: 15, color: "#888" }}>
-                <em>Inicia sesión para ver el precio</em>
-              </p>
-            );
-          } else {
-            const price = user.state === 2 ? p.price_state2 : p.price_state1;
-            priceContent = (
-              <p
-                className="product-price"
-                style={{ fontWeight: 700, color: "#28a745", fontSize: 20 }}
-              >
-                ${price?.toLocaleString()}
-              </p>
-            );
-          }
 
-          // Imágenes para hover
-          const images =
-            p.multimedia && p.multimedia.length > 1
-              ? p.multimedia
-              : [
-                  (p.multimedia && p.multimedia[0]) ||
-                    "https://via.placeholder.com/300",
-                ];
-          const mainImg = images[0];
-          const hoverImg = images[1] || images[0];
+      {/* Layout: Sidebar + Content */}
+      <div className="products-list-layout">
+        {/* Sidebar de Filtros */}
+        <aside className="products-filters-sidebar">
+          <h3 className="products-filters-title">Filtros</h3>
 
-          return (
-            <div
-              key={p.id}
-              className="product-card"
-              style={{
-                background: "#fff",
-                borderRadius: 16,
-                boxShadow: "0 2px 12px rgba(27,31,56,0.08)",
-                padding: 20,
-                transition: "box-shadow 0.3s, transform 0.3s",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: 420, // 👈 altura mínima igualada para todas
-              }}
-              onMouseEnter={() => setHovered(p.id)}
-              onMouseLeave={() => setHovered(null)}
+          <div className="products-filters-list">
+            {subcategories.length > 0 && (
+              <div className="products-filter-group">
+                <label>Subcategoría</label>
+                <select
+                  value={pendingFilters.sub}
+                  onChange={(e) =>
+                    setPendingFilters({
+                      ...pendingFilters,
+                      sub: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Todas</option>
+                  {subcategories.map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="products-filter-group">
+              <label>Buscar</label>
+              <input
+                type="text"
+                placeholder="Nombre del producto..."
+                value={pendingFilters.search}
+                onChange={(e) =>
+                  setPendingFilters({
+                    ...pendingFilters,
+                    search: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="products-filter-group">
+              <label>Stock mínimo</label>
+              <input
+                type="number"
+                placeholder="Ej: 5"
+                value={pendingFilters.minStock}
+                onChange={(e) =>
+                  setPendingFilters({
+                    ...pendingFilters,
+                    minStock: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="products-filter-group products-filter-price">
+              <label>Precio</label>
+              <div className="products-price-inputs">
+                <input
+                  type="number"
+                  placeholder="Mín"
+                  value={pendingFilters.minPrice}
+                  onChange={(e) =>
+                    setPendingFilters({
+                      ...pendingFilters,
+                      minPrice: e.target.value,
+                    })
+                  }
+                />
+                <span>-</span>
+                <input
+                  type="number"
+                  placeholder="Máx"
+                  value={pendingFilters.maxPrice}
+                  onChange={(e) =>
+                    setPendingFilters({
+                      ...pendingFilters,
+                      maxPrice: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="products-filters-actions">
+            <button onClick={handleSearch} className="products-btn-primary">
+              Aplicar Filtros
+            </button>
+            <button
+              onClick={handleClearFilters}
+              className="products-btn-secondary"
             >
-              <div>
-                <div
-                  className="product-img-wrapper"
-                  style={{
-                    marginBottom: 16,
-                    position: "relative",
-                    height: 220,
-                    overflow: "hidden",
-                    borderRadius: 12,
-                    background: "#f9f9fb",
-                    boxShadow: "0 1px 6px rgba(27,31,56,0.06)",
-                  }}
-                >
-                  <Link
-                    to={`/product/${p.id}`}
-                    style={{ display: "block", height: "100%" }}
-                  >
-                    <img
-                      src={hovered === p.id ? hoverImg : mainImg}
-                      alt={p.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "contain",
-                        borderRadius: 12,
-                        transition: "opacity 0.5s cubic-bezier(.4,0,.2,1)",
-                      }}
-                    />
-                  </Link>
-                  {p.stock === 0 && (
+              Limpiar
+            </button>
+          </div>
+        </aside>
+
+        {/* Contenido Principal */}
+        <div className="products-list-content">
+          {/* Toolbar */}
+          <div className="products-toolbar">
+            <div className="products-results-count">
+              Mostrando <strong>{currentProducts.length}</strong> de{" "}
+              <strong>{filtered.length}</strong> productos
+            </div>
+
+            <div className="products-sort-section">
+              <ArrowUpDown size={18} />
+              <label>Ordenar:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="">Relevancia</option>
+                <option value="az">A - Z</option>
+                <option value="za">Z - A</option>
+                {user && <option value="price-asc">Menor precio</option>}
+                {user && <option value="price-desc">Mayor precio</option>}
+              </select>
+            </div>
+          </div>
+
+          {/* Grid de Productos */}
+          {currentProducts.length === 0 ? (
+            <div className="products-list-no-results">
+              <p>No se encontraron productos con los filtros seleccionados</p>
+            </div>
+          ) : (
+            <>
+              <div className="products-list-grid">
+                {currentProducts.map((p) => {
+                  let priceContent;
+                  if (!user) {
+                    priceContent = (
+                      <p className="products-list-login-msg">
+                        Inicia sesión para ver precios
+                      </p>
+                    );
+                  } else {
+                    const price =
+                      user.state === 2 ? p.price_state2 : p.price_state1;
+                    priceContent = (
+                      <p className="products-list-price">
+                        ${price?.toLocaleString()}
+                      </p>
+                    );
+                  }
+
+                  const images =
+                    p.multimedia && p.multimedia.length > 1
+                      ? p.multimedia
+                      : [
+                          (p.multimedia && p.multimedia[0]) ||
+                            "https://via.placeholder.com/300",
+                        ];
+                  const mainImg = images[0];
+                  const hoverImg = images[1] || images[0];
+
+                  return (
                     <div
-                      className="out-of-stock"
-                      style={{
-                        position: "absolute",
-                        top: 8,
-                        left: 8,
-                        background: "#ff4d4f",
-                        color: "#fff",
-                        borderRadius: 6,
-                        padding: "4px 10px",
-                        fontWeight: 700,
-                        fontSize: 13,
-                      }}
+                      key={p.id}
+                      className="products-list-card"
+                      onMouseEnter={() => setHovered(p.id)}
+                      onMouseLeave={() => setHovered(null)}
                     >
-                      SIN STOCK
+                      <div className="products-list-image-container">
+                        <Link to={`/product/${p.id}`}>
+                          <img
+                            src={hovered === p.id ? hoverImg : mainImg}
+                            alt={p.name}
+                            className="products-list-image"
+                          />
+                        </Link>
+                        {p.stock === 0 && (
+                          <span className="products-list-badge-out-stock">
+                            Sin Stock
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="products-list-info">
+                        <Link
+                          to={`/product/${p.id}`}
+                          className="products-list-name"
+                        >
+                          {p.name}
+                        </Link>
+                        <p className="products-list-code">Código: {p.code}</p>
+                        {priceContent}
+                      </div>
+
+                      <Link
+                        to={`/product/${p.id}`}
+                        className={`products-list-btn-buy ${
+                          p.stock === 0 ? "products-list-disabled" : ""
+                        }`}
+                      >
+                        {p.stock === 0 ? "Sin Stock" : "Ver Producto"}
+                      </Link>
                     </div>
-                  )}
-                </div>
-
-                <h3
-                  className="product-name"
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "#009ca6",
-                    margin: "8px 0",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 3, // 👈 máximo 3 líneas
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  <Link
-                    to={`/product/${p.id}`}
-                    style={{ color: "#009ca6", textDecoration: "none" }}
-                  >
-                    {p.name}
-                  </Link>
-                </h3>
-
-                <p
-                  className="product-code"
-                  style={{ fontSize: 13, color: "#888", marginBottom: 8 }}
-                >
-                  Código: {p.code}
-                </p>
-                {priceContent}
+                  );
+                })}
               </div>
 
-              <Link
-                to={`/product/${p.id}`}
-                className={`btn ${p.stock === 0 ? "disabled" : ""}`}
-                style={{
-                  background: p.stock === 0 ? "#eee" : "#009ca6",
-                  color: p.stock === 0 ? "#aaa" : "#fff",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  marginTop: 12,
-                  textDecoration: "none",
-                  padding: "10px 0",
-                  textAlign: "center",
-                }}
-              >
-                {p.stock === 0 ? "SIN STOCK" : "COMPRAR"}
-              </Link>
-            </div>
-          );
-        })}
+              {/* Paginación */}
+              {totalPages > 1 && (
+                <div className="products-list-pagination">
+                  <button
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="products-list-pagination-btn"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+
+                  <div className="products-list-pagination-numbers">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => {
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => goToPage(page)}
+                              className={`products-list-pagination-number ${
+                                page === currentPage
+                                  ? "products-list-active"
+                                  : ""
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        } else if (
+                          page === currentPage - 2 ||
+                          page === currentPage + 2
+                        ) {
+                          return (
+                            <span
+                              key={page}
+                              className="products-list-pagination-ellipsis"
+                            >
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      }
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="products-list-pagination-btn"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
