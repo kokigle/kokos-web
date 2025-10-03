@@ -27,24 +27,43 @@ export default function ProductsList() {
   });
   const [sortBy, setSortBy] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9; // 3 filas de 3 productos
+  const itemsPerPage = 9;
 
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [hovered, setHovered] = useState(null);
 
-  // 🔹 Leer parámetros desde la URL
+  // 🔹 SINCRONIZACIÓN: Leer parámetros desde la URL e inicializar filtros
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const category = params.get("category");
+    let category = params.get("category");
     const subcategory = params.get("subcategory");
+    const searchParam = params.get("search");
+    const minStockParam = params.get("minStock");
+    const minPriceParam = params.get("minPrice");
+    const maxPriceParam = params.get("maxPrice");
 
-    // Si hay subcategoría en URL, ponerla en el filtro
-    if (subcategory) {
-      setPendingFilters((prev) => ({ ...prev, sub: subcategory }));
-      setAppliedFilters((prev) => ({ ...prev, sub: subcategory }));
+    // Si no hay categoría pero hay búsqueda, establecer categoría por defecto
+    if (!category && searchParam) {
+      category = "jugueteria";
+      // Actualizar la URL con la categoría por defecto
+      const newParams = new URLSearchParams(location.search);
+      newParams.set("category", category);
+      navigate({ search: newParams.toString() }, { replace: true });
     }
+
+    // Actualizar filtros desde la URL
+    const urlFilters = {
+      search: searchParam || "",
+      minStock: minStockParam || "",
+      sub: subcategory || "",
+      minPrice: minPriceParam || "",
+      maxPrice: maxPriceParam || "",
+    };
+
+    setPendingFilters(urlFilters);
+    setAppliedFilters(urlFilters);
 
     // Traer productos de Firestore
     let q = collection(db, "products");
@@ -64,7 +83,7 @@ export default function ProductsList() {
     });
 
     return () => unsub();
-  }, [location.search]);
+  }, [location.search, navigate]);
 
   // 🔹 Traer subcategorías
   useEffect(() => {
@@ -84,6 +103,8 @@ export default function ProductsList() {
       if (!snap.empty) {
         const catData = snap.docs[0].data();
         setSubcategories(catData.subcategories || []);
+      } else {
+        setSubcategories([]);
       }
     });
 
@@ -99,9 +120,28 @@ export default function ProductsList() {
       result = result.filter((p) => p.subcategory === sub);
     }
     if (search.trim()) {
-      result = result.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase())
-      );
+      // Función para normalizar texto (quitar tildes y convertir a minúsculas)
+      const normalizeText = (text) => {
+        return text
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      };
+
+      // Dividir el término de búsqueda en palabras y normalizarlas
+      const searchTerms = normalizeText(search.trim()).split(/\s+/);
+
+      result = result.filter((p) => {
+        const productName = normalizeText(p.name || "");
+        const productCode = normalizeText(p.code || "");
+        const productDescription = normalizeText(p.description || "");
+
+        // Concatenar todos los campos donde buscar
+        const searchableText = `${productName} ${productCode} ${productDescription}`;
+
+        // Verificar que TODAS las palabras estén presentes en alguno de los campos
+        return searchTerms.every((term) => searchableText.includes(term));
+      });
     }
     if (minStock) {
       result = result.filter((p) => p.cant_min <= parseInt(minStock));
@@ -110,8 +150,8 @@ export default function ProductsList() {
       result = result.filter((p) => {
         const price = user.state === 2 ? p.price_state2 : p.price_state1;
         if (!price) return false;
-        if (minPrice && price < parseInt(minPrice)) return false;
-        if (maxPrice && price > parseInt(maxPrice)) return false;
+        if (minPrice && price < parseFloat(minPrice)) return false;
+        if (maxPrice && price > parseFloat(maxPrice)) return false;
         return true;
       });
     }
@@ -139,42 +179,65 @@ export default function ProductsList() {
     setCurrentPage(1);
   }, [products, appliedFilters, user, sortBy]);
 
-  // 🔹 Aplicar filtros y actualizar URL
+  // 🔹 MEJORADO: Aplicar filtros y actualizar URL manteniendo category
   const handleSearch = () => {
     setAppliedFilters({ ...pendingFilters });
 
     const params = new URLSearchParams(location.search);
-    Object.entries(pendingFilters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-    });
-    navigate({ search: params.toString() });
+    const category = params.get("category");
+
+    // Crear nuevos parámetros
+    const newParams = new URLSearchParams();
+
+    // SIEMPRE mantener la categoría si existe
+    if (category) {
+      newParams.set("category", category);
+    }
+
+    // Agregar los demás filtros solo si tienen valor
+    if (pendingFilters.sub) {
+      newParams.set("subcategory", pendingFilters.sub);
+    }
+    if (pendingFilters.search.trim()) {
+      newParams.set("search", pendingFilters.search.trim());
+    }
+    if (pendingFilters.minStock) {
+      newParams.set("minStock", pendingFilters.minStock);
+    }
+    if (pendingFilters.minPrice) {
+      newParams.set("minPrice", pendingFilters.minPrice);
+    }
+    if (pendingFilters.maxPrice) {
+      newParams.set("maxPrice", pendingFilters.maxPrice);
+    }
+
+    navigate({ search: newParams.toString() }, { replace: true });
   };
 
-  // Limpiar filtros
+  // 🔹 MEJORADO: Limpiar filtros manteniendo solo la categoría
   const handleClearFilters = () => {
     const params = new URLSearchParams(location.search);
     const category = params.get("category");
 
-    setPendingFilters({
+    const clearedFilters = {
       search: "",
       minStock: "",
       sub: "",
       minPrice: "",
       maxPrice: "",
-    });
-    setAppliedFilters({
-      search: "",
-      minStock: "",
-      sub: "",
-      minPrice: "",
-      maxPrice: "",
-    });
+    };
 
-    navigate({ search: category ? `category=${category}` : "" });
+    setPendingFilters(clearedFilters);
+    setAppliedFilters(clearedFilters);
+    setSortBy("");
+
+    // Solo mantener category en la URL
+    const newParams = new URLSearchParams();
+    if (category) {
+      newParams.set("category", category);
+    }
+
+    navigate({ search: newParams.toString() }, { replace: true });
   };
 
   // Paginación
@@ -188,11 +251,21 @@ export default function ProductsList() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // 🔹 Precargar imágenes hover de los productos actuales
+  useEffect(() => {
+    currentProducts.forEach((p) => {
+      if (p.multimedia && p.multimedia.length > 1) {
+        const img = new Image();
+        img.src = p.multimedia[1];
+      }
+    });
+  }, [currentProducts]);
+
   return (
     <div className="products-list-page">
       {/* Header */}
       <div className="products-list-header">
-        <h1 className="products-list-title">Catálogo de Productos</h1>
+        <h1 className="products-list-title">Jugueteria</h1>
         <p className="products-list-subtitle">
           Explora nuestra selección completa
         </p>
@@ -216,11 +289,24 @@ export default function ProductsList() {
                       sub: e.target.value,
                     })
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch();
+                    }
+                  }}
                 >
                   <option value="">Todas</option>
                   {subcategories.map((sub) => (
                     <option key={sub} value={sub}>
-                      {sub}
+                      {sub
+                        .replace(/_/g, " ")
+                        .split(" ")
+                        .map(
+                          (word) =>
+                            word.charAt(0).toUpperCase() +
+                            word.slice(1).toLowerCase()
+                        )
+                        .join(" ")}
                     </option>
                   ))}
                 </select>
@@ -239,6 +325,11 @@ export default function ProductsList() {
                     search: e.target.value,
                   })
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch();
+                  }
+                }}
               />
             </div>
 
@@ -254,6 +345,11 @@ export default function ProductsList() {
                     minStock: e.target.value,
                   })
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch();
+                  }
+                }}
               />
             </div>
 
@@ -270,6 +366,11 @@ export default function ProductsList() {
                       minPrice: e.target.value,
                     })
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch();
+                    }
+                  }}
                 />
                 <span>-</span>
                 <input
@@ -282,6 +383,11 @@ export default function ProductsList() {
                       maxPrice: e.target.value,
                     })
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch();
+                    }
+                  }}
                 />
               </div>
             </div>

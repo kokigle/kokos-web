@@ -13,6 +13,7 @@ import CartPage from "./CartPage";
 import AdminPanel from "./AdminPanel";
 import NotFound from "./NotFound";
 import Home from "./Home";
+import Nosotros from "./Nosotros";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import {
@@ -153,6 +154,14 @@ export default function App() {
               element={
                 <div className="container">
                   <AdminPanel />
+                </div>
+              }
+            />
+            <Route
+              path="/nosotros"
+              element={
+                <div className="container">
+                  <Nosotros />
                 </div>
               }
             />

@@ -146,7 +146,7 @@
   font-size: 13px;
 }
 
-/* ===== DROPDOWN DE USUARIO ===== */
+/* ===== DROPDOWN DE USUARIO - CORREGIDO ===== */
 .user-dropdown {
   position: relative;
 }
@@ -169,14 +169,23 @@
   border: 1px solid #e9ecef;
 }
 
-.user-dropdown:hover .user-menu {
-  display: block;
-  animation: slideDown 0.3s ease-out;
+/* CRÍTICO: Agregar un espacio invisible para mantener la conexión */
+.user-dropdown::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 100%;
+  height: 12px;
+  background: transparent;
+  z-index: 1000;
 }
 
-/* Importante: Mantener el menú abierto cuando el mouse está sobre él */
+/* Mostrar menú cuando hover sobre el botón O sobre el menú mismo */
+.user-dropdown:hover .user-menu,
 .user-menu:hover {
   display: block;
+  animation: slideDown 0.3s ease-out;
 }
 
 .user-menu-header {

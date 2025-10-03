@@ -146,7 +146,7 @@ export default function ProductCard({ p }) {
           textAlign: "center",
         }}
       >
-        {p.stock === 0 ? "SIN STOCK" : "COMPRAR"}
+        {p.stock === 0 ? "SIN STOCK" : "VER PRODUCTO"}
       </Link>
     </div>
   );

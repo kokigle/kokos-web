@@ -1,6 +1,6 @@
 // Header.jsx
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./App";
 import { db } from "./App";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
@@ -16,6 +16,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const col = collection(db, "products");
@@ -34,7 +35,21 @@ export default function Header() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+      // Obtener parámetros actuales de la URL
+      const params = new URLSearchParams(location.search);
+
+      // Mantener la categoría si existe
+      const category = params.get("category");
+
+      // Crear nuevos parámetros con la búsqueda
+      const newParams = new URLSearchParams();
+      if (category) {
+        newParams.set("category", category);
+      }
+      newParams.set("search", searchQuery.trim());
+
+      // Navegar a products con los parámetros
+      navigate(`/products?${newParams.toString()}`);
       setSearchQuery("");
     }
   };
