@@ -1,6 +1,6 @@
-// CartPage.jsx
+// CartPage.jsx - VERSIÓN COMPLETA CORREGIDA
 import React, { useState, useEffect } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "./App";
 import { db, formatMoney } from "./App";
 import emailjs from "@emailjs/browser";
@@ -11,6 +11,10 @@ const EMAILJS_SERVICE_ID = "service_igan4yb";
 const EMAILJS_TEMPLATE_ID = "template_e8kdsrp";
 const EMAILJS_USER_ID = "WlrKNrL1f219RpOwO";
 
+// Placeholder local que siempre funciona
+const DEFAULT_PRODUCT_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect fill='%23f0f0f0' width='100' height='100'/%3E%3Cpath fill='%23999' d='M30 35h40v5H30zm0 15h40v5H30zm0 15h25v5H30z'/%3E%3Ccircle fill='%23ddd' cx='50' cy='25' r='8'/%3E%3C/svg%3E";
+
 export default function CartPage() {
   const [cart, setCart] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +22,6 @@ export default function CartPage() {
   const [showCopyToast, setShowCopyToast] = useState(false);
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeCart = async () => {
@@ -60,7 +63,6 @@ export default function CartPage() {
                   price,
                   qty: decodedItems[index].qty,
                   cant_min: productData.cant_min || 1,
-                  // ✨ NUEVO: Añadimos la imagen desde Firestore
                   image: productData.multimedia?.[0] || null,
                 };
               }
@@ -95,8 +97,6 @@ export default function CartPage() {
     initializeCart();
   }, [searchParams, user]);
 
-  // ... (El resto de la lógica y funciones se mantienen igual)
-
   useEffect(() => {
     if (isLoading) return;
 
@@ -104,17 +104,24 @@ export default function CartPage() {
       const encodedCart = cart
         .map((item) => `${item.id}:${item.qty}`)
         .join(",");
-      navigate(`?cart=${encodedCart}`, { replace: true });
+      // No usar navigate aquí para evitar loops
+      window.history.replaceState(null, "", `?cart=${encodedCart}`);
       if (user) {
         localStorage.setItem("wh_cart", JSON.stringify(cart));
       }
     } else {
-      navigate("/cart", { replace: true });
+      window.history.replaceState(null, "", "/cart");
       localStorage.removeItem("wh_cart");
     }
-  }, [cart, navigate, isLoading, user]);
 
-  const remove = (id) => setCart((c) => c.filter((x) => x.id !== id));
+    // Disparar eventos para actualizar el botón flotante
+    window.dispatchEvent(new Event("cartUpdated"));
+    window.dispatchEvent(new Event("storage"));
+  }, [cart, isLoading, user]);
+
+  const remove = (id) => {
+    setCart((c) => c.filter((x) => x.id !== id));
+  };
 
   const changeQty = (id, qty) => {
     setCart((c) =>
@@ -162,7 +169,7 @@ export default function CartPage() {
     } catch (e) {
       console.warn("EmailJS send failed: ", e);
     }
-    alert("Pedido creado.");
+    alert("Pedido creado exitosamente. Recibirás un correo de confirmación.");
     setCart([]);
   };
 
@@ -172,6 +179,7 @@ export default function CartPage() {
     return (
       <div className="cart-page-container">
         <div className="cart-page-loading">
+          <div className="cart-page-spinner"></div>
           <p>Cargando carrito...</p>
         </div>
       </div>
@@ -195,7 +203,7 @@ export default function CartPage() {
           </svg>
           <h3 className="cart-page-empty-title">Tu carrito está vacío</h3>
           <p className="cart-page-empty-text">
-            Agrega productos para comenzar tu compra
+            Agrega productos para comenzar tu compra mayorista
           </p>
           <Link to="/products" className="cart-page-empty-link">
             Explorar productos
@@ -221,7 +229,8 @@ export default function CartPage() {
             Inicia sesión para ver tu carrito
           </h3>
           <p className="cart-page-login-text">
-            Los precios y detalles de tu pedido son exclusivos para clientes.
+            Los precios y detalles de tu pedido son exclusivos para clientes
+            mayoristas.
           </p>
           <Link to="/login" className="cart-page-login-btn">
             Iniciar Sesión
@@ -235,17 +244,33 @@ export default function CartPage() {
         <div className="cart-page-items">
           {cart.map((it) => (
             <div key={it.id} className="cart-page-item">
-              {/* ✨ IMAGEN DEL PRODUCTO */}
-              <img
-                src={it.image || "https://via.placeholder.com/100"} // Placeholder si no hay imagen
-                alt={it.name}
-                className="cart-page-item-image"
-              />
+              {/* ✨ IMAGEN CLICKEABLE */}
+              <Link
+                to={`/product/${it.id}`}
+                className="cart-page-item-image-link"
+              >
+                <img
+                  src={it.image || DEFAULT_PRODUCT_IMAGE}
+                  alt={it.name || "Producto"}
+                  className="cart-page-item-image"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = DEFAULT_PRODUCT_IMAGE;
+                  }}
+                />
+              </Link>
+
               <div className="cart-page-item-details">
                 <div className="cart-page-item-info">
-                  <h3 className="cart-page-item-name">
-                    {it.name || "Cargando..."}
-                  </h3>
+                  {/* ✨ NOMBRE CLICKEABLE */}
+                  <Link
+                    to={`/product/${it.id}`}
+                    className="cart-page-item-name-link"
+                  >
+                    <h3 className="cart-page-item-name">
+                      {it.name || "Cargando..."}
+                    </h3>
+                  </Link>
                   <div className="cart-page-item-price">
                     ${formatMoney(it.price)}
                     <span className="cart-page-item-price-label">
@@ -254,25 +279,46 @@ export default function CartPage() {
                     </span>
                   </div>
                 </div>
+
                 <div className="cart-page-item-actions">
                   <div className="cart-page-item-quantity">
                     <label className="cart-page-quantity-label">
                       Cantidad:
                     </label>
-                    <input
-                      type="number"
-                      min={it.cant_min || 1}
-                      value={it.qty}
-                      onChange={(e) => changeQty(it.id, e.target.value)}
-                      className="cart-page-quantity-input"
-                    />
+                    <div className="cart-page-quantity-controls">
+                      <button
+                        className="cart-page-quantity-btn"
+                        onClick={() =>
+                          changeQty(it.id, Math.max(1, it.qty - 1))
+                        }
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={it.cant_min || 1}
+                        value={it.qty}
+                        onChange={(e) =>
+                          changeQty(it.id, Math.max(1, Number(e.target.value)))
+                        }
+                        className="cart-page-quantity-input"
+                      />
+                      <button
+                        className="cart-page-quantity-btn"
+                        onClick={() => changeQty(it.id, it.qty + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
+
                   <div className="cart-page-item-subtotal">
                     <span className="cart-page-subtotal-label">Subtotal:</span>
                     <span className="cart-page-subtotal-amount">
                       ${formatMoney(it.price * it.qty)}
                     </span>
                   </div>
+
                   <button
                     onClick={() => remove(it.id)}
                     className="cart-page-remove-btn"
@@ -295,9 +341,11 @@ export default function CartPage() {
             </div>
           ))}
         </div>
+
         <div className="cart-page-summary">
           <div className="cart-page-summary-card">
             <h3 className="cart-page-summary-title">Resumen de compra</h3>
+
             <div className="cart-page-summary-row">
               <span>
                 Subtotal ({cart.length}{" "}
@@ -305,19 +353,35 @@ export default function CartPage() {
               </span>
               <span>${formatMoney(total)}</span>
             </div>
+
             <div className="cart-page-summary-divider"></div>
+
             <div className="cart-page-summary-total">
               <span>Total</span>
               <span className="cart-page-total-amount">
                 ${formatMoney(total)}
               </span>
             </div>
+
+            <div className="cart-page-summary-note">💼 Compra mayorista</div>
+
             <button onClick={checkout} className="cart-page-checkout-btn">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
               Finalizar compra
             </button>
+
             <button onClick={shareCart} className="cart-page-share-btn">
               🔗 Compartir Carrito
             </button>
+
             <Link to="/products" className="cart-page-continue-shopping">
               ← Continuar comprando
             </Link>
@@ -348,11 +412,13 @@ export default function CartPage() {
           {cart.length} {cart.length === 1 ? "producto" : "productos"}
         </div>
       </div>
+
       {error && <div className="cart-page-error">{error}</div>}
       {!error && renderContent()}
+
       {showCopyToast && (
         <div className="cart-page-toast">
-          ¡Enlace del carrito copiado al portapapeles!
+          ✅ ¡Enlace del carrito copiado al portapapeles!
         </div>
       )}
     </div>

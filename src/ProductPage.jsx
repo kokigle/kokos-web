@@ -1,4 +1,4 @@
-// ProductPage.jsx
+// ProductPage.jsx - VERSIÓN FINAL COMPLETA
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -12,10 +12,8 @@ import {
 import { useAuth } from "./App";
 import { db } from "./App";
 import ProductCard from "./ProductCard";
+import FloatingCartButton from "./FloatingCartButton";
 import "./styles/product-page.css";
-
-// ... (El resto del componente ProductPage se mantiene igual que en la respuesta anterior)
-// ... (Solo cambia la función AddToCart al final del archivo)
 
 export default function ProductPage() {
   const { id } = useParams();
@@ -26,16 +24,8 @@ export default function ProductPage() {
   const [thumbIndex, setThumbIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
-  const [showAddedToast, setShowAddedToast] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const { user } = useAuth();
-
-  const handleShowAddedToast = () => {
-    setShowAddedToast(true);
-    setTimeout(() => {
-      setShowAddedToast(false);
-    }, 3000);
-  };
 
   useEffect(() => {
     if (!product) return;
@@ -450,9 +440,7 @@ export default function ProductPage() {
                       {inStock ? "En stock" : "Sin stock"}
                     </div>
                   </div>
-                  {inStock && (
-                    <AddToCart product={product} onAdd={handleShowAddedToast} />
-                  )}
+                  {inStock && <AddToCart product={product} />}
                   {!inStock && (
                     <button disabled className="product-page-btn-disabled">
                       Sin stock
@@ -501,6 +489,10 @@ export default function ProductPage() {
           </div>
         )}
       </div>
+
+      {/* ✨ BOTÓN FLOTANTE DEL CARRITO */}
+      <FloatingCartButton />
+
       {showShareModal && (
         <div
           className="product-page-modal-overlay"
@@ -547,26 +539,11 @@ export default function ProductPage() {
           <span>¡Enlace copiado al portapapeles!</span>
         </div>
       )}
-      {showAddedToast && (
-        <div className="product-page-toast">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          <span>¡Producto agregado al carrito!</span>
-        </div>
-      )}
     </div>
   );
 }
 
-function AddToCart({ product, onAdd }) {
+function AddToCart({ product }) {
   const { user } = useAuth();
   const [qty, setQty] = useState(product.cant_min || 1);
 
@@ -582,7 +559,6 @@ function AddToCart({ product, onAdd }) {
       name: product.name,
       price,
       cant_min: product.cant_min || 1,
-      // ✨ NUEVO: Añadimos la URL de la imagen principal
       image: product.multimedia?.[0] || null,
     };
 
@@ -591,8 +567,13 @@ function AddToCart({ product, onAdd }) {
     } else {
       cart.push({ ...productData, qty });
     }
+
     localStorage.setItem("wh_cart", JSON.stringify(cart));
-    onAdd();
+
+    // Disparar evento para actualizar el botón flotante
+    window.dispatchEvent(new Event("storage"));
+
+    setQty(product.cant_min || 1);
   };
 
   return (

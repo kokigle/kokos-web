@@ -57,6 +57,9 @@ export default function Header() {
   const handleLogout = () => {
     logout();
     setMobileMenuOpen(false);
+    localStorage.removeItem("wh_cart");
+    window.dispatchEvent(new Event("cartUpdated"));
+    window.dispatchEvent(new Event("storage"));
   };
 
   return (

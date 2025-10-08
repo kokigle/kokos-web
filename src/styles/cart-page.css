@@ -1,4 +1,6 @@
-/* CartPage.css */
+/* ====================================================
+   1. ESTILOS GENERALES Y CONTENEDOR PRINCIPAL
+==================================================== */
 
 .cart-page-container {
   max-width: 1200px;
@@ -7,55 +9,58 @@
   min-height: 80vh;
 }
 
-.cart-page-loading,
+/* ====================================================
+   2. ESTADOS DE LA PÁGINA (LOADING, ERROR, EMPTY)
+==================================================== */
+
+/* ESTADO DE CARGA (LOADING) - VERSIÓN MEJORADA */
+.cart-page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1.5rem;
+}
+
+.cart-page-loading p {
+  color: #009ca6;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* SPINNER PARA LOADING */
+.cart-page-spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid #e8f4f5;
+  border-top: 5px solid #009ca6;
+  border-radius: 50%;
+  animation: cart-spinner-spin 1s linear infinite;
+}
+
+@keyframes cart-spinner-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ESTADO DE ERROR */
 .cart-page-error {
   text-align: center;
   padding: 4rem;
   font-size: 1.2rem;
-  color: #666;
-}
-
-.cart-page-error {
   color: #dc3545;
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
   border-radius: 8px;
 }
 
-.cart-page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.cart-page-title {
-  font-size: 2rem;
-  color: #333;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.cart-page-icon {
-  width: 32px;
-  height: 32px;
-  color: #17a2b8;
-}
-
-.cart-page-items-count {
-  background: #17a2b8;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-/* Login Prompt Styles */
+/* ESTADO CUANDO NO HAY USUARIO LOGUEADO */
 .cart-page-login-prompt {
   display: flex;
   flex-direction: column;
@@ -106,7 +111,7 @@
   box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
 }
 
-/* Empty State */
+/* ESTADO DE CARRITO VACÍO */
 .cart-page-empty {
   display: flex;
   flex-direction: column;
@@ -155,7 +160,47 @@
   box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
 }
 
-/* Content Layout */
+/* ====================================================
+   3. CABECERA DE LA PÁGINA
+==================================================== */
+
+.cart-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.cart-page-title {
+  font-size: 2rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.cart-page-icon {
+  width: 32px;
+  height: 32px;
+  color: #17a2b8;
+}
+
+.cart-page-items-count {
+  background: #17a2b8;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ====================================================
+   4. LAYOUT PRINCIPAL Y LISTA DE ITEMS
+==================================================== */
+
 .cart-page-content {
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -163,12 +208,15 @@
   margin-top: 2rem;
 }
 
-/* Items List */
 .cart-page-items {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
+
+/* ====================================================
+   5. ESTILOS DE CADA ITEM DEL CARRITO
+==================================================== */
 
 .cart-page-item {
   background: white;
@@ -176,28 +224,10 @@
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
-  align-items: center; /* Alinear imagen y detalles verticalmente */
-  gap: 1.5rem; /* Espacio entre imagen y detalles */
+  align-items: center;
+  gap: 1.5rem;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* ✨ ESTILOS PARA LA IMAGEN DEL PRODUCTO */
-.cart-page-item-image {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #eee;
-  flex-shrink: 0; /* Evita que la imagen se encoja */
-}
-
-/* ✨ NUEVO CONTENEDOR PARA LOS DETALLES */
-.cart-page-item-details {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .cart-page-item:hover {
@@ -205,17 +235,69 @@
   border-color: #17a2b8;
 }
 
+/* CONTENEDOR PARA IMAGEN DEL PRODUCTO */
+.cart-page-item-image-link {
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cart-page-item-image-link:hover {
+  transform: scale(1.05);
+}
+
+.cart-page-item-image-link:hover .cart-page-item-image {
+  border-color: #009ca6;
+}
+
+/* IMAGEN DEL PRODUCTO - VERSIÓN MEJORADA */
+.cart-page-item-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #e8f4f5;
+  flex-shrink: 0;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* CONTENEDOR PARA DETALLES (NOMBRE, PRECIO, ACCIONES) */
+.cart-page-item-details {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .cart-page-item-info {
   flex: 1;
 }
 
+/* NOMBRE DEL PRODUCTO - VERSIÓN MEJORADA */
 .cart-page-item-name {
   font-size: 1.25rem;
   color: #333;
   margin: 0 0 0.5rem 0;
   font-weight: 600;
+  transition: color 0.3s ease;
+  cursor: pointer;
 }
 
+.cart-page-item-name-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.3s ease;
+}
+
+.cart-page-item-name-link:hover .cart-page-item-name {
+  color: #009ca6;
+}
+
+/* PRECIO Y SUBTÍTULOS */
 .cart-page-item-price {
   font-size: 1.125rem;
   color: #17a2b8;
@@ -228,39 +310,76 @@
   font-weight: 400;
 }
 
+/* ACCIONES DEL ITEM (CANTIDAD, SUBTOTAL, ELIMINAR) */
 .cart-page-item-actions {
   display: flex;
   align-items: center;
   gap: 1.5rem;
 }
 
-.cart-page-item-quantity {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
+/* CONTROLES DE CANTIDAD - VERSIÓN MEJORADA */
 .cart-page-quantity-label {
   font-size: 0.875rem;
   color: #666;
   font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block; /* Para que el margin-bottom funcione */
+}
+
+.cart-page-quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 2px solid #e8f4f5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cart-page-quantity-btn {
+  background: #f8f9fa;
+  border: none;
+  border-radius: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.25rem;
+  color: #009ca6;
+  transition: all 0.2s ease;
+  font-weight: 700;
+}
+
+.cart-page-quantity-btn:hover {
+  background: #009ca6;
+  color: white;
+}
+
+.cart-page-quantity-btn:active {
+  transform: scale(0.95);
 }
 
 .cart-page-quantity-input {
-  width: 80px;
+  width: 60px;
   padding: 0.5rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  border: none;
+  border-left: 2px solid #e8f4f5;
+  border-right: 2px solid #e8f4f5;
   font-size: 1rem;
   text-align: center;
   transition: border-color 0.3s ease;
+  background: white;
 }
 
 .cart-page-quantity-input:focus {
   outline: none;
-  border-color: #17a2b8;
+  border-left-color: #009ca6;
+  border-right-color: #009ca6;
 }
 
+/* SUBTOTAL DEL ITEM */
 .cart-page-item-subtotal {
   display: flex;
   flex-direction: column;
@@ -279,6 +398,7 @@
   font-weight: 700;
 }
 
+/* BOTÓN DE ELIMINAR ITEM */
 .cart-page-remove-btn {
   background: #fff;
   border: 2px solid #e0e0e0;
@@ -297,6 +417,7 @@
   width: 20px;
   height: 20px;
   color: #666;
+  transition: color 0.3s ease;
 }
 
 .cart-page-remove-btn:hover {
@@ -308,10 +429,13 @@
   color: #dc3545;
 }
 
-/* Summary Card */
+/* ====================================================
+   6. TARJETA DE RESUMEN DE COMPRA
+==================================================== */
+
 .cart-page-summary {
   position: sticky;
-  top: 2rem;
+  top: 9rem;
   height: fit-content;
 }
 
@@ -328,6 +452,19 @@
   color: #333;
   margin: 0 0 1.5rem 0;
   font-weight: 700;
+}
+
+.cart-page-summary-note {
+  background: linear-gradient(135deg, #e8f7f9 0%, #d0f0f5 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #0c5460;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  border: 1px solid #b8e6ec;
+  box-shadow: 0 2px 4px rgba(0, 156, 166, 0.1);
 }
 
 .cart-page-summary-row {
@@ -364,6 +501,7 @@
   color: #17a2b8;
 }
 
+/* BOTONES DE LA TARJETA DE RESUMEN */
 .cart-page-checkout-btn {
   width: 100%;
   background: #17a2b8;
@@ -380,6 +518,10 @@
   justify-content: center;
   gap: 0.75rem;
   box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+}
+.cart-page-checkout-btn svg {
+  width: 30px;
+  height: 30px;
 }
 
 .cart-page-checkout-btn:hover {
@@ -429,6 +571,10 @@
   text-decoration: underline;
 }
 
+/* ====================================================
+   7. NOTIFICACIONES (TOAST)
+==================================================== */
+
 .cart-page-toast {
   position: fixed;
   bottom: 2rem;
@@ -465,7 +611,11 @@
   }
 }
 
-/* Responsive Design */
+/* ====================================================
+   8. DISEÑO RESPONSIVE (MEDIA QUERIES)
+==================================================== */
+
+/* TABLETS Y PANTALLAS MEDIANAS */
 @media (max-width: 968px) {
   .cart-page-content {
     grid-template-columns: 1fr;
@@ -473,9 +623,11 @@
 
   .cart-page-summary {
     position: static;
+    top: auto;
   }
 }
 
+/* MÓVILES */
 @media (max-width: 640px) {
   .cart-page-container {
     padding: 1rem;
@@ -496,11 +648,24 @@
     align-items: stretch;
   }
 
-  /* ✨ AJUSTE RESPONSIVE */
+  .cart-page-item-image-link {
+    width: 100%;
+  }
+
+  .cart-page-item-image {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+  }
+
   .cart-page-item-details {
     flex-direction: column;
     align-items: stretch;
     gap: 1.5rem;
+  }
+
+  .cart-page-item-name {
+    font-size: 1.1rem;
   }
 
   .cart-page-item-actions {
@@ -508,17 +673,10 @@
     justify-content: space-between;
   }
 
-  .cart-page-item-quantity {
-    flex: 1;
-  }
-
-  .cart-page-item-subtotal {
-    flex: 1;
-  }
-
   .cart-page-remove-btn {
     width: 100%;
     height: 44px;
+    margin-top: 1rem; /* Espacio adicional */
   }
 
   .cart-page-summary-card {

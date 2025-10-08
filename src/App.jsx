@@ -15,6 +15,7 @@ import NotFound from "./NotFound";
 import Home from "./Home";
 import Nosotros from "./Nosotros";
 import ScrollTop from "./ScrollTop";
+import FloatingCartButton from "./FloatingCartButton";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import {
@@ -184,6 +185,7 @@ export default function App() {
               }
             />
           </Routes>
+          <FloatingCartButton />
           {/* Botón de WhatsApp siempre fijo */}
           <a
             href="https://wa.me/5491145457891?text=Hola!%20Quisiera%20consultar%20sobre%20sus%20productos."
