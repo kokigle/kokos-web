@@ -1,7 +1,6 @@
 // ProductPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
 import {
   doc,
   getDoc,
@@ -15,6 +14,9 @@ import { db } from "./App";
 import ProductCard from "./ProductCard";
 import "./styles/product-page.css";
 
+// ... (El resto del componente ProductPage se mantiene igual que en la respuesta anterior)
+// ... (Solo cambia la función AddToCart al final del archivo)
+
 export default function ProductPage() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
@@ -24,21 +26,23 @@ export default function ProductPage() {
   const [thumbIndex, setThumbIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
+  const [showAddedToast, setShowAddedToast] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const { user } = useAuth();
 
-  // Preload de imágenes
+  const handleShowAddedToast = () => {
+    setShowAddedToast(true);
+    setTimeout(() => {
+      setShowAddedToast(false);
+    }, 3000);
+  };
+
   useEffect(() => {
     if (!product) return;
-
     const imagesToPreload = [];
-
-    // Imágenes del producto
     if (product.multimedia?.length > 0) {
       imagesToPreload.push(...product.multimedia);
     }
-
-    // Thumbnails de videos (YouTube)
     if (product.videos?.length > 0) {
       product.videos.forEach((videoUrl) => {
         const { id: videoId } = getYouTubeId(videoUrl);
@@ -50,8 +54,6 @@ export default function ProductPage() {
         }
       });
     }
-
-    // Primeras 2 imágenes de productos relacionados
     if (related.length > 0) {
       related.slice(0, 4).forEach((relProduct) => {
         if (relProduct.multimedia?.length >= 2) {
@@ -62,16 +64,12 @@ export default function ProductPage() {
         }
       });
     }
-
-    // Precargar todas las imágenes
     let loadedCount = 0;
     const totalImages = imagesToPreload.length;
-
     if (totalImages === 0) {
       setImagesLoaded(true);
       return;
     }
-
     imagesToPreload.forEach((src) => {
       const img = new Image();
       img.onload = img.onerror = () => {
@@ -106,13 +104,11 @@ export default function ProductPage() {
         if (d.exists()) {
           const data = { id: d.id, ...d.data() };
           setProduct(data);
-
           if (data.multimedia?.length > 0) {
             setMainMedia({ type: "image", url: data.multimedia[0] });
           } else if (data.videos?.length > 0) {
             setMainMedia({ type: "video", url: data.videos[0] });
           }
-
           if (data.subcategory) {
             const q = query(
               collection(db, "products"),
@@ -247,7 +243,6 @@ export default function ProductPage() {
             </>
           )}
         </div>
-
         <div className="product-page-main">
           <div className="product-page-gallery">
             <div className="product-page-main-media">
@@ -348,7 +343,6 @@ export default function ProductPage() {
                 )}
               </div>
             )}
-
             {product.description && (
               <div className="product-page-description-box">
                 <h3 className="product-page-description-title">Descripción</h3>
@@ -358,7 +352,6 @@ export default function ProductPage() {
               </div>
             )}
           </div>
-
           <div className="product-page-info">
             <div className="product-page-header">
               <h1 className="product-page-title">{product.name}</h1>
@@ -395,7 +388,6 @@ export default function ProductPage() {
                 </button>
               </div>
             </div>
-
             <div className="product-page-specs">
               {product.colors && product.colors.length > 0 && (
                 <div className="product-page-spec-item">
@@ -412,7 +404,6 @@ export default function ProductPage() {
                   </div>
                 </div>
               )}
-
               {product.bulto && (
                 <div className="product-page-spec-item">
                   <div className="product-page-spec-label">
@@ -424,7 +415,6 @@ export default function ProductPage() {
                   </div>
                 </div>
               )}
-
               {product.cant_min && (
                 <div className="product-page-spec-item">
                   <div className="product-page-spec-label">
@@ -437,7 +427,6 @@ export default function ProductPage() {
                 </div>
               )}
             </div>
-
             <div className="product-page-purchase">
               {user ? (
                 <>
@@ -461,7 +450,9 @@ export default function ProductPage() {
                       {inStock ? "En stock" : "Sin stock"}
                     </div>
                   </div>
-                  {inStock && <AddToCart product={product} />}
+                  {inStock && (
+                    <AddToCart product={product} onAdd={handleShowAddedToast} />
+                  )}
                   {!inStock && (
                     <button disabled className="product-page-btn-disabled">
                       Sin stock
@@ -479,7 +470,6 @@ export default function ProductPage() {
             </div>
           </div>
         </div>
-
         {related.length > 0 && (
           <div className="product-page-related">
             <h2 className="product-page-related-title">
@@ -511,7 +501,6 @@ export default function ProductPage() {
           </div>
         )}
       </div>
-
       {showShareModal && (
         <div
           className="product-page-modal-overlay"
@@ -543,8 +532,6 @@ export default function ProductPage() {
           </div>
         </div>
       )}
-
-      {/* Toast de confirmación */}
       {showCopyToast && (
         <div className="product-page-toast">
           <svg
@@ -560,14 +547,28 @@ export default function ProductPage() {
           <span>¡Enlace copiado al portapapeles!</span>
         </div>
       )}
+      {showAddedToast && (
+        <div className="product-page-toast">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>¡Producto agregado al carrito!</span>
+        </div>
+      )}
     </div>
   );
 }
 
-function AddToCart({ product }) {
+function AddToCart({ product, onAdd }) {
   const { user } = useAuth();
   const [qty, setQty] = useState(product.cant_min || 1);
-  const navigate = useNavigate();
 
   const add = () => {
     const raw = localStorage.getItem("wh_cart");
@@ -575,10 +576,23 @@ function AddToCart({ product }) {
     const price =
       user?.state === 2 ? product.price_state2 : product.price_state1;
     const existing = cart.find((c) => c.id === product.id);
-    if (existing) existing.qty += qty;
-    else cart.push({ id: product.id, name: product.name, price, qty });
+
+    const productData = {
+      id: product.id,
+      name: product.name,
+      price,
+      cant_min: product.cant_min || 1,
+      // ✨ NUEVO: Añadimos la URL de la imagen principal
+      image: product.multimedia?.[0] || null,
+    };
+
+    if (existing) {
+      existing.qty += qty;
+    } else {
+      cart.push({ ...productData, qty });
+    }
     localStorage.setItem("wh_cart", JSON.stringify(cart));
-    navigate("/cart");
+    onAdd();
   };
 
   return (

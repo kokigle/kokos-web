@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // ✨ NUEVO: Importamos useRef
 import {
   collection,
   doc,
@@ -17,6 +17,9 @@ import ProductForm from "./ProductForm";
 import "./styles/admin-panel.css";
 
 export default function AdminPanel() {
+  // ✨ NUEVO: Creamos una referencia para el contenedor principal del contenido
+  const mainContentRef = useRef(null);
+
   // Estados de autenticación
   const [secret, setSecret] = useState("");
   const [authed, setAuthed] = useState(false);
@@ -47,6 +50,21 @@ export default function AdminPanel() {
     img3: { url: "", redirect: "" },
   });
   const [draggedIndex, setDraggedIndex] = useState(null);
+
+  // ✨ NUEVO: Función reutilizable para hacer scroll top en el panel de contenido
+  const scrollTop = () => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth", // Scroll suave para una mejor UX
+      });
+    }
+  };
+
+  // ✨ NUEVO: useEffect que se ejecuta cada vez que cambia la vista para hacer scroll top
+  useEffect(() => {
+    scrollTop();
+  }, [view]);
 
   // Función para mostrar notificaciones
   const showNotification = (message, type = "success") => {
@@ -98,7 +116,6 @@ export default function AdminPanel() {
       setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    // Cargar banner images
     const unsubBanner = onSnapshot(
       collection(db, "images/banner_images/urls"),
       (snap) => {
@@ -109,7 +126,6 @@ export default function AdminPanel() {
       }
     );
 
-    // Cargar categorías de inicio
     const loadHomeCategories = async () => {
       const cats = { img1: {}, img2: {}, img3: {} };
       for (let i = 1; i <= 3; i++) {
@@ -167,6 +183,7 @@ export default function AdminPanel() {
     });
     ev.target.reset();
     showNotification("Cliente agregado exitosamente");
+    scrollTop(); // ✨ NUEVO: Hacemos scroll top para ver la notificación y el nuevo cliente
   };
 
   // Funciones de productos
@@ -179,7 +196,6 @@ export default function AdminPanel() {
 
       const urls = [...existingUrls];
 
-      // Subir imágenes en paralelo para mayor velocidad
       if (productData.files && productData.files.length > 0) {
         const uploadPromises = productData.files.map((file) =>
           uploadImage(file)
@@ -289,7 +305,6 @@ export default function AdminPanel() {
           ? Math.max(...bannerImages.map((img) => img.pos || 0))
           : 0;
 
-      // Subir todas las imágenes en paralelo
       const uploadPromises = files.map(async (file, index) => {
         const url = await uploadImage(file);
         if (url) {
@@ -322,7 +337,6 @@ export default function AdminPanel() {
       "¿Estás seguro de que deseas eliminar esta imagen del banner?",
       async () => {
         await deleteDoc(doc(db, "images/banner_images/urls", id));
-        // Reordenar posiciones
         await reorderBannerPositions();
         showNotification("Imagen eliminada");
       }
@@ -357,7 +371,6 @@ export default function AdminPanel() {
     setBannerImages(newImages);
     setDraggedIndex(null);
 
-    // Guardar nuevo orden en Firebase
     try {
       const updatePromises = newImages.map((img, index) =>
         updateDoc(doc(db, "images/banner_images/urls", img.id), {
@@ -383,7 +396,6 @@ export default function AdminPanel() {
         };
         await setDoc(doc(db, "images", categoryKey), newData);
 
-        // Actualizar estado local inmediatamente
         setHomeCategories((prev) => ({
           ...prev,
           [categoryKey]: newData,
@@ -401,7 +413,6 @@ export default function AdminPanel() {
   const updateHomeCategoryRedirect = async (categoryKey, redirect) => {
     await updateDoc(doc(db, "images", categoryKey), { redirect });
 
-    // Actualizar estado local inmediatamente
     setHomeCategories((prev) => ({
       ...prev,
       [categoryKey]: {
@@ -420,7 +431,6 @@ export default function AdminPanel() {
         const newData = { url: "", redirect: "" };
         await setDoc(doc(db, "images", categoryKey), newData);
 
-        // Actualizar estado local inmediatamente
         setHomeCategories((prev) => ({
           ...prev,
           [categoryKey]: newData,
@@ -568,7 +578,8 @@ export default function AdminPanel() {
         </nav>
       </aside>
 
-      <main className="admin-content">
+      {/* ✨ NUEVO: Asignamos la referencia al elemento <main> */}
+      <main className="admin-content" ref={mainContentRef}>
         {view === "dashboard" && (
           <div className="admin-card">
             <h2 className="admin-title">Dashboard</h2>
@@ -799,7 +810,6 @@ export default function AdminPanel() {
         {view === "categories" && (
           <div className="admin-card">
             <h2 className="admin-title">Gestión de Categorías</h2>
-
             <div className="categories-list">
               {categories.map((c) => (
                 <div key={c.id} className="category-card">
@@ -809,7 +819,6 @@ export default function AdminPanel() {
                       {(c.subcategories || []).length} subcategorías
                     </span>
                   </div>
-
                   <div className="subcategories-list">
                     {(c.subcategories || []).map((s) => (
                       <div key={s} className="subcategory-item">
@@ -826,7 +835,6 @@ export default function AdminPanel() {
                       <p className="empty-message">Sin subcategorías</p>
                     )}
                   </div>
-
                   <form
                     onSubmit={(ev) => {
                       ev.preventDefault();
@@ -853,8 +861,6 @@ export default function AdminPanel() {
         {view === "editHome" && (
           <div className="admin-card">
             <h2 className="admin-title">Editar Página de Inicio</h2>
-
-            {/* Banner del inicio */}
             <div className="home-section">
               <h3 className="section-title">Banner del Inicio</h3>
               <div className="banner-upload-section">
@@ -870,7 +876,6 @@ export default function AdminPanel() {
                   />
                 </label>
               </div>
-
               <div className="banner-images-list">
                 {bannerImages.map((img, index) => (
                   <div
@@ -908,8 +913,6 @@ export default function AdminPanel() {
                 ))}
               </div>
             </div>
-
-            {/* Categorías del inicio */}
             <div className="home-section">
               <h3 className="section-title">Categorías del Inicio (3)</h3>
               <div className="home-categories-grid">

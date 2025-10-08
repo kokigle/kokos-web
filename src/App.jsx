@@ -14,6 +14,7 @@ import AdminPanel from "./AdminPanel";
 import NotFound from "./NotFound";
 import Home from "./Home";
 import Nosotros from "./Nosotros";
+import ScrollTop from "./ScrollTop";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import {
@@ -113,6 +114,7 @@ export default function App() {
   return (
     <AuthContext.Provider value={value}>
       <Router>
+        <ScrollTop />
         <Header />
         <main>
           <Routes>
