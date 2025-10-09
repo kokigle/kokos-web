@@ -17,6 +17,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [activeDropdown, setActiveDropdown] = useState(null); // Para manejar el dropdown móvil
 
   useEffect(() => {
     const col = collection(db, "products");
@@ -51,6 +52,7 @@ export default function Header() {
       // Navegar a products con los parámetros
       navigate(`/products?${newParams.toString()}`);
       setSearchQuery("");
+      setMobileMenuOpen(false); // Cierra el menú móvil después de buscar
     }
   };
 
@@ -62,16 +64,24 @@ export default function Header() {
     window.dispatchEvent(new Event("storage"));
   };
 
+  const toggleMobileDropdown = (dropdownName) => {
+    setActiveDropdown(activeDropdown === dropdownName ? null : dropdownName);
+  };
+
   return (
-    <header className="kokos-header">
-      <div className="kokos-header-top">
-        <div className="kokos-logo">
+    <header className="header-kokos-header">
+      <div className="header-kokos-header-top">
+        <div className="header-kokos-logo">
           <Link to="/" onClick={() => setMobileMenuOpen(false)}>
-            <img src={logo} alt="Kokos Logo" className="kokos-logo-img" />
+            <img
+              src={logo}
+              alt="Kokos Logo"
+              className="header-kokos-logo-img"
+            />
           </Link>
         </div>
 
-        <div className="kokos-search">
+        <div className="header-kokos-search">
           <form onSubmit={handleSearch}>
             <input
               type="text"
@@ -86,40 +96,42 @@ export default function Header() {
           </form>
         </div>
 
-        <div className="kokos-actions">
+        <div className="header-kokos-actions">
           <Link
             to="/cart"
-            className="action-btn cart-btn"
+            className="header-kokos-action-btn header-kokos-cart-btn"
             onClick={() => setMobileMenuOpen(false)}
           >
-            <span className="action-icon">
+            <span className="header-kokos-action-icon">
               <CartIcon />
             </span>
-            <span className="action-text">Carrito</span>
+            <span className="header-kokos-action-text">Carrito</span>
           </Link>
 
           {user ? (
-            <div className="user-dropdown">
-              <button className="action-btn user-btn">
-                <span className="action-icon">
+            <div className="header-kokos-user-dropdown">
+              <button className="header-kokos-action-btn header-kokos-user-btn">
+                <span className="header-kokos-action-icon">
                   <ProfileIcon />
                 </span>
-                <span className="action-text">Mi Cuenta</span>
+                <span className="header-kokos-action-text">Mi Cuenta</span>
               </button>
-              <div className="user-menu">
-                <div className="user-menu-header">
-                  <span className="user-email-display">{user.email}</span>
+              <div className="header-kokos-user-menu">
+                <div className="header-kokos-user-menu-header">
+                  <span className="header-kokos-user-email-display">
+                    {user.email}
+                  </span>
                 </div>
                 <Link
                   to="/orders"
-                  className="user-menu-item"
+                  className="header-kokos-user-menu-item"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Mis Pedidos
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="user-menu-item logout"
+                  className="header-kokos-user-menu-item header-kokos-logout"
                 >
                   Cerrar Sesión
                 </button>
@@ -128,20 +140,23 @@ export default function Header() {
           ) : (
             <Link
               to="/login"
-              className="action-btn login-btn"
+              className="header-kokos-action-btn header-kokos-login-btn"
               onClick={() => setMobileMenuOpen(false)}
             >
-              <span className="action-icon">
+              <span className="header-kokos-action-icon">
                 <ProfileIcon />
               </span>
-              <span className="action-text">Iniciar Sesión</span>
+              <span className="header-kokos-action-text">Iniciar Sesión</span>
             </Link>
           )}
         </div>
 
         <button
-          className="mobile-menu-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="header-kokos-mobile-menu-toggle"
+          onClick={() => {
+            setMobileMenuOpen(!mobileMenuOpen);
+            setActiveDropdown(null); // Reset dropdown on menu toggle
+          }}
           aria-label="Toggle menu"
           aria-expanded={mobileMenuOpen}
         >
@@ -151,25 +166,42 @@ export default function Header() {
         </button>
       </div>
 
-      <nav className={`kokos-menu ${mobileMenuOpen ? "mobile-open" : ""}`}>
+      <nav
+        className={`header-kokos-menu ${
+          mobileMenuOpen ? "header-kokos-mobile-open" : ""
+        }`}
+      >
         <Link
           to="/"
-          className="menu-link"
+          className="header-kokos-menu-link"
           onClick={() => setMobileMenuOpen(false)}
         >
           INICIO
         </Link>
-        <div className="menu-item dropdown-menu">
+        {/* Usamos onClick para manejar el dropdown en móvil */}
+        <div
+          className={`header-kokos-dropdown-menu ${
+            activeDropdown === "jugueteria" ? "header-kokos-active" : ""
+          }`}
+        >
           <Link
             to="/products?category=jugueteria"
-            className="menu-link"
-            onClick={() => setMobileMenuOpen(false)}
+            className="header-kokos-menu-link"
+            onClick={(e) => {
+              // Previene la navegación inmediata en móvil para abrir el dropdown
+              if (window.innerWidth <= 768 && subcategories.length > 0) {
+                e.preventDefault();
+                toggleMobileDropdown("jugueteria");
+              } else {
+                setMobileMenuOpen(false);
+              }
+            }}
           >
             JUGUETERÍA
           </Link>
           {subcategories.length > 0 && (
-            <div className="submenu">
-              <div className="submenu-content">
+            <div className="header-kokos-submenu">
+              <div className="header-kokos-submenu-content">
                 {subcategories.map((sub) => (
                   <Link
                     key={sub}
@@ -187,21 +219,21 @@ export default function Header() {
         </div>
         <Link
           to="/nosotros"
-          className="menu-link"
+          className="header-kokos-menu-link"
           onClick={() => setMobileMenuOpen(false)}
         >
           NOSOTROS
         </Link>
         <Link
           to="/novedades"
-          className="menu-link"
+          className="header-kokos-menu-link"
           onClick={() => setMobileMenuOpen(false)}
         >
           NOVEDADES
         </Link>
         <Link
           to="/contacto"
-          className="menu-link"
+          className="header-kokos-menu-link"
           onClick={() => setMobileMenuOpen(false)}
         >
           CONTACTO

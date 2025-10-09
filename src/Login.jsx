@@ -1,11 +1,10 @@
 // Login.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "./App";
 import { useNavigate, Link } from "react-router-dom";
-import { FaEnvelope, FaLock, FaUserPlus, FaKey } from "react-icons/fa";
+import { getAuth } from "firebase/auth";
+import { FaEnvelope, FaLock, FaUserPlus } from "react-icons/fa";
 import "./styles/login.css";
-
-const GOOGLE_FORM_LINK = "https://forms.gle/YOUR_FORM_LINK";
 
 export default function Login() {
   const { login, loading } = useAuth();
@@ -21,11 +20,17 @@ export default function Login() {
     const result = await login(email.trim().toLowerCase(), password);
 
     if (result.success) {
+      // Verificar si el estado es "pendiente"
+      if (result.client.status === "pendiente") {
+        setMessage(
+          "Tu cuenta está pendiente de aprobación. Te notificaremos cuando sea activada."
+        );
+        // Cerrar sesión automáticamente
+        const auth = getAuth();
+        await auth.signOut();
+        return;
+      }
       navigate("/");
-    } else if (result.setPassword) {
-      navigate("/set-password", {
-        state: { email, clientId: result.client.id },
-      });
     } else {
       setMessage(result.message || "Correo o contraseña incorrectos.");
     }
@@ -95,32 +100,17 @@ export default function Login() {
           <div className="login-actions-section">
             <div className="actions-header">
               <h2>¿No tienes cuenta?</h2>
-              <p>Elige una opción para comenzar</p>
+              <p>Regístrate como cliente mayorista</p>
             </div>
 
             <div className="action-cards">
-              <a
-                href={GOOGLE_FORM_LINK}
-                target="_blank"
-                rel="noreferrer"
-                className="action-card"
-              >
+              <Link to="/register" className="action-card">
                 <div className="action-icons">
                   <FaUserPlus />
                 </div>
                 <div className="action-content">
                   <h3>Crear Nueva Cuenta</h3>
-                  <p>Completa el formulario de registro</p>
-                </div>
-              </a>
-
-              <Link to="/set-password" className="action-card">
-                <div className="action-icons">
-                  <FaKey />
-                </div>
-                <div className="action-content">
-                  <h3>Configurar Contraseña</h3>
-                  <p>Ya fuiste aceptado? Crea tu contraseña aquí</p>
+                  <p>Completa el formulario de registro y empieza a comprar</p>
                 </div>
               </Link>
             </div>

@@ -1,7 +1,7 @@
 /* =========================
    HEADER KOKOS - COMPACTO Y PROFESIONAL
 ========================= */
-.kokos-header {
+.header-kokos-header {
   background: #ffffff;
   font-family: "Segoe UI", "Arial", sans-serif;
   border-bottom: 2px solid #17a2b8;
@@ -11,7 +11,7 @@
   z-index: 1000;
 }
 
-.kokos-header-top {
+.header-kokos-header-top {
   display: grid;
   grid-template-columns: 180px 1fr auto;
   align-items: center;
@@ -23,24 +23,24 @@
 }
 
 /* ===== LOGO ===== */
-.kokos-logo {
+.header-kokos-logo {
   display: flex;
   align-items: center;
 }
 
-.kokos-logo-img {
+.header-kokos-logo-img {
   max-height: 55px;
   width: auto;
   display: block;
   transition: transform 0.3s ease;
 }
 
-.kokos-logo-img:hover {
+.header-kokos-logo-img:hover {
   transform: scale(1.03);
 }
 
 /* ===== BÚSQUEDA CENTRAL ===== */
-.kokos-search {
+.header-kokos-search {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -49,7 +49,7 @@
   margin: 0 auto;
 }
 
-.kokos-search form {
+.header-kokos-search form {
   display: flex;
   border: 2px solid #e9ecef;
   border-radius: 25px;
@@ -60,12 +60,12 @@
   background: white;
 }
 
-.kokos-search form:focus-within {
+.header-kokos-search form:focus-within {
   border-color: #17a2b8;
   box-shadow: 0 2px 10px rgba(23, 162, 184, 0.15);
 }
 
-.kokos-search input {
+.header-kokos-search input {
   border: none;
   padding: 10px 20px;
   flex: 1;
@@ -76,11 +76,11 @@
   font-family: inherit;
 }
 
-.kokos-search input::placeholder {
+.header-kokos-search input::placeholder {
   color: #adb5bd;
 }
 
-.kokos-search button {
+.header-kokos-search button {
   background: #17a2b8;
   color: white;
   border: none;
@@ -93,27 +93,27 @@
   min-width: 48px;
 }
 
-.kokos-search button svg {
+.header-kokos-search button svg {
   width: 18px;
   height: 18px;
 }
 
-.kokos-search button:hover {
+.header-kokos-search button:hover {
   background: #138496;
 }
 
-.kokos-search button:active {
+.header-kokos-search button:active {
   transform: scale(0.95);
 }
 
 /* ===== ACCIONES (CARRITO Y CUENTA) ===== */
-.kokos-actions {
+.header-kokos-actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.action-btn {
+.header-kokos-action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -130,32 +130,32 @@
   white-space: nowrap;
 }
 
-.action-btn:hover {
+.header-kokos-action-btn:hover {
   border-color: #17a2b8;
   color: #17a2b8;
   background: #f0feff;
   transform: translateY(-2px);
 }
 
-.action-icon {
+.header-kokos-action-icon {
   font-size: 16px;
   margin-top: 7px;
 }
 
-.action-text {
+.header-kokos-action-text {
   font-size: 13px;
 }
 
 /* ===== DROPDOWN DE USUARIO - CORREGIDO ===== */
-.user-dropdown {
+.header-kokos-user-dropdown {
   position: relative;
 }
 
-.user-btn {
+.header-kokos-user-btn {
   background: white;
 }
 
-.user-menu {
+.header-kokos-user-menu {
   display: none;
   position: absolute;
   top: calc(100% + 8px);
@@ -170,7 +170,7 @@
 }
 
 /* CRÍTICO: Agregar un espacio invisible para mantener la conexión */
-.user-dropdown::after {
+.header-kokos-user-dropdown::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -182,19 +182,19 @@
 }
 
 /* Mostrar menú cuando hover sobre el botón O sobre el menú mismo */
-.user-dropdown:hover .user-menu,
-.user-menu:hover {
+.header-kokos-user-dropdown:hover .header-kokos-user-menu,
+.header-kokos-user-menu:hover {
   display: block;
-  animation: slideDown 0.3s ease-out;
+  animation: header-kokos-slideDown 0.3s ease-out;
 }
 
-.user-menu-header {
+.header-kokos-user-menu-header {
   padding: 12px 16px;
   border-bottom: 1px solid #e9ecef;
   margin-bottom: 4px;
 }
 
-.user-email-display {
+.header-kokos-user-email-display {
   font-size: 12px;
   color: #6c757d;
   font-weight: 600;
@@ -204,7 +204,7 @@
   white-space: nowrap;
 }
 
-.user-menu-item {
+.header-kokos-user-menu-item {
   display: block;
   padding: 10px 16px;
   color: #495057;
@@ -220,25 +220,25 @@
   font-family: inherit;
 }
 
-.user-menu-item:hover {
+.header-kokos-user-menu-item:hover {
   background: #f8f9fa;
   color: #17a2b8;
   padding-left: 20px;
 }
 
-.user-menu-item.logout {
+.header-kokos-user-menu-item.header-kokos-logout {
   color: #dc3545;
   border-top: 1px solid #e9ecef;
   margin-top: 4px;
 }
 
-.user-menu-item.logout:hover {
+.header-kokos-user-menu-item.header-kokos-logout:hover {
   background: #fff5f5;
   color: #c82333;
 }
 
 /* ===== MENÚ MÓVIL TOGGLE ===== */
-.mobile-menu-toggle {
+.header-kokos-mobile-menu-toggle {
   display: none;
   flex-direction: column;
   gap: 4px;
@@ -249,7 +249,7 @@
   z-index: 1001;
 }
 
-.mobile-menu-toggle span {
+.header-kokos-mobile-menu-toggle span {
   width: 24px;
   height: 2px;
   background: #17a2b8;
@@ -257,12 +257,12 @@
   transition: all 0.3s ease;
 }
 
-.mobile-menu-toggle:hover span {
+.header-kokos-mobile-menu-toggle:hover span {
   background: #138496;
 }
 
 /* ===== MENÚ DE NAVEGACIÓN ===== */
-.kokos-menu {
+.header-kokos-menu {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -277,7 +277,7 @@
   margin: 0 auto;
 }
 
-.menu-link {
+.header-kokos-menu-link {
   color: white;
   display: inline-flex;
   align-items: center;
@@ -287,7 +287,7 @@
   text-decoration: none;
 }
 
-.menu-link::after {
+.header-kokos-menu-link::after {
   content: "";
   position: absolute;
   bottom: 0;
@@ -299,24 +299,24 @@
   border-radius: 2px;
 }
 
-.menu-link:hover {
+.header-kokos-menu-link:hover {
   color: rgba(255, 255, 255, 0.95);
 }
 
-.menu-link:hover::after {
+.header-kokos-menu-link:hover::after {
   width: 100%;
 }
 
 /* ===== DROPDOWN MENU (JUGUETERÍA) ===== */
-.dropdown-menu {
+.header-kokos-dropdown-menu {
   position: relative;
 }
 
-.dropdown-menu > .menu-link {
+.header-kokos-dropdown-menu > .header-kokos-menu-link {
   display: inline-flex;
 }
 
-.submenu {
+.header-kokos-submenu {
   display: none;
   position: absolute;
   top: 100%;
@@ -326,12 +326,12 @@
   z-index: 1000;
 }
 
-.dropdown-menu:hover .submenu {
+.header-kokos-dropdown-menu:hover .header-kokos-submenu {
   display: block;
-  animation: fadeInDown 0.3s ease-out;
+  animation: header-kokos-fadeInDown 0.3s ease-out;
 }
 
-.submenu-content {
+.header-kokos-submenu-content {
   min-width: 240px;
   background: white;
   border-radius: 12px;
@@ -340,7 +340,7 @@
   border: 1px solid #e9ecef;
 }
 
-.submenu-content a {
+.header-kokos-submenu-content a {
   display: block;
   padding: 12px 20px;
   font-weight: 500;
@@ -353,7 +353,7 @@
   position: relative;
 }
 
-.submenu-content a::before {
+.header-kokos-submenu-content a::before {
   content: "";
   position: absolute;
   left: 0;
@@ -364,18 +364,18 @@
   transition: width 0.2s ease;
 }
 
-.submenu-content a:hover {
+.header-kokos-submenu-content a:hover {
   background: linear-gradient(to right, #f0feff 0%, transparent 100%);
   padding-left: 28px;
   color: #17a2b8;
 }
 
-.submenu-content a:hover::before {
+.header-kokos-submenu-content a:hover::before {
   width: 4px;
 }
 
 /* ===== ANIMACIONES ===== */
-@keyframes slideDown {
+@keyframes header-kokos-slideDown {
   from {
     opacity: 0;
     transform: translateY(-10px);
@@ -386,7 +386,7 @@
   }
 }
 
-@keyframes fadeInDown {
+@keyframes header-kokos-fadeInDown {
   from {
     opacity: 0;
     transform: translateX(-50%) translateY(-10px);
@@ -399,50 +399,50 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
-  .kokos-header-top {
+  .header-kokos-header-top {
     padding: 12px 30px;
     gap: 20px;
   }
 
-  .kokos-menu {
+  .header-kokos-menu {
     gap: 30px;
     padding: 10px 30px;
   }
 
-  .kokos-logo-img {
+  .header-kokos-logo-img {
     max-height: 50px;
   }
 }
 
 @media (max-width: 768px) {
-  .kokos-header-top {
+  .header-kokos-header-top {
     grid-template-columns: 100px 1fr auto;
     padding: 10px 20px;
     gap: 15px;
   }
 
-  .kokos-logo-img {
+  .header-kokos-logo-img {
     max-height: 45px;
   }
 
-  .kokos-search input {
+  .header-kokos-search input {
     padding: 8px 16px;
     font-size: 13px;
   }
 
-  .kokos-search button {
+  .header-kokos-search button {
     padding: 0 14px;
   }
 
-  .kokos-actions {
+  .header-kokos-actions {
     display: none;
   }
 
-  .mobile-menu-toggle {
+  .header-kokos-mobile-menu-toggle {
     display: flex;
   }
 
-  .kokos-menu {
+  .header-kokos-menu {
     position: fixed;
     top: 0;
     right: -100%;
@@ -458,51 +458,51 @@
     overflow-y: auto;
   }
 
-  .kokos-menu.mobile-open {
+  .header-kokos-menu.header-kokos-mobile-open {
     right: 0;
   }
 
-  .menu-link {
+  .header-kokos-menu-link {
     color: #495057;
     padding: 16px 24px;
     border-bottom: 1px solid #f0f0f0;
     width: 100%;
   }
 
-  .menu-link::after {
+  .header-kokos-menu-link::after {
     display: none;
   }
 
-  .menu-link:hover {
+  .header-kokos-menu-link:hover {
     background: #f8f9fa;
     color: #17a2b8;
     padding-left: 32px;
   }
 
-  .dropdown-menu {
+  .header-kokos-dropdown-menu {
     width: 100%;
   }
 
-  .dropdown-menu > .menu-link {
+  .header-kokos-dropdown-menu > .header-kokos-menu-link {
     width: 100%;
   }
 
-  .submenu {
+  .header-kokos-submenu {
     position: static;
     display: none;
     padding-top: 0;
     transform: none;
   }
 
-  .dropdown-menu:hover .submenu {
+  .header-kokos-dropdown-menu:hover .header-kokos-submenu {
     display: none;
   }
 
-  .dropdown-menu.active .submenu {
+  .header-kokos-dropdown-menu.header-kokos-active .header-kokos-submenu {
     display: block;
   }
 
-  .submenu-content {
+  .header-kokos-submenu-content {
     box-shadow: none;
     border: none;
     border-radius: 0;
@@ -510,32 +510,32 @@
     padding: 0;
   }
 
-  .submenu-content a {
+  .header-kokos-submenu-content a {
     padding: 12px 24px 12px 40px;
     font-size: 12px;
   }
 
-  .submenu-content a:hover {
+  .header-kokos-submenu-content a:hover {
     padding-left: 48px;
   }
 }
 
 @media (max-width: 480px) {
-  .kokos-header-top {
+  .header-kokos-header-top {
     grid-template-columns: 90px 1fr auto;
     padding: 10px 15px;
   }
 
-  .kokos-logo-img {
+  .header-kokos-logo-img {
     max-height: 40px;
   }
 
-  .kokos-search input {
+  .header-kokos-search input {
     padding: 8px 14px;
     font-size: 12px;
   }
 
-  .kokos-menu {
+  .header-kokos-menu {
     width: 100%;
   }
 }

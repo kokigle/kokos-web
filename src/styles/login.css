@@ -246,7 +246,7 @@
 }
 
 .actions-header {
-  margin-bottom: 30px;
+  margin-bottom: 25px;
   position: relative;
   z-index: 1;
 }
@@ -270,6 +270,7 @@
   gap: 15px;
   position: relative;
   z-index: 1;
+  margin-bottom: 20px;
 }
 
 .action-card {
@@ -328,6 +329,34 @@
   line-height: 1.4;
 }
 
+/* Info Box */
+.login-info-box {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(10px);
+}
+
+.login-info-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.login-info-box p {
+  color: white;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  opacity: 0.95;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .login-split {
@@ -366,12 +395,12 @@
     padding: 15px;
   }
 
-  .action-icon {
+  .action-icons {
     width: 45px;
     height: 45px;
   }
 
-  .action-icon svg {
+  .action-icons svg {
     font-size: 20px;
   }
 
@@ -380,6 +409,18 @@
   }
 
   .action-content p {
+    font-size: 12px;
+  }
+
+  .login-info-box {
+    padding: 15px;
+  }
+
+  .login-info-icon {
+    font-size: 20px;
+  }
+
+  .login-info-box p {
     font-size: 12px;
   }
 }

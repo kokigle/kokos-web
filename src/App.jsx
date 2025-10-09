@@ -15,6 +15,7 @@ import NotFound from "./NotFound";
 import Home from "./Home";
 import Nosotros from "./Nosotros";
 import ScrollTop from "./ScrollTop";
+import Register from "./Register";
 import FloatingCartButton from "./FloatingCartButton";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { initializeApp } from "firebase/app";
@@ -73,36 +74,38 @@ export default function App() {
 
   const login = async (email, password) => {
     setLoading(true);
-    const clientsRef = collection(db, "clients");
-    const q = query(clientsRef, where("email", "==", email));
-    const snap = await getDocs(q);
+    try {
+      const auth = getAuth();
+      await signInWithEmailAndPassword(auth, email, password);
 
-    if (!snap.empty) {
-      const docu = snap.docs[0];
-      const data = docu.data();
-      const client = { id: docu.id, ...data };
+      const q = query(collection(db, "clients"), where("email", "==", email));
+      const querySnapshot = await getDocs(q);
 
-      if (!data.hasPassword) {
-        setLoading(false);
-        return { success: false, setPassword: true, client };
-      } else {
-        try {
-          const auth = getAuth();
-          await signInWithEmailAndPassword(auth, email, password);
+      if (!querySnapshot.empty) {
+        const clientDoc = querySnapshot.docs[0];
+        const clientData = { id: clientDoc.id, ...clientDoc.data() };
 
-          setUser(client);
-          localStorage.setItem("kokos_user", JSON.stringify(client));
-          setLoading(false);
-          return { success: true, client };
-        } catch {
-          setLoading(false);
-          return { success: false, message: "Contraseña incorrecta." };
+        // Verificar si la cuenta está pendiente
+        if (clientData.status === "pendiente") {
+          await auth.signOut();
+          return {
+            success: false,
+            message:
+              "Tu cuenta está pendiente de aprobación, te notificaremos por correo cuando sea activada.",
+          };
         }
-      }
-    }
 
-    setLoading(false);
-    return { success: false, message: "No estás registrado." };
+        setUser(clientData);
+        localStorage.setItem("kokos_user", JSON.stringify(clientData));
+        return { success: true, client: clientData };
+      }
+
+      return { success: false, message: "Usuario no encontrado" };
+    } catch (err) {
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
@@ -165,6 +168,14 @@ export default function App() {
               element={
                 <div className="container">
                   <Nosotros />
+                </div>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <div className="container">
+                  <Register />
                 </div>
               }
             />
