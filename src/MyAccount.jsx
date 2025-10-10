@@ -37,8 +37,8 @@ const AccountDashboard = ({ user }) => (
       ¡Hola, {user?.nombre || user?.razonSocial}!
     </p>
     <div className="my-account-status-badge">
-      <span>Tu nivel de cliente es:</span>
-      <strong>Estado {user?.state || 1}</strong>
+      <span>El estado actual de tu cuenta es:</span>
+      <strong>{user?.status}</strong>
     </div>
     <div className="my-account-quick-stats">
       <div className="my-account-stat-item">
