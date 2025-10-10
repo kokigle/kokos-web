@@ -13,7 +13,7 @@ body {
   max-width: 100vw;
 }
 
-.kokos-home {
+.home-kokos {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: #f8f9fa;
   width: 100%;
@@ -32,7 +32,7 @@ body {
   /* Eliminar min-height fijo, dejar que la imagen defina la altura */
 }
 
-.banner-slide {
+.home-banner-slide {
   width: 100%;
   position: absolute;
   top: 0;
@@ -43,13 +43,13 @@ body {
   z-index: 1;
 }
 
-.banner-slide.active {
+.home-banner-slide.home-active {
   opacity: 1;
   z-index: 2;
   position: relative; /* El activo es relativo para que defina la altura */
 }
 
-.banner-img {
+.home-banner-img {
   width: 100%;
   height: auto;
   display: block;
@@ -57,7 +57,7 @@ body {
   object-position: center;
 }
 
-.banner-overlay {
+.home-banner-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -75,19 +75,19 @@ body {
   transition: opacity 0.5s ease;
 }
 
-.banner-overlay.hide-text {
+.home-banner-overlay.home-hide-text {
   opacity: 0;
   pointer-events: none;
 }
 
-.banner-content {
+.home-banner-content {
   text-align: center;
   color: white;
   padding: 20px;
-  animation: fadeInUp 1s ease-out;
+  animation: home-fadeInUp 1s ease-out;
 }
 
-.banner-title {
+.home-banner-title {
   font-size: 56px;
   font-weight: 700;
   margin-bottom: 16px;
@@ -95,7 +95,7 @@ body {
   letter-spacing: -1px;
 }
 
-.banner-subtitle {
+.home-banner-subtitle {
   font-size: 24px;
   font-weight: 300;
   margin-bottom: 32px;
@@ -103,7 +103,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-.banner-cta {
+.home-banner-cta {
   display: inline-block;
   padding: 16px 48px;
   background: white;
@@ -118,7 +118,7 @@ body {
   letter-spacing: 1px;
 }
 
-.banner-cta:hover {
+.home-banner-cta:hover {
   background: #009ca6;
   color: white;
   transform: translateY(-3px);
@@ -126,7 +126,7 @@ body {
 }
 
 /* Navegación del Carrusel */
-.banner-nav {
+.home-banner-nav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -146,27 +146,27 @@ body {
   font-size: 28px;
 }
 
-.banner-nav:hover:not(:disabled) {
+.home-banner-nav:hover:not(:disabled) {
   background: white;
   transform: translateY(-50%) scale(1.1);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
 }
 
-.banner-nav:disabled {
+.home-banner-nav:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.banner-nav-prev {
+.home-banner-nav-prev {
   left: 30px;
 }
 
-.banner-nav-next {
+.home-banner-nav-next {
   right: 30px;
 }
 
 /* Indicadores del Carrusel */
-.banner-indicators {
+.home-banner-indicators {
   position: absolute;
   bottom: 30px;
   left: 50%;
@@ -176,7 +176,7 @@ body {
   z-index: 10;
 }
 
-.banner-indicator {
+.home-banner-indicator {
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -187,22 +187,22 @@ body {
   padding: 0;
 }
 
-.banner-indicator:hover:not(:disabled) {
+.home-banner-indicator:hover:not(:disabled) {
   background: rgba(19, 154, 243, 0.8);
   transform: scale(1.2);
 }
 
-.banner-indicator:disabled {
+.home-banner-indicator:disabled {
   cursor: not-allowed;
 }
 
-.banner-indicator.active {
+.home-banner-indicator.home-active {
   background: rgba(19, 154, 243, 0.8);
   width: 32px;
   border-radius: 6px;
 }
 
-.banner-loading {
+.home-banner-loading {
   width: 100%;
   height: 400px;
   display: flex;
@@ -213,7 +213,7 @@ body {
   font-weight: 600;
 }
 
-@keyframes fadeInUp {
+@keyframes home-fadeInUp {
   from {
     opacity: 0;
     transform: translateY(30px);
@@ -237,7 +237,7 @@ body {
   margin-top: -50px;
 }
 
-.values-image-container {
+.home-values-image-container {
   max-width: 1400px;
   width: 100%;
   opacity: 0;
@@ -245,12 +245,12 @@ body {
   transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.home-values.animate-in .values-image-container {
+.home-values.home-animate-in .home-values-image-container {
   opacity: 1;
   transform: translateY(0);
 }
 
-.values-main-image {
+.home-values-main-image {
   width: 100%;
   height: auto;
   border-radius: 24px;
@@ -268,7 +268,7 @@ body {
   margin-top: -100px;
 }
 
-.home-products .section-header {
+.home-products .home-section-header {
   text-align: center;
   max-width: 700px;
   margin: 0 auto 60px;
@@ -277,12 +277,12 @@ body {
   transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.home-products.animate-in .section-header {
+.home-products.home-animate-in .home-section-header {
   opacity: 1;
   transform: translateY(0);
 }
 
-.section-header h2 {
+.home-section-header h2 {
   font-size: 42px;
   font-weight: 700;
   color: #2c3e50;
@@ -290,13 +290,13 @@ body {
   letter-spacing: -1px;
 }
 
-.section-header p {
+.home-section-header p {
   font-size: 18px;
   color: #7f8c8d;
   font-weight: 400;
 }
 
-.products-grid {
+.home-products-grid {
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
@@ -304,31 +304,31 @@ body {
   gap: 40px;
 }
 
-.product-item {
+.home-product-item {
   opacity: 0;
   transform: translateY(60px);
   transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.home-products.animate-in .product-item:nth-child(1) {
+.home-products.home-animate-in .home-product-item:nth-child(1) {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 0.2s;
 }
 
-.home-products.animate-in .product-item:nth-child(2) {
+.home-products.home-animate-in .home-product-item:nth-child(2) {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 0.4s;
 }
 
-.home-products.animate-in .product-item:nth-child(3) {
+.home-products.home-animate-in .home-product-item:nth-child(3) {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 0.6s;
 }
 
-.product-image-container {
+.home-product-image-container {
   position: relative;
   border-radius: 20px;
   overflow: hidden;
@@ -336,14 +336,14 @@ body {
   aspect-ratio: 1;
 }
 
-.product-image {
+.home-product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.product-image-placeholder {
+.home-product-image-placeholder {
   width: 100%;
   aspect-ratio: 1;
   background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
@@ -356,7 +356,7 @@ body {
   font-weight: 600;
 }
 
-.product-hover-overlay {
+.home-product-hover-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -376,11 +376,11 @@ body {
   transition: opacity 0.4s ease;
 }
 
-.product-image-container:hover .product-hover-overlay {
+.home-product-image-container:hover .home-product-hover-overlay {
   opacity: 1;
 }
 
-.product-btn {
+.home-product-btn {
   padding: 16px 40px;
   background: white;
   color: #009ca6;
@@ -395,20 +395,20 @@ body {
   display: inline-block;
 }
 
-.product-btn:hover {
+.home-product-btn:hover {
   background: #2c3e50;
   color: white;
   transform: scale(1.08) translateY(-3px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-.product-btn.disabled {
+.home-product-btn.home-disabled {
   background: #e9ecef;
   color: #6c757d;
   cursor: not-allowed;
 }
 
-.product-btn.disabled:hover {
+.home-product-btn.home-disabled:hover {
   background: #e9ecef;
   color: #6c757d;
   transform: none;
@@ -426,7 +426,7 @@ body {
   margin-top: -100px;
 }
 
-.footer-image-container {
+.home-footer-image-container {
   max-width: 1400px;
   width: 100%;
   opacity: 0;
@@ -434,12 +434,12 @@ body {
   transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.home-footer-info.animate-in .footer-image-container {
+.home-footer-info.home-animate-in .home-footer-image-container {
   opacity: 1;
   transform: translateY(0);
 }
 
-.footer-main-image {
+.home-footer-main-image {
   width: 100%;
   height: auto;
   border-radius: 24px;
@@ -451,29 +451,29 @@ body {
    RESPONSIVE
 ========================= */
 @media (max-width: 1024px) {
-  .banner-title {
+  .home-banner-title {
     font-size: 48px;
   }
 
-  .banner-subtitle {
+  .home-banner-subtitle {
     font-size: 20px;
   }
 
-  .section-header h2 {
+  .home-section-header h2 {
     font-size: 36px;
   }
 
-  .banner-nav {
+  .home-banner-nav {
     width: 50px;
     height: 50px;
     font-size: 24px;
   }
 
-  .banner-nav-prev {
+  .home-banner-nav-prev {
     left: 20px;
   }
 
-  .banner-nav-next {
+  .home-banner-nav-next {
     right: 20px;
   }
 }
@@ -483,7 +483,7 @@ body {
     padding: 60px 5%;
   }
 
-  .values-main-image {
+  .home-values-main-image {
     border-radius: 16px;
   }
 
@@ -491,32 +491,32 @@ body {
     padding: 60px 5%;
   }
 
-  .section-header {
+  .home-section-header {
     margin-bottom: 40px;
   }
 
-  .section-header h2 {
+  .home-section-header h2 {
     font-size: 32px;
   }
 
-  .section-header p {
+  .home-section-header p {
     font-size: 16px;
   }
 
-  .products-grid {
+  .home-products-grid {
     grid-template-columns: 1fr;
     gap: 30px;
   }
 
-  .banner-title {
+  .home-banner-title {
     font-size: 36px;
   }
 
-  .banner-subtitle {
+  .home-banner-subtitle {
     font-size: 18px;
   }
 
-  .banner-cta {
+  .home-banner-cta {
     padding: 14px 36px;
     font-size: 16px;
   }
@@ -525,71 +525,71 @@ body {
     padding: 60px 5%;
   }
 
-  .footer-main-image {
+  .home-footer-main-image {
     border-radius: 16px;
   }
 
-  .product-hover-overlay {
+  .home-product-hover-overlay {
     opacity: 1;
   }
 
-  .banner-nav {
+  .home-banner-nav {
     width: 45px;
     height: 45px;
     font-size: 20px;
   }
 
-  .banner-nav-prev {
+  .home-banner-nav-prev {
     left: 15px;
   }
 
-  .banner-nav-next {
+  .home-banner-nav-next {
     right: 15px;
   }
 
-  .banner-indicators {
+  .home-banner-indicators {
     bottom: 20px;
     gap: 8px;
   }
 
-  .banner-indicator {
+  .home-banner-indicator {
     width: 10px;
     height: 10px;
   }
 
-  .banner-indicator.active {
+  .home-banner-indicator.home-active {
     width: 24px;
   }
 }
 
 @media (max-width: 480px) {
-  .banner-title {
+  .home-banner-title {
     font-size: 28px;
   }
 
-  .banner-subtitle {
+  .home-banner-subtitle {
     font-size: 16px;
     margin-bottom: 24px;
   }
 
-  .banner-cta {
+  .home-banner-cta {
     padding: 12px 28px;
     font-size: 14px;
   }
 
-  .section-header h2 {
+  .home-section-header h2 {
     font-size: 28px;
   }
 
-  .values-main-image {
+  .home-values-main-image {
     border-radius: 12px;
   }
 
-  .footer-main-image {
+  .home-footer-main-image {
     border-radius: 12px;
   }
 
-  .product-btn {
+  .home-product-btn {
     padding: 14px 32px;
     font-size: 14px;
   }
@@ -602,31 +602,31 @@ body {
     padding: 40px 5%;
   }
 
-  .banner-nav {
+  .home-banner-nav {
     width: 40px;
     height: 40px;
     font-size: 18px;
   }
 
-  .banner-nav-prev {
+  .home-banner-nav-prev {
     left: 10px;
   }
 
-  .banner-nav-next {
+  .home-banner-nav-next {
     right: 10px;
   }
 
-  .banner-indicators {
+  .home-banner-indicators {
     bottom: 15px;
     gap: 6px;
   }
 
-  .banner-indicator {
+  .home-banner-indicator {
     width: 8px;
     height: 8px;
   }
 
-  .banner-indicator.active {
+  .home-banner-indicator.home-active {
     width: 20px;
   }
 }

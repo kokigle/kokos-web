@@ -135,7 +135,7 @@ export default function Home() {
     const observerCallback = (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          entry.target.classList.add("animate-in");
+          entry.target.classList.add("home-animate-in");
         }
       });
     };
@@ -229,7 +229,7 @@ export default function Home() {
   const currentBanner = bannerImages[currentBannerIndex];
 
   return (
-    <div className="kokos-home">
+    <div className="home-kokos">
       {/* Banner Principal con Carrusel */}
       <section className="home-banner">
         {bannerImages.length > 0 ? (
@@ -237,11 +237,11 @@ export default function Home() {
             {/* Banner anterior (en transición de salida) */}
             {previousBannerIndex !== null &&
               bannerImages[previousBannerIndex] && (
-                <div className="banner-slide">
+                <div className="home-banner-slide">
                   <img
                     src={bannerImages[previousBannerIndex].url}
                     alt={`Banner ${previousBannerIndex + 1}`}
-                    className="banner-img"
+                    className="home-banner-img"
                   />
                 </div>
               )}
@@ -249,7 +249,7 @@ export default function Home() {
             {/* Banner actual (en transición de entrada) */}
             {currentBanner && (
               <div
-                className="banner-slide active"
+                className="home-banner-slide home-active"
                 onClick={handleBannerClick}
                 style={{
                   cursor:
@@ -261,19 +261,19 @@ export default function Home() {
                 <img
                   src={currentBanner.url}
                   alt={`Banner ${currentBannerIndex + 1}`}
-                  className="banner-img"
+                  className="home-banner-img"
                 />
                 <div
-                  className={`banner-overlay ${
-                    !showBannerText ? "hide-text" : ""
+                  className={`home-banner-overlay ${
+                    !showBannerText ? "home-hide-text" : ""
                   }`}
                 >
-                  <div className="banner-content">
-                    <h1 className="banner-title">BIENVENIDOS A KOKOS</h1>
-                    <p className="banner-subtitle">
+                  <div className="home-banner-content">
+                    <h1 className="home-banner-title">BIENVENIDOS A KOKOS</h1>
+                    <p className="home-banner-subtitle">
                       Calidad y variedad en juguetes
                     </p>
-                    <Link to="/products" className="banner-cta">
+                    <Link to="/products" className="home-banner-cta">
                       Ver Productos
                     </Link>
                   </div>
@@ -284,7 +284,7 @@ export default function Home() {
             {bannerImages.length > 1 && (
               <>
                 <button
-                  className="banner-nav banner-nav-prev"
+                  className="home-banner-nav home-banner-nav-prev"
                   onClick={handlePrevBanner}
                   aria-label="Imagen anterior"
                   disabled={isTransitioning}
@@ -292,7 +292,7 @@ export default function Home() {
                   <Previous />
                 </button>
                 <button
-                  className="banner-nav banner-nav-next"
+                  className="home-banner-nav home-banner-nav-next"
                   onClick={() => handleNextBanner(false)}
                   aria-label="Imagen siguiente"
                   disabled={isTransitioning}
@@ -300,12 +300,12 @@ export default function Home() {
                   <Next />
                 </button>
 
-                <div className="banner-indicators">
+                <div className="home-banner-indicators">
                   {bannerImages.map((_, index) => (
                     <button
                       key={index}
-                      className={`banner-indicator ${
-                        index === currentBannerIndex ? "active" : ""
+                      className={`home-banner-indicator ${
+                        index === currentBannerIndex ? "home-active" : ""
                       }`}
                       onClick={() => handleIndicatorClick(index)}
                       aria-label={`Ir a imagen ${index + 1}`}
@@ -317,7 +317,7 @@ export default function Home() {
             )}
           </>
         ) : (
-          <div className="banner-loading">
+          <div className="home-banner-loading">
             <p>Cargando...</p>
           </div>
         )}
@@ -325,47 +325,47 @@ export default function Home() {
 
       {/* Sección de Servicios y Envíos - Imagen Principal */}
       <section className="home-values" ref={valuesRef}>
-        <div className="values-image-container">
+        <div className="home-values-image-container">
           <img
             src={serviciosEnvios}
             alt="Servicios y Envíos Kokos"
-            className="values-main-image"
+            className="home-values-main-image"
           />
         </div>
       </section>
 
       {/* Sección de Productos - Diseño Nuevo */}
       <section className="home-products" ref={productsRef}>
-        <div className="section-header">
+        <div className="home-section-header">
           <h2>Nuestras Categorías</h2>
           <p>Descubrí nuestra selección de productos</p>
         </div>
-        <div className="products-grid">
+        <div className="home-products-grid">
           {["img1", "img2", "img3"].map((key, index) => {
             const category = categoryImages[key];
             const redirectPath = getRedirectPath(category?.redirect);
 
             return (
-              <div key={key} className="product-item">
+              <div key={key} className="home-product-item">
                 {category?.url ? (
-                  <div className="product-image-container">
+                  <div className="home-product-image-container">
                     <img
                       src={category.url}
                       alt={`Categoría ${index + 1}`}
-                      className="product-image"
+                      className="home-product-image"
                     />
-                    <div className="product-hover-overlay">
+                    <div className="home-product-hover-overlay">
                       {redirectPath ? (
-                        <Link to={redirectPath} className="product-btn">
+                        <Link to={redirectPath} className="home-product-btn">
                           Ver Más
                         </Link>
                       ) : (
-                        <span className="product-btn disabled">Ver Más</span>
+                        <span className="home-product-btn home-disabled">Ver Más</span>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div className="product-image-placeholder">
+                  <div className="home-product-image-placeholder">
                     <p>Categoría {index + 1}</p>
                   </div>
                 )}
@@ -377,11 +377,11 @@ export default function Home() {
 
       {/* Footer Info - Imagen Principal */}
       <section className="home-footer-info" ref={footerRef}>
-        <div className="footer-image-container">
+        <div className="home-footer-image-container">
           <img
             src={envioAtencion}
             alt="Envío y Atención Kokos"
-            className="footer-main-image"
+            className="home-footer-main-image"
           />
         </div>
       </section>
