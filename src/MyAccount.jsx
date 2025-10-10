@@ -78,10 +78,6 @@ const AccountDashboard = ({ user, orders }) => {
           <span>Historial de Pedidos</span>
           <strong>{historicalOrders}</strong>
         </div>
-        <div className="my-account-stat-item my-account-stat-item-full">
-          <span>Total Gastado</span>
-          <strong>{formatMoney(totalSpent)}</strong>
-        </div>
       </div>
     </div>
   );
