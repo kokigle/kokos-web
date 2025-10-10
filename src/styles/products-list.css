@@ -639,4 +639,18 @@
   .products-sort-section label {
     display: none;
   }
+  .products-list-name {
+    font-size: 15px; /* Reducimos el tamaño de la fuente del nombre */
+    min-height: 40px;
+    max-height: 40px;
+  }
+
+  .products-list-price {
+    font-size: 20px; /* Reducimos el tamaño de la fuente del precio */
+  }
+
+  .products-list-btn-buy {
+    padding: 12px 20px; /* Hacemos el botón un poco más pequeño */
+    font-size: 14px;
+  }
 }

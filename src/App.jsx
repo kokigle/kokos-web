@@ -6,7 +6,6 @@ import { WhatsappIcon } from "./icons/WhatsappIcon";
 import Header from "./Header";
 import Footer from "./Footer";
 import Login from "./Login";
-import SetPassword from "./SetPassword";
 import ProductsList from "./ProductsList";
 import ProductPage from "./ProductPage";
 import CartPage from "./CartPage";
@@ -16,6 +15,7 @@ import Home from "./Home";
 import Nosotros from "./Nosotros";
 import ScrollTop from "./ScrollTop";
 import Register from "./Register";
+import MyAccount from "./MyAccount";
 import FloatingCartButton from "./FloatingCartButton";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { initializeApp } from "firebase/app";
@@ -188,10 +188,10 @@ export default function App() {
               }
             />
             <Route
-              path="/set-password"
+              path="/my-account/*"
               element={
                 <div className="container">
-                  <SetPassword />
+                  <MyAccount />
                 </div>
               }
             />

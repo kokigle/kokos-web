@@ -119,11 +119,19 @@ export default function Header() {
               <div className="header-kokos-user-menu">
                 <div className="header-kokos-user-menu-header">
                   <span className="header-kokos-user-email-display">
-                    {user.email}
+                    {user.razonSocial}
                   </span>
                 </div>
+                {/* NUEVO ENLACE A MI CUENTA */}
                 <Link
-                  to="/orders"
+                  to="/my-account"
+                  className="header-kokos-user-menu-item"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Mi Cuenta
+                </Link>
+                <Link
+                  to="/my-account/orders"
                   className="header-kokos-user-menu-item"
                   onClick={() => setMobileMenuOpen(false)}
                 >
