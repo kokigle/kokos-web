@@ -12,6 +12,7 @@ import {
   getDoc,
   query,
   orderBy,
+  writeBatch,
 } from "firebase/firestore";
 import { uploadImage } from "./cloudinary";
 import { db } from "./App";
@@ -50,7 +51,7 @@ export default function AdminPanel() {
   // Estados para gestión de pedidos
   const [ordersTab, setOrdersTab] = useState("pending");
   const [expandedOrder, setExpandedOrder] = useState(null);
-  const [orderSearch, setOrderSearch] = useState(""); // <-- NUEVO ESTADO PARA BÚSQUEDA
+  const [orderSearch, setOrderSearch] = useState("");
 
   // Estados de filtros
   const [clientSearch, setClientSearch] = useState("");
@@ -66,6 +67,13 @@ export default function AdminPanel() {
     img3: { url: "", redirect: "" },
   });
   const [draggedIndex, setDraggedIndex] = useState(null);
+
+  // Estados para aumento de precios
+  const [increasePercentage, setIncreasePercentage] = useState(0);
+  const [roundingZeros, setRoundingZeros] = useState(0);
+  const [priceCategoryFilter, setPriceCategoryFilter] = useState("");
+  const [priceSubcategoryFilter, setPriceSubcategoryFilter] = useState("");
+  const [pricePreview, setPricePreview] = useState([]);
 
   const scrollTop = () => {
     if (mainContentRef.current) {
@@ -122,8 +130,9 @@ export default function AdminPanel() {
       setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    const unsubProducts = onSnapshot(collection(db, "products"), (snap) =>
-      setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const unsubProducts = onSnapshot(
+      query(collection(db, "products"), orderBy("name")),
+      (snap) => setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
     const unsubCategories = onSnapshot(collection(db, "categories"), (snap) =>
@@ -295,6 +304,92 @@ export default function AdminPanel() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getFilteredProductsForPriceIncrease = () => {
+    return products.filter((p) => {
+      const matchCategory =
+        !priceCategoryFilter || p.category === priceCategoryFilter;
+      const matchSubcategory =
+        !priceSubcategoryFilter || p.subcategory === priceSubcategoryFilter;
+      return matchCategory && matchSubcategory;
+    });
+  };
+  const handlePricePreview = () => {
+    if (increasePercentage === 0) {
+      showNotification("El porcentaje debe ser mayor a 0", "error");
+      return;
+    }
+    const filtered = getFilteredProductsForPriceIncrease();
+    const factor = 1 + increasePercentage / 100;
+    const roundingFactor = Math.pow(10, roundingZeros);
+
+    const previewData = filtered.map((product) => {
+      const newPrice1 = product.price_state1 * factor;
+      const newPrice2 = product.price_state2 * factor;
+
+      const roundedPrice1 =
+        Math.round(newPrice1 / roundingFactor) * roundingFactor;
+      const roundedPrice2 =
+        Math.round(newPrice2 / roundingFactor) * roundingFactor;
+      return {
+        id: product.id,
+        name: product.name,
+        oldPrice1: product.price_state1,
+        newPrice1: roundedPrice1,
+        oldPrice2: product.price_state2,
+        newPrice2: roundedPrice2,
+      };
+    });
+    setPricePreview(previewData);
+  };
+  const handlePriceIncrease = async () => {
+    if (increasePercentage === 0) {
+      showNotification("El porcentaje debe ser mayor a 0", "error");
+      return;
+    }
+
+    const productsToUpdate = getFilteredProductsForPriceIncrease();
+
+    showConfirm(
+      `¿Estás seguro de que deseas aumentar los precios de ${productsToUpdate.length} productos en un ${increasePercentage}%? Esta acción es irreversible.`,
+      async () => {
+        setLoading(true);
+        try {
+          const batch = writeBatch(db);
+          const factor = 1 + increasePercentage / 100;
+          const roundingFactor = Math.pow(10, roundingZeros);
+
+          productsToUpdate.forEach((product) => {
+            const newPrice1 = product.price_state1 * factor;
+            const newPrice2 = product.price_state2 * factor;
+
+            const roundedPrice1 =
+              Math.round(newPrice1 / roundingFactor) * roundingFactor;
+            const roundedPrice2 =
+              Math.round(newPrice2 / roundingFactor) * roundingFactor;
+
+            const productRef = doc(db, "products", product.id);
+            batch.update(productRef, {
+              price_state1: roundedPrice1,
+              price_state2: roundedPrice2,
+            });
+          });
+
+          await batch.commit();
+          showNotification(
+            `Precios actualizados para ${productsToUpdate.length} productos`,
+            "success"
+          );
+          setPricePreview([]);
+        } catch (error) {
+          console.error("Error al actualizar precios:", error);
+          showNotification("Error al actualizar precios", "error");
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
   };
 
   const toggleStock = async (id, stock) => {
@@ -660,6 +755,12 @@ export default function AdminPanel() {
             }}
           >
             ➕ Agregar Producto
+          </button>
+          <button
+            className={view === "increasePrices" ? "admin-panel-active" : ""}
+            onClick={() => setView("increasePrices")}
+          >
+            💲 Aumento de Precios
           </button>
           <button
             className={view === "categories" ? "admin-panel-active" : ""}
@@ -1316,6 +1417,122 @@ export default function AdminPanel() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {view === "increasePrices" && (
+          <div className="admin-panel-card">
+            <h2 className="admin-panel-title">Aumento de Precios General</h2>
+            <div className="admin-panel-form-section">
+              <h3 className="admin-panel-section-title">
+                Configuración de Aumento
+              </h3>
+              <div className="admin-panel-form-grid">
+                <div className="admin-panel-form-group">
+                  <label>Porcentaje de Aumento (%)</label>
+                  <input
+                    type="number"
+                    value={increasePercentage}
+                    onChange={(e) => setIncreasePercentage(e.target.value)}
+                    placeholder="Ej: 15"
+                  />
+                </div>
+                <div className="admin-panel-form-group">
+                  <label>Redondear a (cantidad de ceros)</label>
+                  <select
+                    value={roundingZeros}
+                    onChange={(e) => setRoundingZeros(Number(e.target.value))}
+                  >
+                    <option value={0}>Sin redondeo (ej: $123)</option>
+                    <option value={1}>Terminación en 0 (ej: $120)</option>
+                    <option value={2}>Terminación en 00 (ej: $100)</option>
+                    <option value={3}>Terminación en 000 (ej: $1000)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="admin-panel-filter-row">
+                <select
+                  value={priceCategoryFilter}
+                  onChange={(e) => {
+                    setPriceCategoryFilter(e.target.value);
+                    setPriceSubcategoryFilter("");
+                    setPricePreview([]);
+                  }}
+                  className="admin-panel-filter-select"
+                >
+                  <option value="">Todas las categorías</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={priceSubcategoryFilter}
+                  onChange={(e) => {
+                    setPriceSubcategoryFilter(e.target.value);
+                    setPricePreview([]);
+                  }}
+                  className="admin-panel-filter-select"
+                  disabled={!priceCategoryFilter}
+                >
+                  <option value="">Todas las subcategorías</option>
+                  {categories
+                    .find((c) => c.name === priceCategoryFilter)
+                    ?.subcategories?.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div className="admin-panel-form-actions">
+                <button
+                  onClick={handlePricePreview}
+                  className="admin-panel-btn-cancel"
+                  disabled={loading}
+                >
+                  Previsualizar Cambios
+                </button>
+                <button
+                  onClick={handlePriceIncrease}
+                  className="admin-panel-btn-submit"
+                  disabled={loading || pricePreview.length === 0}
+                >
+                  {loading ? "Actualizando..." : "Aplicar Aumento"}
+                </button>
+              </div>
+            </div>
+            {pricePreview.length > 0 && (
+              <div className="admin-panel-form-section">
+                <h3 className="admin-panel-section-title">
+                  Previsualización de Precios ({pricePreview.length} productos)
+                </h3>
+                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>Precio 1 Actual</th>
+                        <th>Precio 1 Nuevo</th>
+                        <th>Precio 2 Actual</th>
+                        <th>Precio 2 Nuevo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pricePreview.map((p) => (
+                        <tr key={p.id}>
+                          <td>{p.name}</td>
+                          <td>{formatMoney(p.oldPrice1)}</td>
+                          <td>{formatMoney(p.newPrice1)}</td>
+                          <td>{formatMoney(p.oldPrice2)}</td>
+                          <td>{formatMoney(p.newPrice2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
