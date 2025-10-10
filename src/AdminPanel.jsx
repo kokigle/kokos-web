@@ -10,11 +10,17 @@ import {
   arrayRemove,
   setDoc,
   getDoc,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { uploadImage } from "./cloudinary";
 import { db } from "./App";
 import ProductForm from "./ProductForm";
 import "./styles/admin-panel.css";
+
+// Helper para formatear dinero
+const formatMoney = (n) =>
+  `$${Number(n).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
 
 export default function AdminPanel() {
   const mainContentRef = useRef(null);
@@ -27,6 +33,7 @@ export default function AdminPanel() {
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [orders, setOrders] = useState([]);
 
   // Estados de UI
   const [view, setView] = useState("dashboard");
@@ -35,10 +42,15 @@ export default function AdminPanel() {
   const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
-  // NUEVO: Estados para gestión de clientes
-  const [clientsTab, setClientsTab] = useState("pendientes"); // "pendientes" o "aprobados"
+  // Estados para gestión de clientes
+  const [clientsTab, setClientsTab] = useState("pendientes");
   const [expandedClient, setExpandedClient] = useState(null);
   const [approvalState, setApprovalState] = useState(1);
+
+  // Estados para gestión de pedidos
+  const [ordersTab, setOrdersTab] = useState("pending");
+  const [expandedOrder, setExpandedOrder] = useState(null);
+  const [orderSearch, setOrderSearch] = useState(""); // <-- NUEVO ESTADO PARA BÚSQUEDA
 
   // Estados de filtros
   const [clientSearch, setClientSearch] = useState("");
@@ -118,6 +130,14 @@ export default function AdminPanel() {
       setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
+    const qOrders = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    );
+    const unsubOrders = onSnapshot(qOrders, (snap) =>
+      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    );
+
     const unsubBanner = onSnapshot(
       collection(db, "images/banner_images/urls"),
       (snap) => {
@@ -147,6 +167,7 @@ export default function AdminPanel() {
       unsubClients();
       unsubProducts();
       unsubCategories();
+      unsubOrders();
       unsubBanner();
     };
   }, [authed]);
@@ -160,7 +181,7 @@ export default function AdminPanel() {
     }
   };
 
-  // NUEVO: Funciones para gestión de usuarios pendientes
+  // Funciones para gestión de usuarios pendientes
   const approveClient = async (clientId) => {
     showConfirm(
       `¿Aprobar este usuario con Estado ${approvalState}?`,
@@ -202,6 +223,16 @@ export default function AdminPanel() {
         await deleteDoc(doc(db, "clients", id));
         showNotification("Cliente eliminado");
         setExpandedClient(null);
+      }
+    );
+  };
+  // Funciones de Pedidos
+  const updateOrderStatus = async (orderId, newStatus) => {
+    showConfirm(
+      `¿Cambiar el estado de este pedido a "${newStatus}"?`,
+      async () => {
+        await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+        showNotification(`Pedido actualizado a "${newStatus}"`);
       }
     );
   };
@@ -472,7 +503,7 @@ export default function AdminPanel() {
     return options;
   };
 
-  // NUEVO: Filtrar clientes pendientes y aprobados
+  // Filtrar clientes pendientes y aprobados
   const pendingClients = clients.filter(
     (c) =>
       c.status === "pendiente" &&
@@ -500,6 +531,23 @@ export default function AdminPanel() {
     const matchCategory = !filterCategory || p.category === filterCategory;
     const matchSub = !filterSubcategory || p.subcategory === filterSubcategory;
     return matchSearch && matchCategory && matchSub;
+  });
+  // Filtrar pedidos por estado y búsqueda
+  const filteredOrders = orders.filter((order) => {
+    if (order.status !== ordersTab) return false;
+
+    if (orderSearch.trim() === "") return true;
+
+    const searchTerm = orderSearch.toLowerCase();
+    const client = clients.find((c) => c.id === order.clientId);
+
+    const matchOrderId = order.id.toLowerCase().includes(searchTerm);
+    const matchClientName = client?.razonSocial
+      ?.toLowerCase()
+      .includes(searchTerm);
+    const matchClientEmail = client?.email?.toLowerCase().includes(searchTerm);
+
+    return matchOrderId || matchClientName || matchClientEmail;
   });
 
   // Pantalla de login
@@ -591,6 +639,12 @@ export default function AdminPanel() {
             }}
           >
             👥 Clientes
+          </button>
+          <button
+            className={view === "orders" ? "admin-panel-active" : ""}
+            onClick={() => setView("orders")}
+          >
+            🛒 Pedidos
           </button>
           <button
             className={view === "products" ? "admin-panel-active" : ""}
@@ -976,6 +1030,193 @@ export default function AdminPanel() {
                 </div>
               </>
             )}
+          </div>
+        )}
+        {view === "orders" && (
+          <div className="admin-panel-card">
+            <h2 className="admin-panel-title">Gestión de Pedidos</h2>
+            <div className="admin-panel-clients-tabs">
+              <button
+                className={`admin-panel-clients-tab ${
+                  ordersTab === "pending"
+                    ? "admin-panel-clients-tab-active"
+                    : ""
+                }`}
+                onClick={() => setOrdersTab("pending")}
+              >
+                Pendientes (
+                {orders.filter((o) => o.status === "pending").length})
+              </button>
+              <button
+                className={`admin-panel-clients-tab ${
+                  ordersTab === "in_progress"
+                    ? "admin-panel-clients-tab-active"
+                    : ""
+                }`}
+                onClick={() => setOrdersTab("in_progress")}
+              >
+                En Proceso (
+                {orders.filter((o) => o.status === "in_progress").length})
+              </button>
+              <button
+                className={`admin-panel-clients-tab ${
+                  ordersTab === "completed"
+                    ? "admin-panel-clients-tab-active"
+                    : ""
+                }`}
+                onClick={() => setOrdersTab("completed")}
+              >
+                Completados (
+                {orders.filter((o) => o.status === "completed").length})
+              </button>
+              <button
+                className={`admin-panel-clients-tab ${
+                  ordersTab === "cancelled"
+                    ? "admin-panel-clients-tab-active"
+                    : ""
+                }`}
+                onClick={() => setOrdersTab("cancelled")}
+              >
+                Cancelados (
+                {orders.filter((o) => o.status === "cancelled").length})
+              </button>
+            </div>
+            {/* **NUEVO: Barra de Búsqueda de Pedidos** */}
+            <div className="admin-panel-search-box">
+              <input
+                type="text"
+                placeholder="🔍 Buscar por N° de pedido, razón social o email..."
+                value={orderSearch}
+                onChange={(e) => setOrderSearch(e.target.value)}
+                className="admin-panel-search-input"
+              />
+            </div>
+            <div className="admin-panel-orders-list">
+              {filteredOrders.length === 0 ? (
+                <div className="admin-panel-empty-state">
+                  <p>No hay pedidos que coincidan con la búsqueda.</p>
+                </div>
+              ) : (
+                filteredOrders.map((order) => {
+                  const client = clients.find((c) => c.id === order.clientId);
+                  const total = order.items.reduce(
+                    (sum, item) => sum + item.price * item.qty,
+                    0
+                  );
+                  return (
+                    <div key={order.id} className="admin-panel-order-card">
+                      <div
+                        className="admin-panel-order-summary"
+                        onClick={() =>
+                          setExpandedOrder(
+                            expandedOrder === order.id ? null : order.id
+                          )
+                        }
+                      >
+                        <div className="admin-panel-order-main-info">
+                          <h4>
+                            Pedido #{order.id.substring(0, 7).toUpperCase()}
+                          </h4>
+                          <p>{client?.razonSocial || order.clientEmail}</p>
+                          <span>
+                            {new Date(order.createdAt).toLocaleDateString(
+                              "es-AR"
+                            )}
+                          </span>
+                        </div>
+                        <div className="admin-panel-order-meta">
+                          <span>{order.items.length} items</span>
+                          <strong>{formatMoney(total)}</strong>
+                          <div
+                            className={`admin-panel-order-status-badge admin-panel-order-status-${order.status}`}
+                          >
+                            {order.status.replace("_", " ")}
+                          </div>
+                        </div>
+                        <div className="admin-panel-expand-icon">
+                          {expandedOrder === order.id ? "▲" : "▼"}
+                        </div>
+                      </div>
+                      {expandedOrder === order.id && (
+                        <div className="admin-panel-order-details">
+                          <h5>Detalle del Cliente</h5>
+                          <div className="admin-panel-order-client-details">
+                            <p>
+                              <strong>Razón Social:</strong>{" "}
+                              {client?.razonSocial}
+                            </p>
+                            <p>
+                              <strong>Email:</strong> {client?.email}
+                            </p>
+                            <p>
+                              <strong>Teléfono:</strong> {client?.telefonoMovil}
+                            </p>
+                          </div>
+                          <h5>Productos</h5>
+                          <div className="admin-panel-order-items-list">
+                            {order.items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="admin-panel-order-item"
+                              >
+                                <img src={item.image} alt={item.name} />
+                                <div className="admin-panel-order-item-info">
+                                  <span>{item.name}</span>
+                                  <small>Código: {item.code}</small>
+                                </div>
+                                <div className="admin-panel-order-item-pricing">
+                                  <span>
+                                    {item.qty} x {formatMoney(item.price)}
+                                  </span>
+                                  <strong>
+                                    {formatMoney(item.qty * item.price)}
+                                  </strong>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="admin-panel-order-actions">
+                            <h5>Cambiar Estado</h5>
+                            <div className="admin-panel-order-status-buttons">
+                              {order.status !== "in_progress" && (
+                                <button
+                                  onClick={() =>
+                                    updateOrderStatus(order.id, "in_progress")
+                                  }
+                                  className="admin-panel-btn-small"
+                                >
+                                  A "En Proceso"
+                                </button>
+                              )}
+                              {order.status !== "completed" && (
+                                <button
+                                  onClick={() =>
+                                    updateOrderStatus(order.id, "completed")
+                                  }
+                                  className="admin-panel-btn-small admin-panel-btn-approve"
+                                >
+                                  A "Completado"
+                                </button>
+                              )}
+                              {order.status !== "cancelled" && (
+                                <button
+                                  onClick={() =>
+                                    updateOrderStatus(order.id, "cancelled")
+                                  }
+                                  className="admin-panel-btn-small admin-panel-btn-danger"
+                                >
+                                  A "Cancelado"
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         )}
 

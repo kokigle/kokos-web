@@ -22,66 +22,74 @@ import {
   orderBy,
 } from "firebase/firestore";
 
-// --- IMPORTACIONES PARA PDF (CORREGIDAS) ---
+// --- IMPORTACIONES PARA PDF ---
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // <-- Cambio clave: importamos la función directamente
+import autoTable from "jspdf-autotable";
 import logo from "./assets/logo.png";
 
+import {
+  FaUserCircle,
+  FaClipboardList,
+  FaUserEdit,
+  FaShieldAlt,
+  FaSignOutAlt,
+  FaFilePdf,
+  FaArrowLeft,
+  FaShoppingBag,
+  FaHistory,
+} from "react-icons/fa";
 import "./styles/my-account.css";
 
 // --- Sub-componente para el Resumen ---
-const AccountDashboard = ({ user }) => (
-  <div className="my-account-widget">
-    <h3 className="my-account-widget-title">Resumen de la Cuenta</h3>
-    <p className="my-account-welcome-message">
-      ¡Hola, {user?.nombre || user?.razonSocial}!
-    </p>
-    <div className="my-account-status-badge">
-      <span>El estado actual de tu cuenta es:</span>
-      <strong>{user?.status}</strong>
-    </div>
-    <div className="my-account-quick-stats">
-      <div className="my-account-stat-item">
-        <span>Pedidos Activos</span>
-        <strong>0</strong>
-      </div>
-      <div className="my-account-stat-item">
-        <span>Pedidos Históricos</span>
-        <strong>0</strong>
-      </div>
-    </div>
-  </div>
-);
+const AccountDashboard = ({ user, orders }) => {
+  const activeOrders = orders.filter(
+    (o) => o.status === "pending" || o.status === "in_progress"
+  ).length;
+  const historicalOrders = orders.filter(
+    (o) => o.status === "completed" || o.status === "cancelled"
+  ).length;
+  const totalSpent = orders
+    .filter((o) => o.status === "completed")
+    .reduce(
+      (acc, order) =>
+        acc + order.items.reduce((sum, item) => sum + item.price * item.qty, 0),
+      0
+    );
 
-// --- Sub-componente para MIS PEDIDOS (CON CÓDIGO CORREGIDO) ---
-const AccountOrders = () => {
-  const { user } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  return (
+    <div className="my-account-widget">
+      <h3 className="my-account-widget-title">Resumen de la Cuenta</h3>
+      <p className="my-account-welcome-message">
+        ¡Hola, <strong>{user?.nombre || user?.razonSocial}</strong>! Desde aquí
+        puedes gestionar tu cuenta y tus pedidos.
+      </p>
+      <div className="my-account-status-badge">
+        <span>Tu cuenta está:</span>
+        <strong>{user?.status}</strong>
+      </div>
+      <div className="my-account-quick-stats">
+        <div className="my-account-stat-item">
+          <FaShoppingBag />
+          <span>Pedidos Activos</span>
+          <strong>{activeOrders}</strong>
+        </div>
+        <div className="my-account-stat-item">
+          <FaHistory />
+          <span>Historial de Pedidos</span>
+          <strong>{historicalOrders}</strong>
+        </div>
+        <div className="my-account-stat-item my-account-stat-item-full">
+          <span>Total Gastado</span>
+          <strong>{formatMoney(totalSpent)}</strong>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Sub-componente para MIS PEDIDOS ---
+const AccountOrders = ({ orders, loading, user }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    setLoading(true);
-    const ordersRef = collection(db, "orders");
-    const q = query(
-      ordersRef,
-      where("clientId", "==", user.id),
-      orderBy("createdAt", "desc")
-    );
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        setOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error fetching orders: ", error);
-        setLoading(false);
-      }
-    );
-    return () => unsubscribe();
-  }, [user]);
 
   const downloadOrderAsPDF = (order, client) => {
     try {
@@ -247,27 +255,29 @@ const AccountOrders = () => {
           onClick={() => setSelectedOrder(null)}
           className="my-account-back-button"
         >
-          ← Volver a Mis Pedidos
+          <FaArrowLeft /> Volver a Mis Pedidos
         </button>
         <div>
           <h3 className="my-account-widget-title" style={{ marginTop: "20px" }}>
-            Detalle del Pedido #{selectedOrder.id.substring(0, 7)}
+            Detalle del Pedido #{selectedOrder.id.substring(0, 7).toUpperCase()}
           </h3>
           <div className="my-account-order-detail-meta">
             <div>
-              <span>Fecha:</span>{" "}
-              {new Date(selectedOrder.createdAt).toLocaleDateString("es-AR")}
-            </div>
-            <div>
-              <span>Estado:</span>{" "}
-              <strong
-                className={`my-account-order-status my-account-order-status-${selectedOrder.status}`}
-              >
-                {selectedOrder.status}
+              <span>Fecha:</span>
+              <strong>
+                {new Date(selectedOrder.createdAt).toLocaleDateString("es-AR")}
               </strong>
             </div>
             <div>
-              <span>Total:</span> <strong>${formatMoney(total)}</strong>
+              <span>Estado:</span>
+              <strong
+                className={`my-account-order-status my-account-order-status-${selectedOrder.status}`}
+              >
+                {selectedOrder.status.replace("_", " ")}
+              </strong>
+            </div>
+            <div>
+              <span>Total:</span> <strong>{formatMoney(total)}</strong>
             </div>
           </div>
           <div className="my-account-order-detail-items">
@@ -283,25 +293,22 @@ const AccountOrders = () => {
                     {item.name}
                   </span>
                   <span className="my-account-order-item-qty">
-                    {item.qty} x ${formatMoney(item.price)}
+                    {item.qty} x {formatMoney(item.price)}
                   </span>
                 </div>
                 <span className="my-account-order-item-subtotal">
-                  ${formatMoney(item.price * item.qty)}
+                  {formatMoney(item.price * item.qty)}
                 </span>
               </div>
             ))}
           </div>
         </div>
-        <div
-          className="my-account-form-actions"
-          style={{ marginTop: "24px", justifyContent: "flex-start" }}
-        >
+        <div className="my-account-form-actions">
           <button
             onClick={() => downloadOrderAsPDF(selectedOrder, user)}
             className="my-account-button"
           >
-            Descargar como PDF
+            <FaFilePdf /> Descargar PDF
           </button>
         </div>
       </div>
@@ -330,7 +337,7 @@ const AccountOrders = () => {
               >
                 <div className="my-account-order-info">
                   <span className="my-account-order-id">
-                    Pedido #{order.id.substring(0, 7)}
+                    Pedido #{order.id.substring(0, 7).toUpperCase()}
                   </span>
                   <span className="my-account-order-date">
                     {new Date(order.createdAt).toLocaleDateString("es-AR")}
@@ -340,10 +347,10 @@ const AccountOrders = () => {
                   <span
                     className={`my-account-order-status my-account-order-status-${order.status}`}
                   >
-                    {order.status}
+                    {order.status.replace("_", " ")}
                   </span>
                   <span className="my-account-order-total">
-                    ${formatMoney(total)}
+                    {formatMoney(total)}
                   </span>
                 </div>
               </div>
@@ -357,6 +364,7 @@ const AccountOrders = () => {
 
 // --- Sub-componente DATOS DE LA CUENTA ---
 const AccountDetails = ({ user }) => (
+  // ... (sin cambios funcionales, pero se beneficiará de los nuevos estilos)
   <div className="my-account-widget">
     <h3 className="my-account-widget-title">Datos de la Cuenta</h3>
     <form className="my-account-form">
@@ -436,6 +444,7 @@ const AccountDetails = ({ user }) => (
 
 // --- Sub-componente SEGURIDAD ---
 const AccountSecurity = () => {
+  // ... (sin cambios funcionales, pero se beneficiará de los nuevos estilos)
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -540,6 +549,27 @@ const AccountSecurity = () => {
 export default function MyAccount() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setLoadingOrders(true);
+    const q = query(
+      collection(db, "orders"),
+      where("clientId", "==", user.id),
+      orderBy("createdAt", "desc")
+    );
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setLoadingOrders(false);
+      },
+      () => setLoadingOrders(false)
+    );
+    return () => unsubscribe();
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -554,6 +584,13 @@ export default function MyAccount() {
     <div className="my-account-container">
       <div className="my-account-layout">
         <aside className="my-account-sidebar">
+          <div className="my-account-user-profile">
+            <FaUserCircle className="my-account-user-avatar" />
+            <div className="my-account-user-info">
+              <h4>{user.nombre || user.razonSocial}</h4>
+              <p>{user.email}</p>
+            </div>
+          </div>
           <nav className="my-account-nav">
             <NavLink
               to="/my-account"
@@ -564,7 +601,7 @@ export default function MyAccount() {
                   : "my-account-nav-link"
               }
             >
-              Resumen
+              <FaUserCircle /> Resumen
             </NavLink>
             <NavLink
               to="/my-account/orders"
@@ -574,7 +611,7 @@ export default function MyAccount() {
                   : "my-account-nav-link"
               }
             >
-              Mis Pedidos
+              <FaClipboardList /> Mis Pedidos
             </NavLink>
             <NavLink
               to="/my-account/details"
@@ -584,7 +621,7 @@ export default function MyAccount() {
                   : "my-account-nav-link"
               }
             >
-              Datos de la Cuenta
+              <FaUserEdit /> Datos de la Cuenta
             </NavLink>
             <NavLink
               to="/my-account/security"
@@ -594,20 +631,32 @@ export default function MyAccount() {
                   : "my-account-nav-link"
               }
             >
-              Seguridad
+              <FaShieldAlt /> Seguridad
             </NavLink>
             <button
               onClick={handleLogout}
               className="my-account-nav-link my-account-logout-button"
             >
-              Cerrar Sesión
+              <FaSignOutAlt /> Cerrar Sesión
             </button>
           </nav>
         </aside>
         <main className="my-account-content">
           <Routes>
-            <Route index element={<AccountDashboard user={user} />} />
-            <Route path="orders" element={<AccountOrders />} />
+            <Route
+              index
+              element={<AccountDashboard user={user} orders={orders} />}
+            />
+            <Route
+              path="orders"
+              element={
+                <AccountOrders
+                  orders={orders}
+                  loading={loadingOrders}
+                  user={user}
+                />
+              }
+            />
             <Route path="details" element={<AccountDetails user={user} />} />
             <Route path="security" element={<AccountSecurity />} />
           </Routes>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import "./styles/products-list.css";
-import "./styles/product-page.css";
+// No es necesario importar los otros archivos CSS aquí
+
 export default function ProductForm({
   initialData = {},
   categories,
@@ -163,12 +163,12 @@ export default function ProductForm({
   );
 
   return (
-    <form onSubmit={handleSubmit} className="product-form">
+    <form onSubmit={handleSubmit} className="admin-panel-product-form">
       {/* Información básica */}
-      <div className="form-section">
-        <h3 className="section-title">Información básica</h3>
-        <div className="form-grid">
-          <div className="form-group">
+      <div className="admin-panel-form-section">
+        <h3 className="admin-panel-section-title">Información básica</h3>
+        <div className="admin-panel-form-grid">
+          <div className="admin-panel-form-group">
             <label>Código *</label>
             <input
               name="code"
@@ -179,7 +179,7 @@ export default function ProductForm({
             />
           </div>
 
-          <div className="form-group">
+          <div className="admin-panel-form-group">
             <label>EAN / Código de barras</label>
             <input
               name="ean"
@@ -189,7 +189,7 @@ export default function ProductForm({
             />
           </div>
 
-          <div className="form-group full-width">
+          <div className="admin-panel-form-group admin-panel-full-width">
             <label>Nombre del producto *</label>
             <input
               name="name"
@@ -200,7 +200,7 @@ export default function ProductForm({
             />
           </div>
 
-          <div className="form-group full-width">
+          <div className="admin-panel-form-group admin-panel-full-width">
             <label>Descripción</label>
             <textarea
               name="description"
@@ -214,10 +214,10 @@ export default function ProductForm({
       </div>
 
       {/* Categorización */}
-      <div className="form-section">
-        <h3 className="section-title">Categorización</h3>
-        <div className="form-grid">
-          <div className="form-group">
+      <div className="admin-panel-form-section">
+        <h3 className="admin-panel-section-title">Categorización</h3>
+        <div className="admin-panel-form-grid">
+          <div className="admin-panel-form-group">
             <label>Categoría *</label>
             <select
               name="category"
@@ -234,7 +234,7 @@ export default function ProductForm({
             </select>
           </div>
 
-          <div className="form-group">
+          <div className="admin-panel-form-group">
             <label>Subcategoría</label>
             <select
               name="subcategory"
@@ -251,7 +251,7 @@ export default function ProductForm({
             </select>
           </div>
 
-          <div className="form-group">
+          <div className="admin-panel-form-group">
             <label>Bulto</label>
             <input
               name="bulto"
@@ -264,10 +264,10 @@ export default function ProductForm({
       </div>
 
       {/* Precios y stock */}
-      <div className="form-section">
-        <h3 className="section-title">Precios y stock</h3>
-        <div className="form-grid">
-          <div className="form-group">
+      <div className="admin-panel-form-section">
+        <h3 className="admin-panel-section-title">Precios y stock</h3>
+        <div className="admin-panel-form-grid">
+          <div className="admin-panel-form-group">
             <label>Precio Estado 1 *</label>
             <input
               type="number"
@@ -281,7 +281,7 @@ export default function ProductForm({
             />
           </div>
 
-          <div className="form-group">
+          <div className="admin-panel-form-group">
             <label>Precio Estado 2 *</label>
             <input
               type="number"
@@ -295,7 +295,7 @@ export default function ProductForm({
             />
           </div>
 
-          <div className="form-group">
+          <div className="admin-panel-form-group">
             <label>Stock</label>
             <select name="stock" value={formData.stock} onChange={handleChange}>
               <option value="1">Disponible</option>
@@ -303,7 +303,7 @@ export default function ProductForm({
             </select>
           </div>
 
-          <div className="form-group">
+          <div className="admin-panel-form-group">
             <label>Cantidad mínima</label>
             <input
               type="number"
@@ -317,10 +317,10 @@ export default function ProductForm({
       </div>
 
       {/* Colores */}
-      <div className="form-section">
-        <h3 className="section-title">Colores disponibles</h3>
-        <div className="colors-manager">
-          <div className="color-input-group">
+      <div className="admin-panel-form-section">
+        <h3 className="admin-panel-section-title">Colores disponibles</h3>
+        <div className="admin-panel-colors-manager">
+          <div className="admin-panel-color-input-group">
             <input
               value={newColor}
               onChange={(e) => setNewColor(e.target.value)}
@@ -329,14 +329,18 @@ export default function ProductForm({
                 e.key === "Enter" && (e.preventDefault(), addColor())
               }
             />
-            <button type="button" onClick={addColor} className="btn-add">
+            <button
+              type="button"
+              onClick={addColor}
+              className="admin-panel-btn-add"
+            >
               + Agregar
             </button>
           </div>
           {formData.colors.length > 0 && (
-            <div className="color-chips">
+            <div className="admin-panel-color-chips">
               {formData.colors.map((color) => (
-                <span key={color} className="chip">
+                <span key={color} className="admin-panel-chip">
                   {color}
                   <button type="button" onClick={() => removeColor(color)}>
                     ×
@@ -349,9 +353,9 @@ export default function ProductForm({
       </div>
 
       {/* Multimedia */}
-      <div className="form-section">
-        <h3 className="section-title">Imágenes</h3>
-        <div className="file-upload">
+      <div className="admin-panel-form-section">
+        <h3 className="admin-panel-section-title">Imágenes</h3>
+        <div className="admin-panel-file-upload">
           <input
             type="file"
             accept="image/*"
@@ -360,7 +364,7 @@ export default function ProductForm({
             id="file-input"
             style={{ display: "none" }}
           />
-          <label htmlFor="file-input" className="btn-upload">
+          <label htmlFor="file-input" className="admin-panel-btn-upload">
             📁 Seleccionar imágenes
           </label>
         </div>
@@ -373,7 +377,7 @@ export default function ProductForm({
             <Droppable droppableId="files-droppable" direction="horizontal">
               {(provided) => (
                 <div
-                  className="file-preview preview-grid"
+                  className="admin-panel-file-preview admin-panel-preview-grid"
                   {...provided.droppableProps}
                   ref={provided.innerRef}
                 >
@@ -381,7 +385,7 @@ export default function ProductForm({
                     <Draggable key={f.key} draggableId={f.key} index={idx}>
                       {(provided) => (
                         <div
-                          className="preview-item"
+                          className="admin-panel-preview-item"
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
@@ -394,7 +398,7 @@ export default function ProductForm({
                           <button
                             type="button"
                             onClick={() => removeFile(idx)}
-                            className="btn-remove"
+                            className="admin-panel-btn-remove"
                           >
                             ×
                           </button>
@@ -420,7 +424,7 @@ export default function ProductForm({
             >
               {(provided) => (
                 <div
-                  className="file-preview preview-grid"
+                  className="admin-panel-file-preview admin-panel-preview-grid"
                   {...provided.droppableProps}
                   ref={provided.innerRef}
                 >
@@ -428,7 +432,7 @@ export default function ProductForm({
                     <Draggable key={url} draggableId={url} index={idx}>
                       {(provided) => (
                         <div
-                          className="preview-item"
+                          className="admin-panel-preview-item"
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
@@ -437,7 +441,7 @@ export default function ProductForm({
                           <button
                             type="button"
                             onClick={() => removeMultimedia(idx)}
-                            className="btn-remove"
+                            className="admin-panel-btn-remove"
                           >
                             ×
                           </button>
@@ -454,10 +458,10 @@ export default function ProductForm({
       </div>
 
       {/* Videos */}
-      <div className="form-section">
-        <h3 className="section-title">Videos (YouTube)</h3>
-        <div className="colors-manager">
-          <div className="color-input-group">
+      <div className="admin-panel-form-section">
+        <h3 className="admin-panel-section-title">Videos (YouTube)</h3>
+        <div className="admin-panel-colors-manager">
+          <div className="admin-panel-color-input-group">
             <input
               value={newVideo}
               onChange={(e) => setNewVideo(e.target.value)}
@@ -466,19 +470,23 @@ export default function ProductForm({
                 e.key === "Enter" && (e.preventDefault(), addVideo())
               }
             />
-            <button type="button" onClick={addVideo} className="btn-add">
+            <button
+              type="button"
+              onClick={addVideo}
+              className="admin-panel-btn-add"
+            >
               + Agregar
             </button>
           </div>
           {videos.length > 0 && (
-            <div className="video-list">
+            <div className="admin-panel-video-list">
               {videos.map((url, idx) => (
-                <div key={idx} className="video-item">
-                  <span className="video-url">{url}</span>
+                <div key={idx} className="admin-panel-video-item">
+                  <span className="admin-panel-video-url">{url}</span>
                   <button
                     type="button"
                     onClick={() => removeVideo(idx)}
-                    className="btn-remove-inline"
+                    className="admin-panel-btn-remove-inline"
                   >
                     × Eliminar
                   </button>
@@ -490,16 +498,20 @@ export default function ProductForm({
       </div>
 
       {/* Botones */}
-      <div className="form-actions">
+      <div className="admin-panel-form-actions">
         <button
           type="button"
           onClick={onCancel}
-          className="btn-cancel"
+          className="admin-panel-btn-cancel"
           disabled={loading}
         >
           Cancelar
         </button>
-        <button type="submit" className="btn-submit" disabled={loading}>
+        <button
+          type="submit"
+          className="admin-panel-btn-submit"
+          disabled={loading}
+        >
           {loading
             ? "Guardando..."
             : initialData?.id
