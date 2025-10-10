@@ -21,6 +21,12 @@ import {
   onSnapshot,
   orderBy,
 } from "firebase/firestore";
+
+// --- IMPORTACIONES PARA PDF (CORREGIDAS) ---
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable"; // <-- Cambio clave: importamos la función directamente
+import logo from "./assets/logo.png";
+
 import "./styles/my-account.css";
 
 // --- Sub-componente para el Resumen ---
@@ -37,17 +43,17 @@ const AccountDashboard = ({ user }) => (
     <div className="my-account-quick-stats">
       <div className="my-account-stat-item">
         <span>Pedidos Activos</span>
-        <strong>0</strong> {/* Dato de ejemplo */}
+        <strong>0</strong>
       </div>
       <div className="my-account-stat-item">
         <span>Pedidos Históricos</span>
-        <strong>0</strong> {/* Dato de ejemplo */}
+        <strong>0</strong>
       </div>
     </div>
   </div>
 );
 
-// --- Sub-componente para MIS PEDIDOS (AHORA CON LÓGICA) ---
+// --- Sub-componente para MIS PEDIDOS (CON CÓDIGO CORREGIDO) ---
 const AccountOrders = () => {
   const { user } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -56,7 +62,6 @@ const AccountOrders = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-
     setLoading(true);
     const ordersRef = collection(db, "orders");
     const q = query(
@@ -64,15 +69,10 @@ const AccountOrders = () => {
       where("clientId", "==", user.id),
       orderBy("createdAt", "desc")
     );
-
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const ordersData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setOrders(ordersData);
+        setOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
         setLoading(false);
       },
       (error) => {
@@ -80,9 +80,152 @@ const AccountOrders = () => {
         setLoading(false);
       }
     );
-
-    return () => unsubscribe(); // Limpiar el listener al desmontar
+    return () => unsubscribe();
   }, [user]);
+
+  const downloadOrderAsPDF = (order, client) => {
+    try {
+      const doc = new jsPDF("p", "mm", "a4");
+      const margin = 15;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let currentY = 0;
+
+      // ---- ENCABEZADO ----
+      const addHeader = () => {
+        doc.addImage(logo, "PNG", margin, 12, 50, 0);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(40);
+        doc.text("Nota de Pedido", pageWidth - margin, 20, { align: "right" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(
+          `Pedido N°: ${order.id.substring(0, 7).toUpperCase()}`,
+          pageWidth - margin,
+          26,
+          { align: "right" }
+        );
+        doc.text(
+          `Fecha: ${new Date(order.createdAt).toLocaleDateString("es-AR")}`,
+          pageWidth - margin,
+          31,
+          { align: "right" }
+        );
+        currentY = 40;
+        doc.setLineWidth(0.5);
+        doc.line(margin, currentY, pageWidth - margin, currentY);
+        currentY += 10;
+      };
+
+      // ---- PIE DE PÁGINA ----
+      const addFooter = () => {
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text(
+            `Página ${i} de ${pageCount}`,
+            pageWidth / 2,
+            pageHeight - 10,
+            { align: "center" }
+          );
+          doc.text(
+            "KOKOS Argentina - De Argimpex S.A.",
+            margin,
+            pageHeight - 10
+          );
+        }
+      };
+
+      addHeader();
+
+      // ---- INFO DEL CLIENTE ----
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+      doc.text("Cliente:", margin, currentY);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(80);
+      doc.text(client.razonSocial || client.nombre, margin + 20, currentY);
+      currentY += 5;
+      doc.text(client.email, margin + 20, currentY);
+      currentY += 5;
+      doc.text(`CUIT: ${client.cuit || "N/A"}`, margin + 20, currentY);
+      currentY += 10;
+
+      doc.setLineWidth(0.2);
+      doc.line(margin, currentY, pageWidth - margin, currentY);
+      currentY += 10;
+
+      // ---- TABLA DE PRODUCTOS ----
+      const tableColumn = ["CÓDIGO", "DESCRIPCIÓN", "CANT.", "PRECIO", "TOTAL"];
+      const tableRows = order.items.map((item) => [
+        item.code || "N/A",
+        item.name || "Producto sin nombre",
+        item.qty || 0,
+        `$${formatMoney(item.price || 0)}`,
+        `$${formatMoney((item.price || 0) * (item.qty || 0))}`,
+      ]);
+
+      // --- CAMBIO CLAVE: CÓMO SE LLAMA A AUTOTABLE ---
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: currentY,
+        theme: "striped",
+        headStyles: {
+          fillColor: [44, 62, 80],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+        },
+        styles: {
+          font: "helvetica",
+          fontSize: 9,
+          cellPadding: 3,
+        },
+        columnStyles: {
+          2: { halign: "center" },
+          3: { halign: "right" },
+          4: { halign: "right" },
+        },
+      });
+
+      let finalY = doc.lastAutoTable.finalY; // Correcta obtención de la Y final
+
+      // ---- TOTALES ----
+      const total = order.items.reduce(
+        (sum, item) => sum + (item.price || 0) * (item.qty || 0),
+        0
+      );
+      currentY = finalY + 15;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(40);
+      doc.text("TOTAL:", pageWidth - margin - 40, currentY, { align: "left" });
+      doc.text(`$${formatMoney(total)}`, pageWidth - margin, currentY, {
+        align: "right",
+      });
+      currentY += 15;
+
+      // ---- FORMA DE PAGO ----
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100);
+      doc.text("Forma de Pago: Cheque a 30 días", margin, currentY);
+
+      addFooter();
+      doc.save(`pedido-${order.id.substring(0, 7)}.pdf`);
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+      alert(
+        "Hubo un error al generar el PDF. Por favor, revisa la consola del desarrollador (F12)."
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -93,10 +236,9 @@ const AccountOrders = () => {
     );
   }
 
-  // --- VISTA DETALLADA DE UN PEDIDO ---
   if (selectedOrder) {
     const total = selectedOrder.items.reduce(
-      (sum, item) => sum + item.price * item.qty,
+      (sum, item) => sum + (item.price || 0) * (item.qty || 0),
       0
     );
     return (
@@ -107,51 +249,65 @@ const AccountOrders = () => {
         >
           ← Volver a Mis Pedidos
         </button>
-        <h3 className="my-account-widget-title">
-          Detalle del Pedido #{selectedOrder.id.substring(0, 7)}
-        </h3>
-        <div className="my-account-order-detail-meta">
-          <div>
-            <span>Fecha:</span>{" "}
-            {new Date(selectedOrder.createdAt).toLocaleDateString("es-AR")}
+        <div>
+          <h3 className="my-account-widget-title" style={{ marginTop: "20px" }}>
+            Detalle del Pedido #{selectedOrder.id.substring(0, 7)}
+          </h3>
+          <div className="my-account-order-detail-meta">
+            <div>
+              <span>Fecha:</span>{" "}
+              {new Date(selectedOrder.createdAt).toLocaleDateString("es-AR")}
+            </div>
+            <div>
+              <span>Estado:</span>{" "}
+              <strong
+                className={`my-account-order-status my-account-order-status-${selectedOrder.status}`}
+              >
+                {selectedOrder.status}
+              </strong>
+            </div>
+            <div>
+              <span>Total:</span> <strong>${formatMoney(total)}</strong>
+            </div>
           </div>
-          <div>
-            <span>Estado:</span>{" "}
-            <span
-              className={`my-account-order-status my-account-order-status-${selectedOrder.status}`}
-            >
-              {selectedOrder.status}
-            </span>
-          </div>
-          <div>
-            <span>Total:</span> <strong>${formatMoney(total)}</strong>
-          </div>
-        </div>
-        <div className="my-account-order-detail-items">
-          {selectedOrder.items.map((item) => (
-            <div key={item.id} className="my-account-order-detail-item">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="my-account-order-item-image"
-              />
-              <div className="my-account-order-item-info">
-                <span className="my-account-order-item-name">{item.name}</span>
-                <span className="my-account-order-item-qty">
-                  {item.qty} x ${formatMoney(item.price)}
+          <div className="my-account-order-detail-items">
+            {selectedOrder.items.map((item) => (
+              <div key={item.id} className="my-account-order-detail-item">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="my-account-order-item-image"
+                />
+                <div className="my-account-order-item-info">
+                  <span className="my-account-order-item-name">
+                    {item.name}
+                  </span>
+                  <span className="my-account-order-item-qty">
+                    {item.qty} x ${formatMoney(item.price)}
+                  </span>
+                </div>
+                <span className="my-account-order-item-subtotal">
+                  ${formatMoney(item.price * item.qty)}
                 </span>
               </div>
-              <span className="my-account-order-item-subtotal">
-                ${formatMoney(item.price * item.qty)}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+        <div
+          className="my-account-form-actions"
+          style={{ marginTop: "24px", justifyContent: "flex-start" }}
+        >
+          <button
+            onClick={() => downloadOrderAsPDF(selectedOrder, user)}
+            className="my-account-button"
+          >
+            Descargar como PDF
+          </button>
         </div>
       </div>
     );
   }
 
-  // --- VISTA DE LISTA DE PEDIDOS ---
   return (
     <div className="my-account-widget">
       <h3 className="my-account-widget-title">Mis Pedidos</h3>
@@ -163,7 +319,7 @@ const AccountOrders = () => {
         <div className="my-account-orders-list">
           {orders.map((order) => {
             const total = order.items.reduce(
-              (sum, item) => sum + item.price * item.qty,
+              (sum, item) => sum + (item.price || 0) * (item.qty || 0),
               0
             );
             return (
@@ -199,13 +355,12 @@ const AccountOrders = () => {
   );
 };
 
-// ... (resto de los componentes como AccountDetails y AccountSecurity)
+// --- Sub-componente DATOS DE LA CUENTA ---
 const AccountDetails = ({ user }) => (
   <div className="my-account-widget">
     <h3 className="my-account-widget-title">Datos de la Cuenta</h3>
     <form className="my-account-form">
       <div className="my-account-form-grid">
-        {/* Datos Personales */}
         <div className="my-account-form-group">
           <label>Nombre</label>
           <input
@@ -224,7 +379,6 @@ const AccountDetails = ({ user }) => (
             className="my-account-input"
           />
         </div>
-        {/* Datos de la Empresa */}
         <div className="my-account-form-group my-account-form-group-full">
           <label>Razón Social</label>
           <input
@@ -252,7 +406,6 @@ const AccountDetails = ({ user }) => (
             className="my-account-input"
           />
         </div>
-        {/* Datos de Contacto */}
         <div className="my-account-form-group">
           <label>Email</label>
           <input
@@ -281,6 +434,7 @@ const AccountDetails = ({ user }) => (
   </div>
 );
 
+// --- Sub-componente SEGURIDAD ---
 const AccountSecurity = () => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -299,7 +453,6 @@ const AccountSecurity = () => {
       return;
     }
     if (newPassword.length < 8) {
-      // Validación simple
       setError("La nueva contraseña debe tener al menos 8 caracteres.");
       return;
     }
@@ -313,10 +466,8 @@ const AccountSecurity = () => {
         user.email,
         currentPassword
       );
-
       await reauthenticateWithCredential(user, credential);
       await updatePassword(user, newPassword);
-
       setSuccess("¡Contraseña actualizada con éxito!");
       setCurrentPassword("");
       setNewPassword("");
@@ -369,10 +520,8 @@ const AccountSecurity = () => {
             required
           />
         </div>
-
         {error && <p className="my-account-form-error">{error}</p>}
         {success && <p className="my-account-form-success">{success}</p>}
-
         <div className="my-account-form-actions">
           <button
             type="submit"
@@ -455,7 +604,6 @@ export default function MyAccount() {
             </button>
           </nav>
         </aside>
-
         <main className="my-account-content">
           <Routes>
             <Route index element={<AccountDashboard user={user} />} />

@@ -1,88 +1,30 @@
-// FloatingCartButton.jsx
-// Componente Global con todas las mejoras y correcciones
-
-import React, { useState, useEffect } from "react";
+// src/FloatingCartButton.jsx
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "./App";
 import "./styles/floating-cart-button.css";
 
 export default function FloatingCartButton() {
-  const [cart, setCart] = useState([]);
-  const [isVisible, setIsVisible] = useState(false);
+  const { user, cart } = useAuth(); // Obtenemos el carrito directamente del contexto
   const location = useLocation();
-  const { user } = useAuth();
 
-  useEffect(() => {
-    const updateCart = () => {
-      // Si no hay usuario, limpiar el carrito
-      if (!user) {
-        localStorage.removeItem("wh_cart");
-        setCart([]);
-        return;
-      }
-
-      const raw = localStorage.getItem("wh_cart");
-      const cartData = raw ? JSON.parse(raw) : [];
-
-      // Validar que el carrito tenga items válidos
-      const validCart = cartData.filter(
-        (item) => item && item.id && item.qty > 0
-      );
-
-      setCart(validCart);
-    };
-
-    updateCart();
-
-    // Escuchar cambios en localStorage
-    const handleStorageChange = () => {
-      updateCart();
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // Escuchar evento personalizado para cambios en la misma pestaña
-    window.addEventListener("cartUpdated", handleStorageChange);
-
-    // Polling reducido solo para casos extremos
-    const interval = setInterval(updateCart, 2000);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("cartUpdated", handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [user]);
-
-  // Efecto para animación de entrada
-  useEffect(() => {
-    if (cart.length > 0) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [cart]);
-
-  // CORRECCIÓN: Contar productos únicos, no cantidades totales
   const uniqueProductsCount = cart.length;
   const totalUnitsCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  // No mostrar si:
-  // - No hay usuario
-  // - Estamos en la página del carrito
-  // - No hay productos
-  // - Estamos en login/register
+  // No mostrar si no hay usuario, estamos en el carrito, o el carrito está vacío
   const hiddenRoutes = ["/cart", "/login", "/register", "/checkout"];
   const shouldHide =
     !user || hiddenRoutes.includes(location.pathname) || cart.length === 0;
 
-  if (shouldHide) return null;
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <Link
       to="/cart"
       className={`floating-cart-button ${
-        isVisible ? "floating-cart-visible" : ""
+        uniqueProductsCount > 0 ? "floating-cart-visible" : ""
       }`}
       aria-label={`Ver carrito con ${uniqueProductsCount} productos`}
     >

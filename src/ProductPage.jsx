@@ -543,37 +543,26 @@ export default function ProductPage() {
   );
 }
 
+// Al final de src/ProductPage.jsx
 function AddToCart({ product }) {
-  const { user } = useAuth();
+  const { user, addToCart } = useAuth(); // Usamos el contexto
   const [qty, setQty] = useState(product.cant_min || 1);
 
-  const add = () => {
-    const raw = localStorage.getItem("wh_cart");
-    const cart = raw ? JSON.parse(raw) : [];
+  const handleAddToCart = () => {
     const price =
       user?.state === 2 ? product.price_state2 : product.price_state1;
-    const existing = cart.find((c) => c.id === product.id);
 
     const productData = {
       id: product.id,
+      code: product.code,
       name: product.name,
       price,
       cant_min: product.cant_min || 1,
       image: product.multimedia?.[0] || null,
     };
 
-    if (existing) {
-      existing.qty += qty;
-    } else {
-      cart.push({ ...productData, qty });
-    }
-
-    localStorage.setItem("wh_cart", JSON.stringify(cart));
-
-    // Disparar evento para actualizar el botón flotante
-    window.dispatchEvent(new Event("storage"));
-
-    setQty(product.cant_min || 1);
+    addToCart(productData, qty); // Llamamos a la función del contexto
+    setQty(product.cant_min || 1); // Reseteamos la cantidad
   };
 
   return (
@@ -610,7 +599,7 @@ function AddToCart({ product }) {
         </p>
       )}
       <button
-        onClick={add}
+        onClick={handleAddToCart}
         className="product-page-btn-add"
         disabled={product.cant_min && qty < product.cant_min}
       >
