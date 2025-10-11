@@ -66,7 +66,7 @@ export default function Footer() {
                 <Link to="/cart">Mi Carrito</Link>
               </li>
               <li>
-                <Link to="/orders">Mis Pedidos</Link>
+                <Link to="/my-account/orders">Mis Pedidos</Link>
               </li>
             </ul>
           </div>

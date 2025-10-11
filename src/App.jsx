@@ -16,6 +16,7 @@ import Nosotros from "./Nosotros";
 import ScrollTop from "./ScrollTop";
 import Register from "./Register";
 import MyAccount from "./MyAccount";
+import Contacto from "./Contacto";
 import FloatingCartButton from "./FloatingCartButton";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { initializeApp } from "firebase/app";
@@ -185,6 +186,7 @@ export default function App() {
             <Route path="/nosotros" element={<Nosotros />} />
             <Route path="/register" element={<Register />} />
             <Route path="*" element={<NotFound />} />
+            <Route path="/contacto" element={<Contacto />} />
             <Route path="/my-account/*" element={<MyAccount />} />
           </Routes>
           <FloatingCartButton />
