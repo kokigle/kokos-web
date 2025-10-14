@@ -187,10 +187,14 @@ export default function ProductPage() {
       : thumbs;
 
   const nextThumb = () => {
-    setThumbIndex((prev) => (prev + 1) % thumbs.length);
+    const newIndex = (thumbIndex + 1) % thumbs.length;
+    setThumbIndex(newIndex);
+    setMainMedia(thumbs[newIndex]);
   };
   const prevThumb = () => {
-    setThumbIndex((prev) => (prev - 1 + thumbs.length) % thumbs.length);
+    const newIndex = (thumbIndex - 1 + thumbs.length) % thumbs.length;
+    setThumbIndex(newIndex);
+    setMainMedia(thumbs[newIndex]);
   };
 
   const handleShare = () => {
