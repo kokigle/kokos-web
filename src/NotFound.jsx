@@ -8,12 +8,12 @@ export default function NotFound() {
     <div className="notfound-container">
       <div className="notfound-content">
         <div className="notfound-animation">
-          <div className="error-code">
-            <span className="digit">4</span>
-            <span className="digit special">0</span>
-            <span className="digit">4</span>
+          <div className="notfound-error-code">
+            <span className="notfound-digit">4</span>
+            <span className="notfound-digit special">0</span>
+            <span className="notfound-digit">4</span>
           </div>
-          <div className="toy-icon">
+          <div className="notfound-toy-icon">
             <svg
               viewBox="0 0 64 64"
               fill="none"
@@ -47,7 +47,7 @@ export default function NotFound() {
           </p>
 
           <div className="notfound-actions">
-            <Link to="/" className="btn-primary">
+            <Link to="/" className="notfound-btn-primary">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -60,7 +60,7 @@ export default function NotFound() {
               Volver al Inicio
             </Link>
 
-            <Link to="/products" className="btn-secondary">
+            <Link to="/products" className="notfound-btn-secondary">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -75,8 +75,8 @@ export default function NotFound() {
           </div>
 
           <div className="notfound-suggestions">
-            <p className="suggestions-title">Tal vez te interese:</p>
-            <div className="suggestions-links">
+            <p className="notfound-suggestions-title">Tal vez te interese:</p>
+            <div className="notfound-suggestions-links">
               <Link to="/novedades">Novedades</Link>
               <Link to="/nosotros">Sobre Nosotros</Link>
               <Link to="/contacto">Contacto</Link>
@@ -86,10 +86,10 @@ export default function NotFound() {
       </div>
 
       <div className="notfound-background">
-        <div className="floating-shape shape-1"></div>
-        <div className="floating-shape shape-2"></div>
-        <div className="floating-shape shape-3"></div>
-        <div className="floating-shape shape-4"></div>
+        <div className="notfound-floating-shape notfound-shape-1"></div>
+        <div className="notfound-floating-shape notfound-shape-2"></div>
+        <div className="notfound-floating-shape notfound-shape-3"></div>
+        <div className="notfound-floating-shape notfound-shape-4"></div>
       </div>
     </div>
   );
