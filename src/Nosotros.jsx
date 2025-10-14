@@ -18,30 +18,31 @@ export default function Nosotros() {
             <div className="nosotros-section">
               <h2>Más de 10 años de trayectoria</h2>
               <p>
-                <strong>KOKOS</strong> es una empresa familiar argentina con más
-                de 10 años de trayectoria. Lo que comenzó como un sueño familiar
-                se transformó en una empresa en constante expansión. Creemos que
-                el crecimiento se construye paso a paso, por eso no hemos dejado
-                de sumar nuevos proyectos y oportunidades.
+                <strong>KOKOS de Argimpex S.A.</strong> es una empresa familiar
+                con más de 10 años de trayectoria. Lo que comenzó como un sueño
+                familiar se transformó en una empresa en constante expansión.
               </p>
             </div>
 
             <div className="nosotros-section">
               <h2>Compromiso con la calidad</h2>
               <p>
-                Iniciamos nuestra historia como importadores de juguetes y
+                Creemos que el crecimiento se construye paso a paso, por eso no
+                hemos dejado de sumar nuevos proyectos y oportunidades.
+                Iniciamos nuestra historia como importadores de juguetes y,
                 gracias al compromiso con la calidad y la confianza de nuestros
-                clientes, seguimos creciendo y ampliando nuestro horizonte.
+                clientes, seguimos creciendo y ampliando nuestros horizontes.
               </p>
             </div>
 
             <div className="nosotros-section">
               <h2>Mirando hacia el futuro</h2>
               <p>
-                Seguimos construyendo vínculos de confianza con comerciantes de
-                todo el país. Y mirando hacia adelante, proyectamos seguir
-                ampliando nuestra propuesta con nuevas categorías y
-                oportunidades.
+                Hoy continuamos construyendo vínculos de confianza con
+                comerciantes de todo el país y, mirando hacia el futuro,
+                proyectamos seguir ampliando nuestra propuesta con nuevas
+                categorías y oportunidades que nos impulsen a seguir creciendo
+                juntos.
               </p>
             </div>
 
