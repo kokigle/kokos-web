@@ -47,6 +47,7 @@ export default function AdminPanel() {
   const [clientsTab, setClientsTab] = useState("pendientes");
   const [expandedClient, setExpandedClient] = useState(null);
   const [approvalState, setApprovalState] = useState(1);
+  const [approvalDiscount, setApprovalDiscount] = useState(0); // NUEVO ESTADO
 
   // Estados para gestión de pedidos
   const [ordersTab, setOrdersTab] = useState("pending");
@@ -193,14 +194,15 @@ export default function AdminPanel() {
   // Funciones para gestión de usuarios pendientes
   const approveClient = async (clientId) => {
     showConfirm(
-      `¿Aprobar este usuario con Lista ${approvalState}?`,
+      `¿Aprobar este usuario con Lista ${approvalState} y ${approvalDiscount}% de descuento?`,
       async () => {
         await updateDoc(doc(db, "clients", clientId), {
           status: "aprobado",
           state: approvalState,
+          descuento: Number(approvalDiscount) || 0,
         });
         showNotification(
-          `Usuario aprobado con Lista ${approvalState}`,
+          `Usuario aprobado con Lista ${approvalState} y ${approvalDiscount}% de descuento`,
           "success"
         );
         setExpandedClient(null);
@@ -223,6 +225,13 @@ export default function AdminPanel() {
   const toggleState = async (id, state) => {
     await updateDoc(doc(db, "clients", id), { state });
     showNotification(`Lista actualizada a ${state}`);
+  };
+
+  const updateClientDiscount = async (id, newDiscount) => {
+    await updateDoc(doc(db, "clients", id), {
+      descuento: Number(newDiscount) || 0,
+    });
+    showNotification(`Descuento actualizado a ${newDiscount}%`);
   };
 
   const deleteClient = async (id) => {
@@ -944,7 +953,8 @@ export default function AdminPanel() {
                             <div className="admin-panel-approval-header">
                               <h4>Aprobar Usuario</h4>
                               <p>
-                                Selecciona la lista con la que será aprobado
+                                Selecciona la lista y el descuento con el que
+                                será aprobado
                               </p>
                             </div>
                             <div className="admin-panel-approval-controls">
@@ -969,6 +979,17 @@ export default function AdminPanel() {
                                 >
                                   Lista 2
                                 </button>
+                              </div>
+                              <div className="admin-panel-form-group">
+                                <label>Descuento (%)</label>
+                                <input
+                                  type="number"
+                                  value={approvalDiscount}
+                                  onChange={(e) =>
+                                    setApprovalDiscount(e.target.value)
+                                  }
+                                  placeholder="0"
+                                />
                               </div>
                               <div className="admin-panel-approval-actions">
                                 <button
@@ -1029,6 +1050,11 @@ export default function AdminPanel() {
                               >
                                 Lista {c.state || 1}
                               </span>
+                              {c.descuento > 0 && (
+                                <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
+                                  {c.descuento}% OFF
+                                </span>
+                              )}
                               {c.posicionFiscal && (
                                 <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
                                   {c.posicionFiscal}
@@ -1040,7 +1066,6 @@ export default function AdminPanel() {
                             {expandedClient === c.id ? "▲" : "▼"}
                           </div>
                         </div>
-
                         {expandedClient === c.id && (
                           <div className="admin-panel-client-details">
                             <div className="admin-panel-detail-grid">
@@ -1051,14 +1076,6 @@ export default function AdminPanel() {
                               <div className="admin-panel-detail-item">
                                 <strong>Apellido:</strong>
                                 <span>{c.apellido || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Razón Social:</strong>
-                                <span>{c.razonSocial || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Posición Fiscal:</strong>
-                                <span>{c.posicionFiscal || "N/A"}</span>
                               </div>
                               <div className="admin-panel-detail-item">
                                 <strong>CUIT:</strong>
@@ -1111,6 +1128,18 @@ export default function AdminPanel() {
                                 >
                                   Lista 2
                                 </button>
+                                <div className="admin-panel-form-group">
+                                  <label>Descuento (%)</label>
+                                  <input
+                                    type="number"
+                                    defaultValue={c.descuento || 0}
+                                    onBlur={(e) =>
+                                      updateClientDiscount(c.id, e.target.value)
+                                    }
+                                    placeholder="0"
+                                    style={{ maxWidth: "100px" }}
+                                  />
+                                </div>
                                 <button
                                   onClick={() => deleteClient(c.id)}
                                   className="admin-panel-btn-small admin-panel-btn-danger"

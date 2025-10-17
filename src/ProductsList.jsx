@@ -134,10 +134,9 @@ export default function ProductsList() {
       result = result.filter((p) => {
         const productName = normalizeText(p.name || "");
         const productCode = normalizeText(p.code || "");
-        const productDescription = normalizeText(p.description || "");
 
         // Concatenar todos los campos donde buscar
-        const searchableText = `${productName} ${productCode} ${productDescription}`;
+        const searchableText = `${productName} ${productCode}`;
 
         // Verificar que TODAS las palabras estén presentes en alguno de los campos
         return searchTerms.every((term) => searchableText.includes(term));
