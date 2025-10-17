@@ -322,69 +322,72 @@ export default function Home() {
           </div>
         )}
       </section>
+      <div className="home-content-wrapper">
+        {/* Sección de Servicios y Envíos - Imagen Principal */}
+        <section className="home-values" ref={valuesRef}>
+          <div className="home-values-image-container">
+            <img
+              src={serviciosEnvios}
+              alt="Servicios y Envíos Kokos"
+              className="home-values-main-image"
+            />
+          </div>
+        </section>
 
-      {/* Sección de Servicios y Envíos - Imagen Principal */}
-      <section className="home-values" ref={valuesRef}>
-        <div className="home-values-image-container">
-          <img
-            src={serviciosEnvios}
-            alt="Servicios y Envíos Kokos"
-            className="home-values-main-image"
-          />
-        </div>
-      </section>
+        {/* Sección de Productos - Diseño Nuevo */}
+        <section className="home-products" ref={productsRef}>
+          <div className="home-section-header">
+            <h2>Nuestras Categorías</h2>
+            <p>Descubrí nuestra selección de productos</p>
+          </div>
+          <div className="home-products-grid">
+            {["img1", "img2", "img3"].map((key, index) => {
+              const category = categoryImages[key];
+              const redirectPath = getRedirectPath(category?.redirect);
 
-      {/* Sección de Productos - Diseño Nuevo */}
-      <section className="home-products" ref={productsRef}>
-        <div className="home-section-header">
-          <h2>Nuestras Categorías</h2>
-          <p>Descubrí nuestra selección de productos</p>
-        </div>
-        <div className="home-products-grid">
-          {["img1", "img2", "img3"].map((key, index) => {
-            const category = categoryImages[key];
-            const redirectPath = getRedirectPath(category?.redirect);
-
-            return (
-              <div key={key} className="home-product-item">
-                {category?.url ? (
-                  <div className="home-product-image-container">
-                    <img
-                      src={category.url}
-                      alt={`Categoría ${index + 1}`}
-                      className="home-product-image"
-                    />
-                    <div className="home-product-hover-overlay">
-                      {redirectPath ? (
-                        <Link to={redirectPath} className="home-product-btn">
-                          Ver Más
-                        </Link>
-                      ) : (
-                        <span className="home-product-btn home-disabled">Ver Más</span>
-                      )}
+              return (
+                <div key={key} className="home-product-item">
+                  {category?.url ? (
+                    <div className="home-product-image-container">
+                      <img
+                        src={category.url}
+                        alt={`Categoría ${index + 1}`}
+                        className="home-product-image"
+                      />
+                      <div className="home-product-hover-overlay">
+                        {redirectPath ? (
+                          <Link to={redirectPath} className="home-product-btn">
+                            Ver Más
+                          </Link>
+                        ) : (
+                          <span className="home-product-btn home-disabled">
+                            Ver Más
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="home-product-image-placeholder">
-                    <p>Categoría {index + 1}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+                  ) : (
+                    <div className="home-product-image-placeholder">
+                      <p>Categoría {index + 1}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
-      {/* Footer Info - Imagen Principal */}
-      <section className="home-footer-info" ref={footerRef}>
-        <div className="home-footer-image-container">
-          <img
-            src={envioAtencion}
-            alt="Envío y Atención Kokos"
-            className="home-footer-main-image"
-          />
-        </div>
-      </section>
+        {/* Footer Info - Imagen Principal */}
+        <section className="home-footer-info" ref={footerRef}>
+          <div className="home-footer-image-container">
+            <img
+              src={envioAtencion}
+              alt="Envío y Atención Kokos"
+              className="home-footer-main-image"
+            />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

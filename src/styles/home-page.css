@@ -21,6 +21,14 @@ body {
   position: relative;
 }
 
+.home-content-wrapper {
+  background-image: url("../assets/Fondo Web-10.jpg");
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  padding-top: 1px;
+}
+
 /* =========================
    BANNER PRINCIPAL CON CARRUSEL
 ========================= */
@@ -229,7 +237,7 @@ body {
 ========================= */
 .home-values {
   padding: 80px 5%;
-  background: #ffffff;
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -263,7 +271,7 @@ body {
 ========================= */
 .home-products {
   padding: 80px 5%;
-  background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+  background: transparent;
   overflow: hidden;
   margin-top: -100px;
 }
@@ -419,6 +427,7 @@ body {
 ========================= */
 .home-footer-info {
   padding: 80px 5%;
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
