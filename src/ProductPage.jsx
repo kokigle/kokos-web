@@ -240,6 +240,14 @@ export default function ProductPage() {
         <div className="product-page-main">
           <div className="product-page-gallery">
             <div className="product-page-main-media">
+              {thumbs.length > 1 && (
+                <button
+                  className="product-page-main-arrow product-page-main-arrow-left"
+                  onClick={prevThumb}
+                >
+                  ❮
+                </button>
+              )}
               {mainMedia?.type === "image" && (
                 <img
                   className="product-page-main-img"
@@ -278,17 +286,17 @@ export default function ProductPage() {
                     ></iframe>
                   );
                 })()}
+              {thumbs.length > 1 && (
+                <button
+                  className="product-page-main-arrow product-page-main-arrow-right"
+                  onClick={nextThumb}
+                >
+                  ❯
+                </button>
+              )}
             </div>
             {thumbs.length > 0 && (
               <div className="product-page-thumb-carousel">
-                {thumbs.length > 4 && (
-                  <button
-                    className="product-page-arrow product-page-arrow-left"
-                    onClick={prevThumb}
-                  >
-                    ❮
-                  </button>
-                )}
                 <div className="product-page-thumb-grid">
                   {showThumbs.map((t, idx) => {
                     if (t.type === "image") {
@@ -327,14 +335,6 @@ export default function ProductPage() {
                     }
                   })}
                 </div>
-                {thumbs.length > 4 && (
-                  <button
-                    className="product-page-arrow product-page-arrow-right"
-                    onClick={nextThumb}
-                  >
-                    ❯
-                  </button>
-                )}
               </div>
             )}
             {product.description && (
