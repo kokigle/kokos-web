@@ -398,6 +398,18 @@ export default function ProductPage() {
                   </div>
                 </div>
               )}
+              {/* SECCIÓN DE MEDIDAS AÑADIDA */}
+              {product.medidas && product.medidas.length > 0 && (
+                <div className="product-page-spec-item">
+                  <div className="product-page-spec-label">
+                    <span className="product-page-spec-icon">📏</span>
+                    <span>Medidas</span>
+                  </div>
+                  <div className="product-page-spec-value">
+                    {product.medidas.join(" / ")}
+                  </div>
+                </div>
+              )}
               {product.bulto && (
                 <div className="product-page-spec-item">
                   <div className="product-page-spec-label">

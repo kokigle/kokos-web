@@ -1,6 +1,6 @@
+// src/ProductForm.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-// No es necesario importar los otros archivos CSS aquí
 
 export default function ProductForm({
   initialData = {},
@@ -9,7 +9,6 @@ export default function ProductForm({
   loading,
   onCancel,
 }) {
-  // Estado inicial limpio
   const getInitialState = () => ({
     id: initialData?.id || null,
     code: initialData?.code || "",
@@ -24,6 +23,7 @@ export default function ProductForm({
     subcategory: initialData?.subcategory || "",
     bulto: initialData?.bulto || "",
     colors: initialData?.colors || [],
+    medidas: initialData?.medidas || [],
   });
 
   const [formData, setFormData] = useState(getInitialState());
@@ -32,8 +32,8 @@ export default function ProductForm({
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [newColor, setNewColor] = useState("");
   const [newVideo, setNewVideo] = useState("");
+  const [newMedida, setNewMedida] = useState("");
 
-  // Sincronizar cuando cambia initialData
   useEffect(() => {
     const newState = getInitialState();
     setFormData(newState);
@@ -42,7 +42,8 @@ export default function ProductForm({
     setSelectedFiles([]);
     setNewColor("");
     setNewVideo("");
-  }, [initialData?.id]); // Solo cuando cambia el ID del producto
+    setNewMedida("");
+  }, [initialData?.id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -85,6 +86,24 @@ export default function ProductForm({
     }));
   };
 
+  const addMedida = () => {
+    const trimmed = newMedida.trim();
+    if (trimmed && !formData.medidas.includes(trimmed)) {
+      setFormData((prev) => ({
+        ...prev,
+        medidas: [...prev.medidas, trimmed],
+      }));
+      setNewMedida("");
+    }
+  };
+
+  const removeMedida = (medida) => {
+    setFormData((prev) => ({
+      ...prev,
+      medidas: prev.medidas.filter((m) => m !== medida),
+    }));
+  };
+
   const addVideo = () => {
     const trimmed = newVideo.trim();
     if (trimmed && !videos.includes(trimmed)) {
@@ -100,7 +119,6 @@ export default function ProductForm({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validaciones básicas
     if (!formData.name.trim()) {
       alert("El nombre del producto es obligatorio");
       return;
@@ -110,7 +128,6 @@ export default function ProductForm({
       return;
     }
 
-    // Preparar datos para enviar
     const productData = {
       ...formData,
       multimedia,
@@ -128,7 +145,6 @@ export default function ProductForm({
   const selectedCategory = categories.find((c) => c.id === formData.category);
   const subcategories = selectedCategory?.subcategories || [];
 
-  // Drag & Drop reorder helper
   const reorder = (list, startIndex, endIndex) => {
     const result = Array.from(list);
     const [removed] = result.splice(startIndex, 1);
@@ -152,7 +168,6 @@ export default function ProductForm({
     }
   };
 
-  // cachear object URLs para performance
   const filePreviews = useMemo(
     () =>
       selectedFiles.map((f) => ({
@@ -316,39 +331,81 @@ export default function ProductForm({
         </div>
       </div>
 
-      {/* Colores */}
+      {/* Especificaciones */}
       <div className="admin-panel-form-section">
-        <h3 className="admin-panel-section-title">Colores disponibles</h3>
-        <div className="admin-panel-colors-manager">
-          <div className="admin-panel-color-input-group">
-            <input
-              value={newColor}
-              onChange={(e) => setNewColor(e.target.value)}
-              placeholder="Agregar color"
-              onKeyPress={(e) =>
-                e.key === "Enter" && (e.preventDefault(), addColor())
-              }
-            />
-            <button
-              type="button"
-              onClick={addColor}
-              className="admin-panel-btn-add"
-            >
-              + Agregar
-            </button>
-          </div>
-          {formData.colors.length > 0 && (
-            <div className="admin-panel-color-chips">
-              {formData.colors.map((color) => (
-                <span key={color} className="admin-panel-chip">
-                  {color}
-                  <button type="button" onClick={() => removeColor(color)}>
-                    ×
-                  </button>
-                </span>
-              ))}
+        <h3 className="admin-panel-section-title">Especificaciones</h3>
+        <div className="admin-panel-form-grid">
+          <div className="admin-panel-form-group admin-panel-full-width">
+            <label>Colores</label>
+            <div className="admin-panel-colors-manager">
+              <div className="admin-panel-color-input-group">
+                <input
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  placeholder="Agregar color"
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), addColor())
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={addColor}
+                  className="admin-panel-btn-add"
+                >
+                  + Agregar
+                </button>
+              </div>
+              {formData.colors.length > 0 && (
+                <div className="admin-panel-color-chips">
+                  {formData.colors.map((color) => (
+                    <span key={color} className="admin-panel-chip">
+                      {color}
+                      <button type="button" onClick={() => removeColor(color)}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+          <div className="admin-panel-form-group admin-panel-full-width">
+            <label>Medidas</label>
+            <div className="admin-panel-colors-manager">
+              <div className="admin-panel-color-input-group">
+                <input
+                  value={newMedida}
+                  onChange={(e) => setNewMedida(e.target.value)}
+                  placeholder="Agregar medida (ej: 20x30cm)"
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), addMedida())
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={addMedida}
+                  className="admin-panel-btn-add"
+                >
+                  + Agregar
+                </button>
+              </div>
+              {formData.medidas.length > 0 && (
+                <div className="admin-panel-color-chips">
+                  {formData.medidas.map((medida) => (
+                    <span key={medida} className="admin-panel-chip">
+                      {medida}
+                      <button
+                        type="button"
+                        onClick={() => removeMedida(medida)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -369,7 +426,6 @@ export default function ProductForm({
           </label>
         </div>
 
-        {/* Archivos nuevos seleccionados */}
         {selectedFiles.length > 0 && (
           <DragDropContext
             onDragEnd={(result) => handleDragEnd(result, "files")}
@@ -413,7 +469,6 @@ export default function ProductForm({
           </DragDropContext>
         )}
 
-        {/* Multimedia existente */}
         {multimedia.length > 0 && (
           <DragDropContext
             onDragEnd={(result) => handleDragEnd(result, "multimedia")}
@@ -497,7 +552,6 @@ export default function ProductForm({
         </div>
       </div>
 
-      {/* Botones */}
       <div className="admin-panel-form-actions">
         <button
           type="button"

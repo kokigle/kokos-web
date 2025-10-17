@@ -460,6 +460,10 @@ body {
    RESPONSIVE
 ========================= */
 @media (max-width: 1024px) {
+  .home-content-wrapper {
+    background-attachment: scroll; /* Mejora de rendimiento en móvil */
+  }
+
   .home-banner-title {
     font-size: 48px;
   }

@@ -186,6 +186,7 @@
   object-fit: contain;
   transition: transform 0.3s ease, opacity 0.3s ease;
   opacity: 1;
+  background: white;
 }
 
 .product-page-main-media:hover .product-page-main-img {

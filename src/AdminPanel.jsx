@@ -286,6 +286,7 @@ export default function AdminPanel() {
         subcategory: productData.subcategory || "",
         bulto: productData.bulto || "",
         colors: productData.colors || [],
+        medidas: productData.medidas || [],
       };
 
       if (productData.id) {
