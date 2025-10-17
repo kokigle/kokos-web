@@ -193,14 +193,14 @@ export default function AdminPanel() {
   // Funciones para gestión de usuarios pendientes
   const approveClient = async (clientId) => {
     showConfirm(
-      `¿Aprobar este usuario con Estado ${approvalState}?`,
+      `¿Aprobar este usuario con Lista ${approvalState}?`,
       async () => {
         await updateDoc(doc(db, "clients", clientId), {
           status: "aprobado",
           state: approvalState,
         });
         showNotification(
-          `Usuario aprobado con Estado ${approvalState}`,
+          `Usuario aprobado con Lista ${approvalState}`,
           "success"
         );
         setExpandedClient(null);
@@ -222,7 +222,7 @@ export default function AdminPanel() {
   // Funciones de clientes (actualizadas)
   const toggleState = async (id, state) => {
     await updateDoc(doc(db, "clients", id), { state });
-    showNotification(`Estado actualizado a ${state}`);
+    showNotification(`Lista actualizada a ${state}`);
   };
 
   const deleteClient = async (id) => {
@@ -344,42 +344,37 @@ export default function AdminPanel() {
     });
     setPricePreview(previewData);
   };
+
+  const handlePriceChange = (id, priceType, value) => {
+    setPricePreview((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [priceType]: Number(value) } : p))
+    );
+  };
+
   const handlePriceIncrease = async () => {
-    if (increasePercentage === 0) {
-      showNotification("El porcentaje debe ser mayor a 0", "error");
+    if (pricePreview.length === 0) {
+      showNotification("No hay precios para actualizar", "error");
       return;
     }
 
-    const productsToUpdate = getFilteredProductsForPriceIncrease();
-
     showConfirm(
-      `¿Estás seguro de que deseas aumentar los precios de ${productsToUpdate.length} productos en un ${increasePercentage}%? Esta acción es irreversible.`,
+      `¿Estás seguro de que deseas actualizar los precios de ${pricePreview.length} productos? Esta acción es irreversible.`,
       async () => {
         setLoading(true);
         try {
           const batch = writeBatch(db);
-          const factor = 1 + increasePercentage / 100;
-          const roundingFactor = Math.pow(10, roundingZeros);
 
-          productsToUpdate.forEach((product) => {
-            const newPrice1 = product.price_state1 * factor;
-            const newPrice2 = product.price_state2 * factor;
-
-            const roundedPrice1 =
-              Math.round(newPrice1 / roundingFactor) * roundingFactor;
-            const roundedPrice2 =
-              Math.round(newPrice2 / roundingFactor) * roundingFactor;
-
+          pricePreview.forEach((product) => {
             const productRef = doc(db, "products", product.id);
             batch.update(productRef, {
-              price_state1: roundedPrice1,
-              price_state2: roundedPrice2,
+              price_state1: product.newPrice1,
+              price_state2: product.newPrice2,
             });
           });
 
           await batch.commit();
           showNotification(
-            `Precios actualizados para ${productsToUpdate.length} productos`,
+            `Precios actualizados para ${pricePreview.length} productos`,
             "success"
           );
           setPricePreview([]);
@@ -949,7 +944,7 @@ export default function AdminPanel() {
                             <div className="admin-panel-approval-header">
                               <h4>Aprobar Usuario</h4>
                               <p>
-                                Selecciona el estado con el que será aprobado
+                                Selecciona la lista con la que será aprobado
                               </p>
                             </div>
                             <div className="admin-panel-approval-controls">
@@ -962,7 +957,7 @@ export default function AdminPanel() {
                                   }`}
                                   onClick={() => setApprovalState(1)}
                                 >
-                                  Estado 1
+                                  Lista 1
                                 </button>
                                 <button
                                   className={`admin-panel-state-btn ${
@@ -972,7 +967,7 @@ export default function AdminPanel() {
                                   }`}
                                   onClick={() => setApprovalState(2)}
                                 >
-                                  Estado 2
+                                  Lista 2
                                 </button>
                               </div>
                               <div className="admin-panel-approval-actions">
@@ -1032,7 +1027,7 @@ export default function AdminPanel() {
                                     : "admin-panel-admin-badge-state2"
                                 }`}
                               >
-                                Estado {c.state || 1}
+                                Lista {c.state || 1}
                               </span>
                               {c.posicionFiscal && (
                                 <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
@@ -1106,7 +1101,7 @@ export default function AdminPanel() {
                                     c.state === 1 ? "admin-panel-active" : ""
                                   }`}
                                 >
-                                  Estado 1
+                                  Lista 1
                                 </button>
                                 <button
                                   onClick={() => toggleState(c.id, 2)}
@@ -1114,7 +1109,7 @@ export default function AdminPanel() {
                                     c.state === 2 ? "admin-panel-active" : ""
                                   }`}
                                 >
-                                  Estado 2
+                                  Lista 2
                                 </button>
                                 <button
                                   onClick={() => deleteClient(c.id)}
@@ -1524,9 +1519,35 @@ export default function AdminPanel() {
                         <tr key={p.id}>
                           <td>{p.name}</td>
                           <td>{formatMoney(p.oldPrice1)}</td>
-                          <td>{formatMoney(p.newPrice1)}</td>
+                          <td>
+                            <input
+                              type="number"
+                              value={p.newPrice1}
+                              onChange={(e) =>
+                                handlePriceChange(
+                                  p.id,
+                                  "newPrice1",
+                                  e.target.value
+                                )
+                              }
+                              className="admin-panel-price-input"
+                            />
+                          </td>
                           <td>{formatMoney(p.oldPrice2)}</td>
-                          <td>{formatMoney(p.newPrice2)}</td>
+                          <td>
+                            <input
+                              type="number"
+                              value={p.newPrice2}
+                              onChange={(e) =>
+                                handlePriceChange(
+                                  p.id,
+                                  "newPrice2",
+                                  e.target.value
+                                )
+                              }
+                              className="admin-panel-price-input"
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>

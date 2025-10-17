@@ -312,47 +312,6 @@ export default function ProductsList() {
                 </select>
               </div>
             )}
-
-            <div className="products-filter-group">
-              <label>Buscar</label>
-              <input
-                type="text"
-                placeholder="Nombre del producto..."
-                value={pendingFilters.search}
-                onChange={(e) =>
-                  setPendingFilters({
-                    ...pendingFilters,
-                    search: e.target.value,
-                  })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch();
-                  }
-                }}
-              />
-            </div>
-
-            <div className="products-filter-group">
-              <label>Stock mínimo</label>
-              <input
-                type="number"
-                placeholder="Ej: 5"
-                value={pendingFilters.minStock}
-                onChange={(e) =>
-                  setPendingFilters({
-                    ...pendingFilters,
-                    minStock: e.target.value,
-                  })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch();
-                  }
-                }}
-              />
-            </div>
-
             <div className="products-filter-group products-filter-price">
               <label>Precio</label>
               <div className="products-price-inputs">

@@ -78,7 +78,7 @@ export default function CartPage() {
             Agrega productos para comenzar tu compra mayorista
           </p>
           <Link to="/products" className="cart-page-empty-link">
-            Explorar productos
+            Añadir productos
           </Link>
         </div>
       );
@@ -207,7 +207,7 @@ export default function CartPage() {
             <div className="cart-page-summary-total">
               <span>Total</span>
               <span className="cart-page-total-amount">
-                ${formatMoney(total)}
+                ${formatMoney(total)} + IVA
               </span>
             </div>
             <button onClick={checkout} className="cart-page-checkout-btn">
