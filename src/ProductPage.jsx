@@ -217,26 +217,6 @@ export default function ProductPage() {
         className="product-page-wrapper"
         style={{ opacity: imagesLoaded ? 1 : 0 }}
       >
-        <div className="product-page-breadcrumb">
-          <Link to="/" className="product-page-breadcrumb-link">
-            Inicio
-          </Link>
-          <span className="product-page-breadcrumb-separator">/</span>
-          <Link
-            to={`/products?category=${product.category}`}
-            className="product-page-breadcrumb-link"
-          >
-            {product.category}
-          </Link>
-          {product.subcategory && (
-            <>
-              <span className="product-page-breadcrumb-separator">/</span>
-              <span className="product-page-breadcrumb-current">
-                {product.subcategory}
-              </span>
-            </>
-          )}
-        </div>
         <div className="product-page-main">
           <div className="product-page-gallery">
             <div className="product-page-main-media">
