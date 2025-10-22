@@ -1,4 +1,3 @@
-// Header.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./App";
@@ -35,6 +34,7 @@ export default function Header() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    e.stopPropagation(); // <-- AÑADIDO: Detiene la propagación del evento submit
     if (searchQuery.trim()) {
       // Obtener parámetros actuales de la URL
       const params = new URLSearchParams(location.search);
@@ -46,6 +46,9 @@ export default function Header() {
       const newParams = new URLSearchParams();
       if (category) {
         newParams.set("category", category);
+      } else {
+        // Si no hay categoría y se busca, asumimos jugueteria (o la categoría por defecto)
+        newParams.set("category", "jugueteria");
       }
       newParams.set("search", searchQuery.trim());
 
@@ -82,6 +85,7 @@ export default function Header() {
         </div>
 
         <div className="header-kokos-search">
+          {/* Asegúrate que este form no esté anidado dentro de otro form en el DOM final */}
           <form onSubmit={handleSearch}>
             <input
               type="text"
@@ -89,6 +93,7 @@ export default function Header() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Buscar productos"
+              // Quita 'required' si lo tenías, no debería ser obligatorio para la navegación
             />
             <button type="submit" aria-label="Buscar">
               <Search />
@@ -246,6 +251,36 @@ export default function Header() {
         >
           CONTACTO
         </Link>
+
+        {/* --- Menú Móvil Adicional --- */}
+        {mobileMenuOpen && (
+          <div className="header-kokos-mobile-actions">
+            <hr />
+            {user ? (
+              <>
+                <Link to="/my-account" onClick={() => setMobileMenuOpen(false)}>
+                  Mi Cuenta
+                </Link>
+                <Link
+                  to="/my-account/orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Mis Pedidos
+                </Link>
+                <button onClick={handleLogout}>Cerrar Sesión</button>
+              </>
+            ) : (
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                Iniciar Sesión
+              </Link>
+            )}
+            <hr />
+            <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
+              Carrito
+            </Link>
+          </div>
+        )}
+        {/* --- Fin Menú Móvil Adicional --- */}
       </nav>
     </header>
   );

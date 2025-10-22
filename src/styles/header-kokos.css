@@ -539,3 +539,37 @@
     width: 100%;
   }
 }
+
+.header-kokos-mobile-actions {
+  display: none;
+  padding: 20px 24px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: auto;
+}
+
+@media (max-width: 768px) {
+  .header-kokos-menu.header-kokos-mobile-open .header-kokos-mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .header-kokos-mobile-actions hr {
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    margin: 8px 0;
+  }
+  .header-kokos-mobile-actions a,
+  .header-kokos-mobile-actions button {
+    color: #495057;
+    font-weight: 600;
+    text-decoration: none;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .header-kokos-mobile-actions button {
+    color: #dc3545;
+  }
+}
