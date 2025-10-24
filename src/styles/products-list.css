@@ -16,6 +16,57 @@
   margin-bottom: 32px;
 }
 
+/* Estilos para el filtro de árbol */
+.category-filter-tree {
+  max-height: 250px; /* Limitar altura si es necesario */
+  overflow-y: auto;
+  padding-right: 5px; /* Espacio para scrollbar */
+}
+.category-filter-tree::-webkit-scrollbar {
+  width: 4px;
+}
+.category-filter-tree::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Botón Filtros Móvil */
+.products-mobile-filter-btn {
+  display: none; /* Oculto por defecto */
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 2px solid #009ca6;
+  color: #009ca6;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Sidebar móvil */
+.products-mobile-close-btn {
+  display: none; /* Oculto por defecto */
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.products-mobile-filter-overlay {
+  display: none; /* Oculto por defecto */
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1040; /* Debe estar debajo del sidebar */
+}
+
 .products-list-title {
   font-size: 36px;
   font-weight: 700;
@@ -573,6 +624,10 @@
 }
 
 @media (max-width: 768px) {
+  .products-mobile-filter-btn {
+    display: inline-flex; /* Mostrar en móvil */
+  }
+
   .products-list-page {
     padding: 24px 16px;
   }
@@ -587,14 +642,35 @@
   }
 
   .products-filters-sidebar {
-    position: static;
-    max-height: none;
+    position: fixed;
+    top: 0;
+    left: -100%; /* Oculto fuera de pantalla */
+    width: 300px;
+    height: 100vh;
+    z-index: 1050;
+    transition: left 0.3s ease-in-out;
+    max-height: 100vh; /* Permitir scroll completo */
+    overflow-y: auto; /* Permitir scroll si el contenido es largo */
+    padding-top: 50px; /* Espacio para el botón de cerrar */
+  }
+  .products-filters-sidebar.mobile-visible {
+    left: 0; /* Mostrar */
+  }
+
+  .products-mobile-close-btn {
+    display: block; /* Mostrar botón de cerrar */
   }
 
   .products-toolbar {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
+  }
+
+  .products-filters-list {
+    overflow-y: visible; /* Quitar scroll interno */
+    max-height: none;
+    padding-right: 0;
   }
 
   .products-results-count {
@@ -624,6 +700,19 @@
     width: 40px;
     height: 40px;
     min-width: 40px;
+  }
+
+  .products-filters-actions {
+    margin-top: auto; /* Empujar acciones al fondo */
+    padding-bottom: 20px;
+  }
+
+  .products-mobile-filter-overlay {
+    display: block; /* Mostrar overlay */
+  }
+  .products-filters-sidebar:not(.mobile-visible)
+    ~ .products-mobile-filter-overlay {
+    display: none; /* Ocultar overlay si sidebar no está visible */
   }
 }
 

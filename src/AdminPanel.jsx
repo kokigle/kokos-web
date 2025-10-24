@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   collection,
   doc,
@@ -13,15 +13,69 @@ import {
   query,
   orderBy,
   writeBatch,
+  where, // <- Importar where
+  getDocs, // <- Importar getDocs
 } from "firebase/firestore";
 import { uploadImage } from "./cloudinary";
 import { db } from "./App";
 import ProductForm from "./ProductForm";
 import "./styles/admin-panel.css";
-
+import {
+  FaFolder,
+  FaFolderOpen,
+  FaFile,
+  FaPlus,
+  FaTrash,
+  FaPencilAlt,
+} from "react-icons/fa";
 // Helper para formatear dinero
 const formatMoney = (n) =>
   `$${Number(n).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
+
+// --- NUEVO: Helper para construir el árbol de categorías ---
+const buildCategoryTree = (categories) => {
+  const map = {};
+  const roots = [];
+  categories.forEach((cat) => {
+    map[cat.id] = { ...cat, children: [] };
+  });
+  categories.forEach((cat) => {
+    if (cat.parentId && map[cat.parentId]) {
+      map[cat.parentId].children.push(map[cat.id]);
+    } else {
+      roots.push(map[cat.id]);
+    }
+  });
+  // Ordenar hijos alfabéticamente
+  Object.values(map).forEach((node) => {
+    node.children.sort((a, b) => a.name.localeCompare(b.name));
+  });
+  roots.sort((a, b) => a.name.localeCompare(b.name));
+  return roots;
+};
+
+// --- NUEVO: Helper para obtener la ruta de una categoría ---
+const getCategoryPath = (categoryId, categoriesMap) => {
+  const path = [];
+  let current = categoriesMap[categoryId];
+  while (current) {
+    path.unshift(current.name); // Añadir al principio
+    current = categoriesMap[current.parentId];
+  }
+  return path;
+};
+
+// --- NUEVO: Helper para obtener todos los IDs descendientes ---
+const getDescendantIds = (categoryId, categoriesMap) => {
+  let ids = [categoryId];
+  const node = Object.values(categoriesMap).find((c) => c.id === categoryId);
+  if (node && node.children) {
+    node.children.forEach((child) => {
+      ids = ids.concat(getDescendantIds(child.id, categoriesMap));
+    });
+  }
+  return ids;
+};
 
 export default function AdminPanel() {
   const mainContentRef = useRef(null);
@@ -32,11 +86,13 @@ export default function AdminPanel() {
 
   // Estados de datos
   const [clients, setClients] = useState([]);
+  const [categoriesMap, setCategoriesMap] = useState({}); // <- Mapa para acceso rápido
+  const [categoryTree, setCategoryTree] = useState([]); // <- Estructura de árbol
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
 
-  // Estados de UI
+  // Estados de UI (sin cambios excepto notificaciones y diálogos)
   const [view, setView] = useState("dashboard");
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -57,8 +113,8 @@ export default function AdminPanel() {
   // Estados de filtros
   const [clientSearch, setClientSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterSubcategory, setFilterSubcategory] = useState("");
+  const [filterCategoryPath, setFilterCategoryPath] = useState([]); // <- CAMBIO: path para filtro
+  const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState(""); // ID de hoja o nodo
 
   // Estados para editar inicio
   const [bannerImages, setBannerImages] = useState([]);
@@ -72,9 +128,13 @@ export default function AdminPanel() {
   // Estados para aumento de precios
   const [increasePercentage, setIncreasePercentage] = useState(0);
   const [roundingZeros, setRoundingZeros] = useState(0);
-  const [priceCategoryFilter, setPriceCategoryFilter] = useState("");
-  const [priceSubcategoryFilter, setPriceSubcategoryFilter] = useState("");
+  const [priceCategoryFilterId, setPriceCategoryFilterId] = useState(""); // <- CAMBIO: ID para filtro de precios
   const [pricePreview, setPricePreview] = useState([]);
+
+  // Estados para gestión de categorías (NUEVOS)
+  const [editingCategory, setEditingCategory] = useState(null); // { id, name, parentId }
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryParentId, setNewCategoryParentId] = useState(null);
 
   const scrollTop = () => {
     if (mainContentRef.current) {
@@ -131,13 +191,23 @@ export default function AdminPanel() {
       setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
+    // Productos (sin cambios en la query inicial)
     const unsubProducts = onSnapshot(
       query(collection(db, "products"), orderBy("name")),
       (snap) => setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    const unsubCategories = onSnapshot(collection(db, "categories"), (snap) =>
-      setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    // --- CAMBIO: Suscripción a Categorías ---
+    const unsubCategories = onSnapshot(
+      query(collection(db, "categories"), orderBy("name")), // Ordenar por nombre
+      (snap) => {
+        const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setCategories(flatList); // Guardar lista plana
+        const map = {};
+        flatList.forEach((cat) => (map[cat.id] = cat));
+        setCategoriesMap(map); // Guardar mapa
+        setCategoryTree(buildCategoryTree(flatList)); // Construir y guardar árbol
+      }
     );
 
     const qOrders = query(
@@ -274,10 +344,11 @@ export default function AdminPanel() {
       }
 
       const uniqueUrls = Array.from(new Set(urls));
-
-      const cat = categories.find(
-        (c) => String(c.id) === String(productData.category)
-      );
+      // --- CAMBIO: Obtener categoría y ruta ---
+      const categoryId = productData.category; // Ahora es el ID de la hoja
+      const categoryPath = categoryId
+        ? getCategoryPath(categoryId, categoriesMap)
+        : [];
 
       const product = {
         code: productData.code,
@@ -290,13 +361,14 @@ export default function AdminPanel() {
         stock: Number(productData.stock) || 0,
         cant_min: Number(productData.cant_min) || 1,
         ean: productData.ean,
-        category: cat?.name || "",
-        categoryId: cat?.id || "",
-        subcategory: productData.subcategory || "",
+        categoryId: categoryId || "", // <- CAMBIO: Guardar ID de hoja
+        categoryPath: categoryPath, // <- NUEVO: Guardar ruta de nombres
         bulto: productData.bulto || "",
         colors: productData.colors || [],
         medidas: productData.medidas || [],
       };
+      delete product.category;
+      delete product.subcategory;
 
       if (productData.id) {
         await updateDoc(doc(db, "products", productData.id), product);
@@ -317,13 +389,13 @@ export default function AdminPanel() {
   };
 
   const getFilteredProductsForPriceIncrease = () => {
-    return products.filter((p) => {
-      const matchCategory =
-        !priceCategoryFilter || p.category === priceCategoryFilter;
-      const matchSubcategory =
-        !priceSubcategoryFilter || p.subcategory === priceSubcategoryFilter;
-      return matchCategory && matchSubcategory;
-    });
+    if (!priceCategoryFilterId) return products; // Todos si no hay filtro
+
+    const descendantIds = getDescendantIds(
+      priceCategoryFilterId,
+      categoriesMap
+    );
+    return products.filter((p) => descendantIds.includes(p.categoryId));
   };
   const handlePricePreview = () => {
     if (increasePercentage === 0) {
@@ -421,29 +493,108 @@ export default function AdminPanel() {
     setView("editProduct");
   };
 
-  // Funciones de categorías
-  const addSubcategory = async (catId, subName) => {
-    if (!subName) {
-      showNotification("Nombre vacío", "error");
+  // --- NUEVAS Funciones de categorías ---
+  const handleAddCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      showNotification("El nombre no puede estar vacío", "error");
       return;
     }
-    const normalized = subName.trim().toLowerCase().replace(/\s+/g, "_");
-    await updateDoc(doc(db, "categories", catId), {
-      subcategories: arrayUnion(normalized),
-    });
-    showNotification("Subcategoría agregada");
+    setLoading(true);
+    try {
+      await addDoc(collection(db, "categories"), {
+        name: name,
+        parentId: newCategoryParentId || null, // Asegurar null si es raíz
+      });
+      showNotification(`Categoría "${name}" agregada`);
+      setNewCategoryName("");
+      setNewCategoryParentId(null);
+    } catch (error) {
+      console.error("Error adding category:", error);
+      showNotification("Error al agregar categoría", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeSubcategory = async (catId, subName) => {
+  const handleUpdateCategory = async () => {
+    if (!editingCategory || !editingCategory.id) return;
+    const name = newCategoryName.trim();
+    if (!name) {
+      showNotification("El nombre no puede estar vacío", "error");
+      return;
+    }
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "categories", editingCategory.id), {
+        name: name,
+        parentId: newCategoryParentId || null,
+      });
+      showNotification(`Categoría "${name}" actualizada`);
+      setEditingCategory(null);
+      setNewCategoryName("");
+      setNewCategoryParentId(null);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      showNotification("Error al actualizar categoría", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId, categoryName) => {
     showConfirm(
-      `¿Estás seguro de que deseas eliminar la subcategoría "${subName}"?`,
+      `¿Estás seguro de que deseas eliminar la categoría "${categoryName}" y TODAS sus subcategorías? Los productos asociados quedarán sin categoría.`,
       async () => {
-        await updateDoc(doc(db, "categories", catId), {
-          subcategories: arrayRemove(subName),
-        });
-        showNotification("Subcategoría eliminada");
+        setLoading(true);
+        try {
+          const descendantIds = getDescendantIds(categoryId, categoriesMap);
+
+          // 1. Desasociar productos
+          const productsToUpdateQuery = query(
+            collection(db, "products"),
+            where("categoryId", "in", descendantIds)
+          );
+          const productsSnapshot = await getDocs(productsToUpdateQuery);
+          const productBatch = writeBatch(db);
+          productsSnapshot.forEach((productDoc) => {
+            productBatch.update(doc(db, "products", productDoc.id), {
+              categoryId: "",
+              categoryPath: [],
+            });
+          });
+          await productBatch.commit();
+
+          // 2. Eliminar categorías
+          const categoryBatch = writeBatch(db);
+          descendantIds.forEach((id) => {
+            categoryBatch.delete(doc(db, "categories", id));
+          });
+          await categoryBatch.commit();
+
+          showNotification(
+            `Categoría "${categoryName}" y sus subcategorías eliminadas`
+          );
+        } catch (error) {
+          console.error("Error deleting category:", error);
+          showNotification("Error al eliminar categoría", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
+  };
+
+  const startEditingCategory = (category) => {
+    setEditingCategory(category);
+    setNewCategoryName(category.name);
+    setNewCategoryParentId(category.parentId || null);
+  };
+
+  const cancelEditingCategory = () => {
+    setEditingCategory(null);
+    setNewCategoryName("");
+    setNewCategoryParentId(null);
   };
 
   // Funciones para editar inicio - Banner
@@ -593,15 +744,23 @@ export default function AdminPanel() {
   };
 
   // Obtener todas las opciones de redirección
-  const getRedirectOptions = () => {
-    const options = ["ninguno", "novedades"];
-    categories.forEach((cat) => {
-      (cat.subcategories || []).forEach((sub) => {
-        options.push(sub);
+  const getRedirectOptions = useCallback(() => {
+    const options = [
+      { value: "ninguno", label: "Ninguno" },
+      { value: "novedades", label: "Novedades" },
+    ];
+    const traverse = (nodes, prefix = "") => {
+      nodes.forEach((node) => {
+        const label = prefix ? `${prefix} > ${node.name}` : node.name;
+        options.push({ value: node.id, label });
+        if (node.children && node.children.length > 0) {
+          traverse(node.children, label);
+        }
       });
-    });
+    };
+    traverse(categoryTree);
     return options;
-  };
+  }, [categoryTree]);
 
   // Filtrar clientes pendientes y aprobados
   const pendingClients = clients.filter(
@@ -620,17 +779,27 @@ export default function AdminPanel() {
         c.nombre?.toLowerCase().includes(clientSearch.toLowerCase()))
   );
 
-  // Filtros de productos
+  // --- CAMBIO: Filtros de productos ---
   const filteredProducts = products.filter((p) => {
+    // Búsqueda por texto (sin cambios)
     const matchSearch =
       p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
       (p.description || "")
         .toLowerCase()
         .includes(productSearch.toLowerCase()) ||
       (p.code || "").toLowerCase().includes(productSearch.toLowerCase());
-    const matchCategory = !filterCategory || p.category === filterCategory;
-    const matchSub = !filterSubcategory || p.subcategory === filterSubcategory;
-    return matchSearch && matchCategory && matchSub;
+
+    // Filtro por categoría (NUEVO)
+    let matchCategory = true;
+    if (selectedFilterCategoryId) {
+      const descendantIds = getDescendantIds(
+        selectedFilterCategoryId,
+        categoriesMap
+      );
+      matchCategory = descendantIds.includes(p.categoryId);
+    }
+
+    return matchSearch && matchCategory;
   });
   // Filtrar pedidos por estado y búsqueda
   const filteredOrders = orders.filter((order) => {
@@ -674,6 +843,106 @@ export default function AdminPanel() {
       </div>
     );
   }
+  const CategoryTreeNode = ({ node, level = 0, onEdit, onDelete }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <div
+        style={{ marginLeft: `${level * 20}px` }}
+        className="admin-panel-category-tree-node"
+      >
+        <div className="admin-panel-category-tree-item">
+          <span
+            onClick={() => setIsOpen(!isOpen)}
+            style={{
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+            }}
+          >
+            {node.children && node.children.length > 0 ? (
+              isOpen ? (
+                <FaFolderOpen />
+              ) : (
+                <FaFolder />
+              )
+            ) : (
+              <FaFile style={{ marginLeft: "18px" }} /> // Placeholder for alignment
+            )}
+            {node.name}
+          </span>
+          <div className="admin-panel-category-tree-actions">
+            <button onClick={() => onEdit(node)} title="Editar">
+              <FaPencilAlt />
+            </button>
+            <button
+              onClick={() => onDelete(node.id, node.name)}
+              title="Eliminar"
+            >
+              <FaTrash />
+            </button>
+          </div>
+        </div>
+        {isOpen && node.children && node.children.length > 0 && (
+          <div className="admin-panel-category-tree-children">
+            {node.children.map((child) => (
+              <CategoryTreeNode
+                key={child.id}
+                node={child}
+                level={level + 1}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+  // --- FIN NUEVO Componente ---
+
+  // --- NUEVO: Componente para seleccionar categoría padre ---
+  const CategoryParentSelector = ({
+    categories,
+    value,
+    onChange,
+    currentCategoryId = null,
+  }) => {
+    const options = [{ id: null, name: "Raíz (sin padre)", level: 0 }];
+
+    const buildOptions = (nodes, level = 0) => {
+      nodes.forEach((node) => {
+        // No permitir seleccionarse a sí mismo o a sus descendientes como padre
+        if (
+          node.id !== currentCategoryId &&
+          !getDescendantIds(node.id, categoriesMap).includes(currentCategoryId)
+        ) {
+          options.push({ id: node.id, name: node.name, level });
+          if (node.children && node.children.length > 0) {
+            buildOptions(node.children, level + 1);
+          }
+        }
+      });
+    };
+    buildOptions(categoryTree);
+
+    return (
+      <select
+        value={value === null ? "" : value}
+        onChange={(e) =>
+          onChange(e.target.value === "" ? null : e.target.value)
+        }
+      >
+        {options.map((opt) => (
+          <option key={opt.id || "root"} value={opt.id === null ? "" : opt.id}>
+            {`${"--".repeat(opt.level)} ${opt.name}`}
+          </option>
+        ))}
+      </select>
+    );
+  };
+  // --- FIN NUEVO Componente ---
 
   // Panel principal
   return (
@@ -811,16 +1080,25 @@ export default function AdminPanel() {
             </div>
 
             <div className="admin-panel-dashboard-categories">
-              <h3>Subcategorías por categoría</h3>
+              <h3>Estructura de Categorías</h3>
               <div className="admin-panel-category-list">
-                {categories.map((c) => (
-                  <div key={c.id} className="admin-panel-category-item">
-                    <strong>{c.name}</strong>
-                    <span className="admin-panel-badge">
-                      {(c.subcategories || []).length} subcategorías
-                    </span>
-                  </div>
-                ))}
+                {categoryTree.length === 0 ? (
+                  <p>No hay categorías creadas.</p>
+                ) : (
+                  categoryTree.map((rootNode) => (
+                    <div
+                      key={rootNode.id}
+                      className="admin-panel-category-item"
+                    >
+                      <strong>{rootNode.name}</strong>
+                      <span className="admin-panel-badge">
+                        {getDescendantIds(rootNode.id, categoriesMap).length -
+                          1}{" "}
+                        subcategorías
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -1358,37 +1636,21 @@ export default function AdminPanel() {
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="admin-panel-search-input"
               />
-              <div className="admin-panel-filter-row">
-                <select
-                  value={filterCategory}
-                  onChange={(e) => {
-                    setFilterCategory(e.target.value);
-                    setFilterSubcategory("");
-                  }}
-                  className="admin-panel-filter-select"
+              <div
+                className="admin-panel-filter-row"
+                style={{ marginTop: "12px" }}
+              >
+                <CategoryParentSelector
+                  categories={categories}
+                  value={selectedFilterCategoryId}
+                  onChange={(id) => setSelectedFilterCategoryId(id)}
+                />
+                <button
+                  onClick={() => setSelectedFilterCategoryId("")}
+                  className="admin-panel-btn-small"
                 >
-                  <option value="">Todas las categorías</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filterSubcategory}
-                  onChange={(e) => setFilterSubcategory(e.target.value)}
-                  className="admin-panel-filter-select"
-                  disabled={!filterCategory}
-                >
-                  <option value="">Todas las subcategorías</option>
-                  {categories
-                    .find((c) => c.name === filterCategory)
-                    ?.subcategories?.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                </select>
+                  Quitar Filtro Cat.
+                </button>
               </div>
             </div>
 
@@ -1399,7 +1661,9 @@ export default function AdminPanel() {
                     <h4>{p.name}</h4>
                     <p className="admin-panel-product-code">Código: {p.code}</p>
                     <p className="admin-panel-product-category">
-                      {p.category} {p.subcategory && `/ ${p.subcategory}`}
+                      {p.categoryPath
+                        ? p.categoryPath.join(" > ")
+                        : "Sin categoría"}
                     </p>
                     <div className="admin-panel-product-prices">
                       <span>Precio 1: ${p.price_state1}</span>
@@ -1475,40 +1739,23 @@ export default function AdminPanel() {
                 </div>
               </div>
               <div className="admin-panel-filter-row">
-                <select
-                  value={priceCategoryFilter}
-                  onChange={(e) => {
-                    setPriceCategoryFilter(e.target.value);
-                    setPriceSubcategoryFilter("");
+                <CategoryParentSelector
+                  categories={categories}
+                  value={priceCategoryFilterId}
+                  onChange={(id) => {
+                    setPriceCategoryFilterId(id);
+                    setPricePreview([]); // Resetear preview al cambiar filtro
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    setPriceCategoryFilterId("");
                     setPricePreview([]);
                   }}
-                  className="admin-panel-filter-select"
+                  className="admin-panel-btn-small"
                 >
-                  <option value="">Todas las categorías</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={priceSubcategoryFilter}
-                  onChange={(e) => {
-                    setPriceSubcategoryFilter(e.target.value);
-                    setPricePreview([]);
-                  }}
-                  className="admin-panel-filter-select"
-                  disabled={!priceCategoryFilter}
-                >
-                  <option value="">Todas las subcategorías</option>
-                  {categories
-                    .find((c) => c.name === priceCategoryFilter)
-                    ?.subcategories?.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                </select>
+                  Quitar Filtro Cat.
+                </button>
               </div>
               <div className="admin-panel-form-actions">
                 <button
@@ -1587,15 +1834,17 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* Agregar/Editar Producto */}
         {(view === "addProduct" ||
           (view === "editProduct" && editingProduct)) && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">
               {editingProduct ? "Editar Producto" : "Agregar Nuevo Producto"}
             </h2>
-            <ProductForm
+            <ProductForm // <- ProductForm recibirá `categoriesMap` y `categoryTree`
               initialData={editingProduct || {}}
-              categories={categories}
+              categoriesMap={categoriesMap} // <- Pasar mapa
+              categoryTree={categoryTree} // <- Pasar árbol
               onSubmit={handleSubmitProduct}
               loading={loading}
               onCancel={() => {
@@ -1609,52 +1858,80 @@ export default function AdminPanel() {
         {view === "categories" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Gestión de Categorías</h2>
-            <div className="admin-panel-categories-list">
-              {categories.map((c) => (
-                <div key={c.id} className="admin-panel-category-card">
-                  <div className="admin-panel-category-header">
-                    <h3>{c.name}</h3>
-                    <span className="admin-panel-badge">
-                      {(c.subcategories || []).length} subcategorías
-                    </span>
-                  </div>
-                  <div className="admin-panel-subcategories-list">
-                    {(c.subcategories || []).map((s) => (
-                      <div key={s} className="admin-panel-subcategory-item">
-                        <span>{s}</span>
-                        <button
-                          onClick={() => removeSubcategory(c.id, s)}
-                          className="admin-panel-btn-remove-sub"
-                        >
-                          × Eliminar
-                        </button>
-                      </div>
-                    ))}
-                    {(!c.subcategories || c.subcategories.length === 0) && (
-                      <p className="admin-panel-empty-message">
-                        Sin subcategorías
-                      </p>
-                    )}
-                  </div>
-                  <form
-                    onSubmit={(ev) => {
-                      ev.preventDefault();
-                      addSubcategory(c.id, ev.target.sub.value);
-                      ev.target.reset();
-                    }}
-                    className="admin-panel-add-subcategory-form"
-                  >
-                    <input
-                      name="sub"
-                      placeholder="Nueva subcategoría"
-                      required
-                    />
-                    <button type="submit" className="admin-panel-btn-add-sub">
-                      + Agregar
-                    </button>
-                  </form>
+            {/* --- NUEVO: Formulario para Agregar/Editar Categoría --- */}
+            <div
+              className="admin-panel-form-section"
+              style={{ marginBottom: "30px" }}
+            >
+              <h3 className="admin-panel-section-title">
+                {editingCategory
+                  ? `Editando "${editingCategory.name}"`
+                  : "Nueva Categoría"}
+              </h3>
+              <div className="admin-panel-form-grid">
+                <div className="admin-panel-form-group">
+                  <label>Nombre *</label>
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Nombre de la categoría"
+                    required
+                  />
                 </div>
-              ))}
+                <div className="admin-panel-form-group">
+                  <label>Categoría Padre</label>
+                  <CategoryParentSelector
+                    categories={categories}
+                    value={newCategoryParentId}
+                    onChange={setNewCategoryParentId}
+                    currentCategoryId={editingCategory?.id} // Para evitar ciclos
+                  />
+                </div>
+              </div>
+              <div className="admin-panel-form-actions">
+                {editingCategory && (
+                  <button
+                    type="button"
+                    onClick={cancelEditingCategory}
+                    className="admin-panel-btn-cancel"
+                    disabled={loading}
+                  >
+                    Cancelar Edición
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={
+                    editingCategory ? handleUpdateCategory : handleAddCategory
+                  }
+                  className="admin-panel-btn-submit"
+                  disabled={loading || !newCategoryName.trim()}
+                >
+                  {loading
+                    ? "Guardando..."
+                    : editingCategory
+                    ? "Actualizar"
+                    : "Agregar"}
+                </button>
+              </div>
+            </div>
+            <div className="admin-panel-categories-tree">
+              <h3 className="admin-panel-section-title">Estructura</h3>
+              {categoryTree.length === 0 ? (
+                <p className="admin-panel-empty-message">
+                  No hay categorías creadas.
+                </p>
+              ) : (
+                categoryTree.map((rootNode) => (
+                  <CategoryTreeNode
+                    key={rootNode.id}
+                    node={rootNode}
+                    onEdit={startEditingCategory}
+                    onDelete={handleDeleteCategory}
+                  />
+                ))
+              )}
             </div>
           </div>
         )}
@@ -1698,8 +1975,8 @@ export default function AdminPanel() {
                         className="admin-panel-redirect-select"
                       >
                         {getRedirectOptions().map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
                           </option>
                         ))}
                       </select>
@@ -1758,8 +2035,8 @@ export default function AdminPanel() {
                       disabled={!homeCategories[key]?.url}
                     >
                       {getRedirectOptions().map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
                         </option>
                       ))}
                     </select>

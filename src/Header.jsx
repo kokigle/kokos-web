@@ -2,16 +2,106 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./App";
 import { db } from "./App";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
 import logo from "./assets/logo.png";
 import { Search } from "./icons/SearchIcon.jsx";
 import "./styles/header-kokos.css";
 import { ProfileIcon } from "./icons/ProfileIcon";
 import { CartIcon } from "./icons/CartIcon.jsx";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+
+const buildCategoryTree = (categories) => {
+  const map = {};
+  const roots = [];
+  categories.forEach((cat) => {
+    map[cat.id] = { ...cat, children: [] };
+  });
+  categories.forEach((cat) => {
+    if (cat.parentId && map[cat.parentId]) {
+      // Asegurarse de que el padre exista antes de intentar añadirlo
+      map[cat.parentId].children.push(map[cat.id]);
+    } else if (!cat.parentId) {
+      // Solo añadir nodos raíz si no tienen padre
+      roots.push(map[cat.id]);
+    }
+  });
+  // Ordenar hijos alfabéticamente
+  Object.values(map).forEach((node) => {
+    if (node.children) {
+      node.children.sort((a, b) => a.name.localeCompare(b.name));
+    }
+  });
+  roots.sort((a, b) => a.name.localeCompare(b.name));
+  return roots;
+};
+
+// --- NUEVO: Componente Recursivo para Submenú ---
+const SubmenuItem = ({ item, closeMobileMenu }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const hasChildren = item.children && item.children.length > 0;
+
+  // Construir la ruta completa para el Link
+  // Asumimos que la estructura base es /products?categoryPath=cat1_cat2_cat3
+  // O podrías usar categoryId si ProductsList lo maneja
+  const categoryPathString = item.path ? item.path.join("_") : item.id; // Necesitaríamos añadir 'path' al construir el árbol
+  const linkTo = `/products?categoryId=${item.id}`; // O usar categoryPathString si prefieres
+
+  const handleToggle = (e) => {
+    if (hasChildren && window.innerWidth <= 768) {
+      // Solo prevenir en móvil si hay hijos
+      e.preventDefault();
+      setIsOpen(!isOpen);
+    } else {
+      closeMobileMenu(); // Cierra en desktop o si no hay hijos
+    }
+  };
+
+  return (
+    <div
+      className={`header-kokos-submenu-item ${
+        hasChildren ? "has-children" : ""
+      } ${isOpen ? "open" : ""}`}
+    >
+      <Link to={linkTo} onClick={handleToggle}>
+        {item.name.replace(/_/g, " ").toUpperCase()}
+        {hasChildren && (
+          <span className="submenu-arrow">{isOpen ? "−" : "+"}</span>
+        )}
+      </Link>
+      {hasChildren && (
+        <div
+          className="header-kokos-submenu-nested"
+          style={{
+            display: isOpen || window.innerWidth > 768 ? "block" : "none",
+          }}
+        >
+          {item.children.map((child) => (
+            <SubmenuItem
+              key={child.id}
+              item={child}
+              closeMobileMenu={closeMobileMenu}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Función para añadir 'path' a cada nodo del árbol
+const addPathToTree = (nodes, currentPath = []) => {
+  return nodes.map((node) => {
+    const nodePath = [...currentPath, node.name]; // O node.id si prefieres path de IDs
+    const newNode = { ...node, path: nodePath };
+    if (node.children && node.children.length > 0) {
+      newNode.children = addPathToTree(node.children, nodePath);
+    }
+    return newNode;
+  });
+};
 
 export default function Header() {
   const { user, logout } = useAuth();
-  const [subcategories, setSubcategories] = useState([]);
+  const [categoryTree, setCategoryTree] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -19,43 +109,33 @@ export default function Header() {
   const [activeDropdown, setActiveDropdown] = useState(null); // Para manejar el dropdown móvil
 
   useEffect(() => {
-    const col = collection(db, "products");
-    const q = query(col, where("category", "==", "jugueteria"));
+    const q = query(collection(db, "categories"), orderBy("name")); // Ordenar raíces/nodos
     const unsub = onSnapshot(q, (snap) => {
-      const uniqueSubs = new Set();
-      snap.forEach((doc) => {
-        const data = doc.data();
-        if (data.subcategory) uniqueSubs.add(data.subcategory);
-      });
-      setSubcategories([...uniqueSubs]);
+      const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const tree = buildCategoryTree(flatList);
+      const treeWithPath = addPathToTree(tree); // Añadir la ruta a cada nodo
+      // Podrías filtrar aquí para obtener solo el árbol de "Juguetería" si es necesario
+      // O pasar el árbol completo y que el componente SubmenuItem filtre
+      setCategoryTree(treeWithPath);
     });
     return () => unsub();
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    e.stopPropagation(); // <-- AÑADIDO: Detiene la propagación del evento submit
+    e.stopPropagation();
     if (searchQuery.trim()) {
-      // Obtener parámetros actuales de la URL
+      // Podrías mantener la categoría actual si existe
       const params = new URLSearchParams(location.search);
-
-      // Mantener la categoría si existe
-      const category = params.get("category");
-
-      // Crear nuevos parámetros con la búsqueda
+      const categoryId = params.get("categoryId"); // <- Usar categoryId
       const newParams = new URLSearchParams();
-      if (category) {
-        newParams.set("category", category);
-      } else {
-        // Si no hay categoría y se busca, asumimos jugueteria (o la categoría por defecto)
-        newParams.set("category", "jugueteria");
+      if (categoryId) {
+        newParams.set("categoryId", categoryId);
       }
       newParams.set("search", searchQuery.trim());
-
-      // Navegar a products con los parámetros
       navigate(`/products?${newParams.toString()}`);
       setSearchQuery("");
-      setMobileMenuOpen(false); // Cierra el menú móvil después de buscar
+      setMobileMenuOpen(false);
     }
   };
 
@@ -67,9 +147,9 @@ export default function Header() {
     window.dispatchEvent(new Event("storage"));
   };
 
-  const toggleMobileDropdown = (dropdownName) => {
-    setActiveDropdown(activeDropdown === dropdownName ? null : dropdownName);
-  };
+  const jugueteriaNode = categoryTree.find(
+    (node) => node.name.toLowerCase() === "juguetería"
+  ); // Ajusta el nombre si es diferente
 
   return (
     <header className="header-kokos-header">
@@ -192,44 +272,43 @@ export default function Header() {
           INICIO
         </Link>
         {/* Usamos onClick para manejar el dropdown en móvil */}
-        <div
-          className={`header-kokos-dropdown-menu ${
-            activeDropdown === "jugueteria" ? "header-kokos-active" : ""
-          }`}
-        >
-          <Link
-            to="/products?category=jugueteria"
-            className="header-kokos-menu-link"
-            onClick={(e) => {
-              // Previene la navegación inmediata en móvil para abrir el dropdown
-              if (window.innerWidth <= 768 && subcategories.length > 0) {
-                e.preventDefault();
-                toggleMobileDropdown("jugueteria");
-              } else {
-                setMobileMenuOpen(false);
-              }
-            }}
-          >
-            JUGUETERÍA
-          </Link>
-          {subcategories.length > 0 && (
-            <div className="header-kokos-submenu">
-              <div className="header-kokos-submenu-content">
-                {subcategories.map((sub) => (
-                  <Link
-                    key={sub}
-                    to={`/products?category=jugueteria&subcategory=${encodeURIComponent(
-                      sub
-                    )}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {sub.replace(/_/g, " ").toUpperCase()}
-                  </Link>
-                ))}
+        {jugueteriaNode && ( // Solo mostrar si existe la categoría raíz
+          <div className="header-kokos-dropdown-menu">
+            <Link
+              to={`/products?categoryId=${jugueteriaNode.id}`} // Enlace a la categoría raíz
+              className="header-kokos-menu-link"
+              onClick={(e) => {
+                // Prevenir en móvil SI hay hijos para abrir el dropdown interno
+                if (
+                  window.innerWidth <= 768 &&
+                  jugueteriaNode.children &&
+                  jugueteriaNode.children.length > 0
+                ) {
+                  e.preventDefault();
+                  // El toggle ahora lo maneja SubmenuItem, podríamos necesitar un estado aquí o refactorizar
+                  // setActiveDropdown(activeDropdown === "jugueteria" ? null : "jugueteria"); // Mantener algo similar?
+                } else {
+                  setMobileMenuOpen(false);
+                }
+              }}
+            >
+              {jugueteriaNode.name.toUpperCase()}
+            </Link>
+            {jugueteriaNode.children && jugueteriaNode.children.length > 0 && (
+              <div className="header-kokos-submenu">
+                <div className="header-kokos-submenu-content">
+                  {jugueteriaNode.children.map((subItem) => (
+                    <SubmenuItem
+                      key={subItem.id}
+                      item={subItem}
+                      closeMobileMenu={() => setMobileMenuOpen(false)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
         <Link
           to="/nosotros"
           className="header-kokos-menu-link"

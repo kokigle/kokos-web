@@ -1,33 +1,186 @@
 // ProductsList.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  getDocs,
+} from "firebase/firestore";
 import { useAuth } from "./App";
 import { db } from "./App";
-import { ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import "./styles/products-list.css";
+import { ChevronLeft, ChevronRight, ArrowUpDown, Filter } from "lucide-react"; // Añadir Filter
+import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
+// --- NUEVO: Helper para construir árbol (igual que en Header/Admin) ---
+const buildCategoryTree = (categories) => {
+  const map = {};
+  const roots = [];
+  categories.forEach((cat) => {
+    map[cat.id] = { ...cat, children: [] };
+  });
+  categories.forEach((cat) => {
+    if (cat.parentId && map[cat.parentId]) {
+      map[cat.parentId].children.push(map[cat.id]);
+    } else {
+      roots.push(map[cat.id]);
+    }
+  });
+  // Ordenar hijos alfabéticamente
+  Object.values(map).forEach((node) => {
+    node.children.sort((a, b) => a.name.localeCompare(b.name));
+  });
+  roots.sort((a, b) => a.name.localeCompare(b.name));
+  return roots;
+};
+const getDescendantIds = (categoryId, categoriesMap) => {
+  let ids = [categoryId];
+  const node = Object.values(categoriesMap).find((c) => c.id === categoryId);
+  if (node && node.children) {
+    node.children.forEach((child) => {
+      ids = ids.concat(getDescendantIds(child.id, categoriesMap));
+    });
+  }
+  return ids;
+};
+
+// --- NUEVO: Componente para Filtro de Categorías en Árbol ---
+const CategoryFilterTree = ({
+  categoryTree,
+  selectedCategoryId,
+  onSelectCategory,
+}) => {
+  const [openNodes, setOpenNodes] = useState({});
+
+  const toggleNode = (nodeId) => {
+    setOpenNodes((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
+  };
+
+  // Abre los nodos padres de la categoría seleccionada al montar
+  useEffect(() => {
+    if (selectedCategoryId) {
+      const map = {};
+      const buildMap = (nodes) => {
+        nodes.forEach((n) => {
+          map[n.id] = n;
+          if (n.children) buildMap(n.children);
+        });
+      };
+      buildMap(categoryTree);
+
+      const getAncestors = (id) => {
+        const ancestors = {};
+        let current = map[id];
+        while (current && current.parentId) {
+          ancestors[current.parentId] = true;
+          current = Object.values(map).find((c) => c.id === current.parentId); // Lento, mejor usar un mapa de IDs
+        }
+        return ancestors;
+      };
+      setOpenNodes((prev) => ({
+        ...prev,
+        ...getAncestors(selectedCategoryId),
+      }));
+    }
+  }, [selectedCategoryId, categoryTree]);
+
+  const renderNode = (node, level = 0) => (
+    <div
+      key={node.id}
+      style={{ marginLeft: `${level * 15}px`, marginBottom: "3px" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "6px 8px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          background:
+            selectedCategoryId === node.id ? "#e7f7f8" : "transparent",
+          border:
+            selectedCategoryId === node.id
+              ? "1px solid #009ca6"
+              : "1px solid transparent",
+          fontWeight: selectedCategoryId === node.id ? "bold" : "normal",
+          fontSize: "14px",
+          color: selectedCategoryId === node.id ? "#007f85" : "#374151",
+        }}
+        onClick={() => onSelectCategory(node.id)}
+      >
+        {node.children && node.children.length > 0 && (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleNode(node.id);
+            }}
+            style={{ display: "inline-block", width: "16px", color: "#9ca3af" }}
+          >
+            {openNodes[node.id] ? (
+              <FaFolderOpen size={14} />
+            ) : (
+              <FaFolder size={14} />
+            )}
+          </span>
+        )}
+        {!node.children ||
+          (node.children.length === 0 && (
+            <span
+              style={{
+                display: "inline-block",
+                width: "16px",
+                color: "#cbd5e1",
+              }}
+            >
+              <FaFile size={12} />
+            </span>
+          ))}
+        <span>{node.name}</span>
+      </div>
+      {node.children && node.children.length > 0 && openNodes[node.id] && (
+        <div style={{ marginTop: "3px" }}>
+          {node.children.map((child) => renderNode(child, level + 1))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="category-filter-tree">
+      {categoryTree.map((node) => renderNode(node))}
+    </div>
+  );
+};
+// --- FIN NUEVO Componente ---
 
 export default function ProductsList() {
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
+  // --- CAMBIO: Estados para categorías ---
+  const [allCategories, setAllCategories] = useState([]); // Lista plana
+  const [categoriesMap, setCategoriesMap] = useState({}); // Mapa
+  const [categoryTree, setCategoryTree] = useState([]); // Árbol
+  // --- FIN CAMBIO ---
   const [pendingFilters, setPendingFilters] = useState({
     search: "",
-    minStock: "",
-    sub: "",
+    categoryId: "",
     minPrice: "",
     maxPrice: "",
   });
   const [appliedFilters, setAppliedFilters] = useState({
     search: "",
-    minStock: "",
-    sub: "",
+    categoryId: "",
     minPrice: "",
     maxPrice: "",
   });
   const [sortBy, setSortBy] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 9; // Reducido para mejor visualización
+
+  const [showMobileFilters, setShowMobileFilters] = useState(false); // Para filtros móviles
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,27 +190,15 @@ export default function ProductsList() {
   // 🔹 SINCRONIZACIÓN: Leer parámetros desde la URL e inicializar filtros
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    let category = params.get("category");
-    const subcategory = params.get("subcategory");
+    const categoryIdParam = params.get("categoryId"); // <- CAMBIO
     const searchParam = params.get("search");
-    const minStockParam = params.get("minStock");
     const minPriceParam = params.get("minPrice");
     const maxPriceParam = params.get("maxPrice");
-
-    // Si no hay categoría pero hay búsqueda, establecer categoría por defecto
-    if (!category && searchParam) {
-      category = "jugueteria";
-      // Actualizar la URL con la categoría por defecto
-      const newParams = new URLSearchParams(location.search);
-      newParams.set("category", category);
-      navigate({ search: newParams.toString() }, { replace: true });
-    }
 
     // Actualizar filtros desde la URL
     const urlFilters = {
       search: searchParam || "",
-      minStock: minStockParam || "",
-      sub: subcategory || "",
+      categoryId: categoryIdParam || "", // <- CAMBIO
       minPrice: minPriceParam || "",
       maxPrice: maxPriceParam || "",
     };
@@ -65,59 +206,38 @@ export default function ProductsList() {
     setPendingFilters(urlFilters);
     setAppliedFilters(urlFilters);
 
-    // Traer productos de Firestore
-    let q = collection(db, "products");
-    if (category && subcategory) {
-      q = query(
-        q,
-        where("category", "==", category),
-        where("subcategory", "==", subcategory)
-      );
-    } else if (category) {
-      q = query(q, where("category", "==", category));
-    }
-
-    const unsub = onSnapshot(q, (snap) => {
-      const prods = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setProducts(prods);
+    // Traer TODAS las categorías una vez
+    const qCategories = query(collection(db, "categories"), orderBy("name"));
+    const unsubCategories = onSnapshot(qCategories, (snap) => {
+      const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setAllCategories(flatList);
+      const map = {};
+      flatList.forEach((cat) => (map[cat.id] = cat));
+      setCategoriesMap(map);
+      setCategoryTree(buildCategoryTree(flatList));
     });
 
-    return () => unsub();
-  }, [location.search, navigate]);
-
-  // 🔹 Traer subcategorías
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const category = params.get("category");
-
-    if (!category) {
-      setSubcategories([]);
-      return;
-    }
-
-    const q = query(
-      collection(db, "categories"),
-      where("name", "==", category)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      if (!snap.empty) {
-        const catData = snap.docs[0].data();
-        setSubcategories(catData.subcategories || []);
-      } else {
-        setSubcategories([]);
-      }
+    // Traer TODOS los productos una vez
+    const qProducts = query(collection(db, "products"), orderBy("name"));
+    const unsubProducts = onSnapshot(qProducts, (snap) => {
+      setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
-    return () => unsub();
-  }, [location.search]);
+    return () => {
+      unsubCategories();
+      unsubProducts();
+    };
+  }, []); // Solo se ejecuta al montar
 
-  // 🔹 Aplicar filtros y ordenamiento
+  // 🔹 Aplicar filtros y ordenamiento (se ejecuta cuando cambian los productos o filtros aplicados)
   useEffect(() => {
     let result = [...products];
-    const { sub, search, minStock, minPrice, maxPrice } = appliedFilters;
+    const { categoryId, search, minPrice, maxPrice } = appliedFilters;
 
-    if (sub) {
-      result = result.filter((p) => p.subcategory === sub);
+    // --- CAMBIO: Filtrar por categoryId (incluyendo descendientes) ---
+    if (categoryId) {
+      const descendantIds = getDescendantIds(categoryId, categoriesMap);
+      result = result.filter((p) => descendantIds.includes(p.categoryId));
     }
     if (search.trim()) {
       // Función para normalizar texto (quitar tildes y convertir a minúsculas)
@@ -141,9 +261,6 @@ export default function ProductsList() {
         // Verificar que TODAS las palabras estén presentes en alguno de los campos
         return searchTerms.every((term) => searchableText.includes(term));
       });
-    }
-    if (minStock) {
-      result = result.filter((p) => p.cant_min <= parseInt(minStock));
     }
     if (user) {
       result = result.filter((p) => {
@@ -175,68 +292,36 @@ export default function ProductsList() {
     }
 
     setFiltered(result);
-    setCurrentPage(1);
-  }, [products, appliedFilters, user, sortBy]);
+    setCurrentPage(1); // Resetear página al filtrar/ordenar
+  }, [products, appliedFilters, user, sortBy, categoriesMap]); // <- Añadir categoriesMap
 
-  // 🔹 MEJORADO: Aplicar filtros y actualizar URL manteniendo category
-  const handleSearch = () => {
+  // 🔹 Aplicar filtros pendientes y actualizar URL
+  const handleApplyFilters = () => {
     setAppliedFilters({ ...pendingFilters });
+    setShowMobileFilters(false); // Cerrar filtros móviles
 
-    const params = new URLSearchParams(location.search);
-    const category = params.get("category");
-
-    // Crear nuevos parámetros
     const newParams = new URLSearchParams();
-
-    // SIEMPRE mantener la categoría si existe
-    if (category) {
-      newParams.set("category", category);
-    }
-
-    // Agregar los demás filtros solo si tienen valor
-    if (pendingFilters.sub) {
-      newParams.set("subcategory", pendingFilters.sub);
-    }
-    if (pendingFilters.search.trim()) {
+    if (pendingFilters.categoryId)
+      newParams.set("categoryId", pendingFilters.categoryId);
+    if (pendingFilters.search.trim())
       newParams.set("search", pendingFilters.search.trim());
-    }
-    if (pendingFilters.minStock) {
-      newParams.set("minStock", pendingFilters.minStock);
-    }
-    if (pendingFilters.minPrice) {
+    if (pendingFilters.minPrice)
       newParams.set("minPrice", pendingFilters.minPrice);
-    }
-    if (pendingFilters.maxPrice) {
+    if (pendingFilters.maxPrice)
       newParams.set("maxPrice", pendingFilters.maxPrice);
-    }
 
     navigate({ search: newParams.toString() }, { replace: true });
   };
 
   // 🔹 MEJORADO: Limpiar filtros manteniendo solo la categoría
+  // 🔹 Limpiar filtros
   const handleClearFilters = () => {
-    const params = new URLSearchParams(location.search);
-    const category = params.get("category");
-
-    const clearedFilters = {
-      search: "",
-      minStock: "",
-      sub: "",
-      minPrice: "",
-      maxPrice: "",
-    };
-
-    setPendingFilters(clearedFilters);
-    setAppliedFilters(clearedFilters);
+    const cleared = { search: "", minPrice: "", maxPrice: "", categoryId: "" };
+    setPendingFilters(cleared);
+    setAppliedFilters(cleared);
     setSortBy("");
-
-    // Solo mantener category en la URL
-    const newParams = new URLSearchParams();
-    if (category) {
-      newParams.set("category", category);
-    }
-
-    navigate({ search: newParams.toString() }, { replace: true });
+    setShowMobileFilters(false);
+    navigate({ search: "" }, { replace: true }); // Limpiar URL
   };
 
   // Paginación
@@ -260,57 +345,65 @@ export default function ProductsList() {
     });
   }, [currentProducts]);
 
+  // Obtener nombre de categoría actual para título (NUEVO)
+  const getCurrentCategoryName = () => {
+    if (appliedFilters.categoryId && categoriesMap[appliedFilters.categoryId]) {
+      return categoriesMap[appliedFilters.categoryId].name;
+    }
+    return "Todos los Productos"; // Título por defecto
+  };
+
   return (
     <div className="products-list-page">
       {/* Header */}
       <div className="products-list-header">
-        <h1 className="products-list-title">Jugueteria</h1>
+        <h1 className="products-list-title">{getCurrentCategoryName()}</h1>
         <p className="products-list-subtitle">
           Explora nuestra selección completa
         </p>
       </div>
+      {/* Botón Filtros Móvil (NUEVO) */}
+      <button
+        className="products-mobile-filter-btn"
+        onClick={() => setShowMobileFilters(true)}
+      >
+        <Filter size={18} /> Filtrar (
+        {Object.values(appliedFilters).filter((v) => v).length})
+      </button>
 
       {/* Layout: Sidebar + Content */}
       <div className="products-list-layout">
         {/* Sidebar de Filtros */}
-        <aside className="products-filters-sidebar">
+        <aside
+          className={`products-filters-sidebar ${
+            showMobileFilters ? "mobile-visible" : ""
+          }`}
+        >
+          {/* Botón cerrar móvil */}
+          <button
+            className="products-mobile-close-btn"
+            onClick={() => setShowMobileFilters(false)}
+          >
+            ✕
+          </button>
+
           <h3 className="products-filters-title">Filtros</h3>
 
           <div className="products-filters-list">
-            {subcategories.length > 0 && (
-              <div className="products-filter-group">
-                <label>Subcategoría</label>
-                <select
-                  value={pendingFilters.sub}
-                  onChange={(e) =>
-                    setPendingFilters({
-                      ...pendingFilters,
-                      sub: e.target.value,
-                    })
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                >
-                  <option value="">Todas</option>
-                  {subcategories.map((sub) => (
-                    <option key={sub} value={sub}>
-                      {sub
-                        .replace(/_/g, " ")
-                        .split(" ")
-                        .map(
-                          (word) =>
-                            word.charAt(0).toUpperCase() +
-                            word.slice(1).toLowerCase()
-                        )
-                        .join(" ")}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* --- CAMBIO: Filtro de Categoría Árbol --- */}
+            <div className="products-filter-group">
+              <label>Categoría</label>
+              <CategoryFilterTree
+                categoryTree={categoryTree}
+                selectedCategoryId={pendingFilters.categoryId}
+                onSelectCategory={(id) =>
+                  setPendingFilters((prev) => ({ ...prev, categoryId: id }))
+                }
+              />
+            </div>
+            {/* --- FIN CAMBIO --- */}
+
+            {/* Filtro de Precio (sin cambios estructurales) */}
             <div className="products-filter-group products-filter-price">
               <label>Precio</label>
               <div className="products-price-inputs">
@@ -324,11 +417,6 @@ export default function ProductsList() {
                       minPrice: e.target.value,
                     })
                   }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
                 />
                 <span>-</span>
                 <input
@@ -341,25 +429,23 @@ export default function ProductsList() {
                       maxPrice: e.target.value,
                     })
                   }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
                 />
               </div>
             </div>
           </div>
 
           <div className="products-filters-actions">
-            <button onClick={handleSearch} className="products-btn-primary">
+            <button
+              onClick={handleApplyFilters}
+              className="products-btn-primary"
+            >
               Aplicar Filtros
             </button>
             <button
               onClick={handleClearFilters}
               className="products-btn-secondary"
             >
-              Limpiar
+              Limpiar Todo
             </button>
           </div>
         </aside>
@@ -534,6 +620,13 @@ export default function ProductsList() {
           )}
         </div>
       </div>
+      {/* Overlay para cerrar filtros móviles */}
+      {showMobileFilters && (
+        <div
+          className="products-mobile-filter-overlay"
+          onClick={() => setShowMobileFilters(false)}
+        ></div>
+      )}
     </div>
   );
 }

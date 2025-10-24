@@ -2,9 +2,112 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
+import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
+
+const CategorySelector = ({ categoryTree, selectedCategoryId, onSelect }) => {
+  const [openNodes, setOpenNodes] = useState({});
+
+  const toggleNode = (nodeId) => {
+    setOpenNodes((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
+  };
+
+  const renderNode = (node, level = 0) => (
+    <div
+      key={node.id}
+      style={{ marginLeft: `${level * 20}px`, marginBottom: "5px" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "5px 8px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          background:
+            selectedCategoryId === node.id ? "#e7f7f8" : "transparent",
+          border:
+            selectedCategoryId === node.id
+              ? "1px solid #009ca6"
+              : "1px solid transparent",
+          fontWeight: selectedCategoryId === node.id ? "bold" : "normal",
+        }}
+        onClick={() => onSelect(node.id)} // Seleccionar al hacer clic en cualquier parte
+      >
+        {node.children && node.children.length > 0 && (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleNode(node.id);
+            }}
+            style={{ display: "inline-block", width: "18px" }}
+          >
+            {openNodes[node.id] ? <FaFolderOpen /> : <FaFolder />}
+          </span>
+        )}
+        {!node.children ||
+          (node.children.length === 0 && (
+            <span style={{ display: "inline-block", width: "18px" }}>
+              <FaFile />
+            </span>
+          ))}
+        <span>{node.name}</span>
+      </div>
+      {node.children && node.children.length > 0 && openNodes[node.id] && (
+        <div style={{ marginTop: "5px" }}>
+          {node.children.map((child) => renderNode(child, level + 1))}
+        </div>
+      )}
+    </div>
+  );
+
+  // Inicializar nodos raíz abiertos por defecto
+  useEffect(() => {
+    const initialOpen = {};
+    categoryTree.forEach((root) => (initialOpen[root.id] = true));
+    setOpenNodes(initialOpen);
+  }, [categoryTree]);
+
+  return (
+    <div
+      style={{
+        maxHeight: "300px",
+        overflowY: "auto",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        padding: "10px",
+        background: "#fdfdfd",
+      }}
+    >
+      {categoryTree.length === 0 ? (
+        <p>No hay categorías creadas.</p>
+      ) : (
+        categoryTree.map((node) => renderNode(node))
+      )}
+      <button
+        type="button"
+        onClick={() => onSelect("")} // Botón para deseleccionar
+        style={{
+          marginTop: "10px",
+          padding: "5px 10px",
+          fontSize: "12px",
+          cursor: "pointer",
+          color: "#dc3545",
+          background: "none",
+          border: "1px solid #dc3545",
+          borderRadius: "4px",
+        }}
+      >
+        Quitar Selección
+      </button>
+    </div>
+  );
+};
+
 export default function ProductForm({
   initialData = {},
-  categories,
+  categoriesMap, // <- Recibe Mapa
+  categoryTree, // <- Recibe Árbol
   onSubmit,
   loading,
   onCancel,
@@ -19,8 +122,7 @@ export default function ProductForm({
     stock: initialData?.stock !== undefined ? initialData.stock : 1,
     cant_min: initialData?.cant_min || 1,
     ean: initialData?.ean || "",
-    category: initialData?.categoryId || "",
-    subcategory: initialData?.subcategory || "",
+    category: initialData?.categoryId || "", // <- CAMBIO: Usa categoryId
     bulto: initialData?.bulto || "",
     colors: initialData?.colors || [],
     medidas: initialData?.medidas || [],
@@ -50,6 +152,9 @@ export default function ProductForm({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleCategorySelect = (categoryId) => {
+    setFormData((prev) => ({ ...prev, category: categoryId }));
+  };
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files).map((file) => ({
       file,
@@ -128,6 +233,17 @@ export default function ProductForm({
       return;
     }
 
+    if (!formData.category) {
+      alert("Debe seleccionar una categoría final (hoja) para el producto.");
+      // Opcional: Podrías permitir guardar sin categoría o validar que sea hoja
+      // const selectedCat = categoriesMap[formData.category];
+      // if (!selectedCat || (selectedCat.children && selectedCat.children.length > 0)) {
+      //    alert("Debe seleccionar una categoría final (sin subcategorías).");
+      //    return;
+      // }
+      return; // Por ahora, requerir una categoría
+    }
+
     const productData = {
       ...formData,
       multimedia,
@@ -141,9 +257,6 @@ export default function ProductForm({
 
     onSubmit(productData);
   };
-
-  const selectedCategory = categories.find((c) => c.id === formData.category);
-  const subcategories = selectedCategory?.subcategories || [];
 
   const reorder = (list, startIndex, endIndex) => {
     const result = Array.from(list);
@@ -232,38 +345,13 @@ export default function ProductForm({
       <div className="admin-panel-form-section">
         <h3 className="admin-panel-section-title">Categorización</h3>
         <div className="admin-panel-form-grid">
-          <div className="admin-panel-form-group">
+          <div className="admin-panel-form-group admin-panel-full-width">
             <label>Categoría *</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-            >
-              <option value="">-- Seleccionar --</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="admin-panel-form-group">
-            <label>Subcategoría</label>
-            <select
-              name="subcategory"
-              value={formData.subcategory}
-              onChange={handleChange}
-              disabled={!formData.category}
-            >
-              <option value="">-- Seleccionar --</option>
-              {subcategories.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <CategorySelector
+              categoryTree={categoryTree || []}
+              selectedCategoryId={formData.category}
+              onSelect={handleCategorySelect}
+            />
           </div>
 
           <div className="admin-panel-form-group">

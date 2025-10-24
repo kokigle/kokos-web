@@ -2238,3 +2238,68 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* =========================
+   CATEGORY TREE STYLES
+========================= */
+
+.admin-panel-categories-tree {
+  margin-top: 30px;
+  border-top: 2px solid var(--admin-light-gray);
+  padding-top: 20px;
+}
+
+.admin-panel-category-tree-node {
+  margin-bottom: 5px;
+}
+
+.admin-panel-category-tree-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.admin-panel-category-tree-item:hover {
+  background-color: #f0f2f5;
+}
+
+.admin-panel-category-tree-item > span {
+  font-weight: 500;
+  color: var(--admin-text-dark);
+}
+
+.admin-panel-category-tree-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.admin-panel-category-tree-item:hover .admin-panel-category-tree-actions {
+  opacity: 1;
+}
+
+.admin-panel-category-tree-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--admin-text-light);
+  font-size: 14px;
+  padding: 4px;
+}
+
+.admin-panel-category-tree-actions button:hover {
+  color: var(--admin-primary);
+}
+.admin-panel-category-tree-actions button[title="Eliminar"]:hover {
+  color: #ff4d4f;
+}
+
+.admin-panel-category-tree-children {
+  padding-top: 5px;
+  border-left: 2px solid var(--admin-light-gray);
+  margin-left: 10px; /* Alineación visual */
+}
