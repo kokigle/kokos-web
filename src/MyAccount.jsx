@@ -40,6 +40,9 @@ import {
 } from "react-icons/fa";
 import "./styles/my-account.css";
 
+import { EyeIcon } from "./icons/EyeIcon"; // Import EyeIcon
+import { EyeSlashIcon } from "./icons/EyeSlashIcon"; // Import EyeSlashIcon
+
 // --- Sub-componente para el Resumen ---
 const AccountDashboard = ({ user, orders }) => {
   const activeOrders = orders.filter(
@@ -440,13 +443,15 @@ const AccountDetails = ({ user }) => (
 
 // --- Sub-componente SEGURIDAD ---
 const AccountSecurity = () => {
-  // ... (sin cambios funcionales, pero se beneficiará de los nuevos estilos)
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -494,36 +499,63 @@ const AccountSecurity = () => {
       <form onSubmit={handleSubmit} className="my-account-form">
         <div className="my-account-form-group">
           <label>Contraseña Actual</label>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="••••••••"
-            className="my-account-input"
-            required
-          />
+          {/* Wrap input and icon */}
+          <div className="password-input-wrapper">
+            <input
+              type={showCurrentPassword ? "text" : "password"} // Toggle type
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="••••••••"
+              className="my-account-input" // Use existing class
+              required
+            />
+            <span
+              className="password-toggle-icon"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+            >
+              {showCurrentPassword ? <EyeSlashIcon /> : <EyeIcon />}
+            </span>
+          </div>
         </div>
         <div className="my-account-form-group">
           <label>Nueva Contraseña</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="••••••••"
-            className="my-account-input"
-            required
-          />
+          {/* Wrap input and icon */}
+          <div className="password-input-wrapper">
+            <input
+              type={showNewPassword ? "text" : "password"} // Toggle type
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="••••••••"
+              className="my-account-input" // Use existing class
+              required
+            />
+            <span
+              className="password-toggle-icon"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+            >
+              {showNewPassword ? <EyeSlashIcon /> : <EyeIcon />}
+            </span>
+          </div>
         </div>
         <div className="my-account-form-group">
           <label>Confirmar Nueva Contraseña</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="••••••••"
-            className="my-account-input"
-            required
-          />
+          {/* Wrap input and icon */}
+          <div className="password-input-wrapper">
+            <input
+              type={showConfirmNewPassword ? "text" : "password"} // Toggle type
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              className="my-account-input" // Use existing class
+              required
+            />
+            <span
+              className="password-toggle-icon"
+              onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+            >
+              {showConfirmNewPassword ? <EyeSlashIcon /> : <EyeIcon />}
+            </span>
+          </div>
         </div>
         {error && <p className="my-account-form-error">{error}</p>}
         {success && <p className="my-account-form-success">{success}</p>}

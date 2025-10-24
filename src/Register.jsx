@@ -18,12 +18,16 @@ import {
   FaArrowLeft,
 } from "react-icons/fa";
 import "./styles/register.css";
+import { EyeIcon } from "./icons/EyeIcon"; // Import EyeIcon
+import { EyeSlashIcon } from "./icons/EyeSlashIcon"; // Import EyeSlashIcon
 
 export default function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -407,30 +411,49 @@ export default function Register() {
                 <label htmlFor="password">
                   <FaLock /> Contraseña *
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="••••••••"
-                />
+                {/* Wrap input and icon */}
+                <div className="password-input-wrapper">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"} // Toggle type
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    placeholder="••••••••"
+                    className="register-input" // Add a class if needed, or rely on .form-group input styles
+                  />
+                  <span
+                    className="password-toggle-icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                  </span>
+                </div>
               </div>
 
               <div className="register-form-group">
                 <label htmlFor="confirmPassword">
                   <FaLock /> Confirmar Contraseña *
                 </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  placeholder="••••••••"
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"} // Toggle type
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    placeholder="••••••••"
+                    className="register-input" // Add a class if needed
+                  />
+                  <span
+                    className="password-toggle-icon"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                  </span>
+                </div>
                 {formData.confirmPassword && (
                   <div
                     className={`register-match-indicator ${

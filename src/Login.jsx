@@ -5,6 +5,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { FaEnvelope, FaLock, FaUserPlus } from "react-icons/fa";
 import "./styles/login.css";
+import { EyeIcon } from "./icons/EyeIcon"; // Import EyeIcon
+import { EyeSlashIcon } from "./icons/EyeSlashIcon"; // Import EyeSlashIcon
 
 export default function Login() {
   const { login, loading } = useAuth();
@@ -12,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState(null);
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false); // Add state for visibility
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -66,14 +69,24 @@ export default function Login() {
                 <label htmlFor="password">
                   <FaLock /> Contraseña
                 </label>
-                <input
-                  id="password"
-                  required
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
+                {/* Wrap input and icon */}
+                <div className="password-input-wrapper">
+                  <input
+                    id="password"
+                    required
+                    type={showPassword ? "text" : "password"} // Toggle type
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                  {/* Add the icon toggle */}
+                  <span
+                    className="password-toggle-icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                  </span>
+                </div>
               </div>
 
               <button type="submit" className="btn-primary" disabled={loading}>
