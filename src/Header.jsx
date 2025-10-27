@@ -34,51 +34,49 @@ const buildCategoryTree = (categories) => {
   return roots;
 };
 
-// --- NUEVO: Componente Recursivo para Submenú ---
-const SubmenuItem = ({ item, closeMobileMenu }) => {
+const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
-
-  // Construir la ruta completa para el Link
-  // Asumimos que la estructura base es /products?categoryPath=cat1_cat2_cat3
-  // O podrías usar categoryId si ProductsList lo maneja
-  const categoryPathString = item.path ? item.path.join("_") : item.id; // Necesitaríamos añadir 'path' al construir el árbol
-  const linkTo = `/products?categoryId=${item.id}`; // O usar categoryPathString si prefieres
+  const linkTo = `/products?categoryId=${item.id}`;
 
   const handleToggle = (e) => {
     if (hasChildren && window.innerWidth <= 768) {
-      // Solo prevenir en móvil si hay hijos
       e.preventDefault();
       setIsOpen(!isOpen);
     } else {
-      closeMobileMenu(); // Cierra en desktop o si no hay hijos
+      closeMobileMenu();
     }
   };
 
   return (
     <div
-      className={`header-kokos-submenu-item ${
-        hasChildren ? "has-children" : ""
-      } ${isOpen ? "open" : ""}`}
+      className={`header-submenu-item ${hasChildren ? "has-children" : ""} ${
+        isOpen ? "open" : ""
+      }`}
     >
-      <Link to={linkTo} onClick={handleToggle}>
-        {item.name.replace(/_/g, " ").toUpperCase()}
+      <Link to={linkTo} onClick={handleToggle} className="header-submenu-link">
+        <span className="header-submenu-icon">
+          {hasChildren ? (isOpen ? "📂" : "📁") : ""}
+        </span>
+        <span className="header-submenu-text">
+          {item.name.replace(/_/g, " ")}
+        </span>
         {hasChildren && (
-          <span className="submenu-arrow">{isOpen ? "−" : "+"}</span>
+          <span className="header-submenu-arrow">{isOpen ? "−" : "+"}</span>
         )}
       </Link>
       {hasChildren && (
         <div
-          className="header-kokos-submenu-nested"
-          style={{
-            display: isOpen || window.innerWidth > 768 ? "block" : "none",
-          }}
+          className={`header-submenu-nested ${
+            isOpen || window.innerWidth > 768 ? "visible" : ""
+          }`}
         >
           {item.children.map((child) => (
             <SubmenuItem
               key={child.id}
               item={child}
               closeMobileMenu={closeMobileMenu}
+              level={level + 1}
             />
           ))}
         </div>

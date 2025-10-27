@@ -6,100 +6,133 @@ import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
 
 const CategorySelector = ({ categoryTree, selectedCategoryId, onSelect }) => {
   const [openNodes, setOpenNodes] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const toggleNode = (nodeId) => {
+  const toggleNode = (nodeId, e) => {
+    e.stopPropagation();
     setOpenNodes((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
   };
 
-  const renderNode = (node, level = 0) => (
-    <div
-      key={node.id}
-      style={{ marginLeft: `${level * 20}px`, marginBottom: "5px" }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "5px 8px",
-          borderRadius: "4px",
-          cursor: "pointer",
-          background:
-            selectedCategoryId === node.id ? "#e7f7f8" : "transparent",
-          border:
-            selectedCategoryId === node.id
-              ? "1px solid #009ca6"
-              : "1px solid transparent",
-          fontWeight: selectedCategoryId === node.id ? "bold" : "normal",
-        }}
-        onClick={() => onSelect(node.id)} // Seleccionar al hacer clic en cualquier parte
-      >
-        {node.children && node.children.length > 0 && (
-          <span
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleNode(node.id);
-            }}
-            style={{ display: "inline-block", width: "18px" }}
-          >
-            {openNodes[node.id] ? <FaFolderOpen /> : <FaFolder />}
-          </span>
-        )}
-        {!node.children ||
-          (node.children.length === 0 && (
-            <span style={{ display: "inline-block", width: "18px" }}>
-              <FaFile />
-            </span>
-          ))}
-        <span>{node.name}</span>
-      </div>
-      {node.children && node.children.length > 0 && openNodes[node.id] && (
-        <div style={{ marginTop: "5px" }}>
-          {node.children.map((child) => renderNode(child, level + 1))}
-        </div>
-      )}
-    </div>
-  );
-
-  // Inicializar nodos raíz abiertos por defecto
+  // Inicializar nodos raíz abiertos
   useEffect(() => {
     const initialOpen = {};
     categoryTree.forEach((root) => (initialOpen[root.id] = true));
     setOpenNodes(initialOpen);
   }, [categoryTree]);
 
-  return (
-    <div
-      style={{
-        maxHeight: "300px",
-        overflowY: "auto",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        padding: "10px",
-        background: "#fdfdfd",
-      }}
-    >
-      {categoryTree.length === 0 ? (
-        <p>No hay categorías creadas.</p>
-      ) : (
-        categoryTree.map((node) => renderNode(node))
-      )}
-      <button
-        type="button"
-        onClick={() => onSelect("")} // Botón para deseleccionar
-        style={{
-          marginTop: "10px",
-          padding: "5px 10px",
-          fontSize: "12px",
-          cursor: "pointer",
-          color: "#dc3545",
-          background: "none",
-          border: "1px solid #dc3545",
-          borderRadius: "4px",
-        }}
+  // Filtrar árbol por búsqueda
+  const filterTree = (nodes, term) => {
+    if (!term) return nodes;
+
+    const filtered = [];
+    nodes.forEach((node) => {
+      const matches = node.name.toLowerCase().includes(term.toLowerCase());
+      const filteredChildren = node.children
+        ? filterTree(node.children, term)
+        : [];
+
+      if (matches || filteredChildren.length > 0) {
+        filtered.push({
+          ...node,
+          children: filteredChildren,
+        });
+      }
+    });
+    return filtered;
+  };
+
+  const filteredTree = filterTree(categoryTree, searchTerm);
+
+  const renderNode = (node, level = 0) => {
+    const hasChildren = node.children && node.children.length > 0;
+    const isSelected = selectedCategoryId === node.id;
+    const isOpen = openNodes[node.id];
+
+    return (
+      <div
+        key={node.id}
+        className="category-selector-node"
+        style={{ marginLeft: `${level * 16}px` }}
       >
-        Quitar Selección
-      </button>
+        <div
+          className={`category-selector-item ${isSelected ? "selected" : ""}`}
+          onClick={() => onSelect(node.id)}
+        >
+          <div className="category-selector-item-content">
+            {hasChildren && (
+              <button
+                className="category-selector-toggle"
+                onClick={(e) => toggleNode(node.id, e)}
+                type="button"
+              >
+                {isOpen ? "−" : "+"}
+              </button>
+            )}
+
+            <span className="category-selector-item-icon">
+              {hasChildren ? (isOpen ? "📂" : "📁") : "📄"}
+            </span>
+
+            <span className="category-selector-item-name">{node.name}</span>
+
+            {isSelected && (
+              <span className="category-selector-item-check">✓</span>
+            )}
+          </div>
+        </div>
+
+        {hasChildren && isOpen && (
+          <div className="category-selector-children">
+            {node.children.map((child) => renderNode(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="category-selector-container">
+      <div className="category-selector-search">
+        <input
+          type="text"
+          placeholder="🔍 Buscar categoría..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm("")}
+            className="category-selector-clear"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="category-selector-tree">
+        {filteredTree.length === 0 ? (
+          <div className="category-selector-empty">
+            <p>
+              {searchTerm
+                ? "No se encontraron categorías"
+                : "No hay categorías creadas"}
+            </p>
+          </div>
+        ) : (
+          filteredTree.map((node) => renderNode(node))
+        )}
+      </div>
+
+      {selectedCategoryId && (
+        <button
+          type="button"
+          onClick={() => onSelect("")}
+          className="category-selector-deselect"
+        >
+          ✕ Quitar selección
+        </button>
+      )}
     </div>
   );
 };

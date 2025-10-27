@@ -157,6 +157,9 @@
 .header-kokos-user-dropdown {
   position: relative;
 }
+.header-kokos-dropdown-menu {
+  position: relative;
+}
 
 .header-kokos-user-btn {
   background: white;
@@ -314,13 +317,12 @@
   width: 100%;
 }
 
-/* ===== DROPDOWN MENU (JUGUETERÍA) ===== */
+/* =========================
+   DROPDOWN MENU MEJORADO
+========================= */
+
 .header-kokos-dropdown-menu {
   position: relative;
-}
-
-.header-kokos-dropdown-menu > .header-kokos-menu-link {
-  display: inline-flex;
 }
 
 .header-kokos-submenu {
@@ -339,214 +341,144 @@
 }
 
 .header-kokos-submenu-content {
-  min-width: 240px;
+  min-width: 280px;
+  max-width: 400px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  padding: 8px 0;
-  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  padding: 12px 0;
+  border: 2px solid #17a2b8;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
-.header-kokos-submenu-item {
-  position: relative; /* Para la flecha */
+.header-kokos-submenu-content::-webkit-scrollbar {
+  width: 6px;
 }
 
-.header-kokos-submenu-item.open > a > .submenu-arrow {
-  transform: rotate(90deg);
+.header-kokos-submenu-content::-webkit-scrollbar-thumb {
+  background: #17a2b8;
+  border-radius: 10px;
 }
 
-.header-kokos-submenu-item a {
-  display: flex; /* Para alinear texto y flecha */
-  justify-content: space-between;
+.header-submenu-item {
+  position: relative;
+}
+
+.header-submenu-link {
+  display: flex;
   align-items: center;
-}
-
-.header-kokos-submenu-nested {
-  padding-left: 15px; /* Indentación para subniveles */
-  /* Estilos adicionales si quieres líneas o algo */
-  border-left: 1px solid #eee; /* Ejemplo de línea guía */
-  margin-left: 10px; /* Separación de la línea */
-}
-
-.header-kokos-submenu-content a {
-  display: block;
+  gap: 10px;
   padding: 12px 20px;
-  font-weight: 500;
-  font-size: 12px;
+  font-weight: 600;
+  font-size: 13px;
   color: #495057;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   transition: all 0.2s ease;
   text-decoration: none;
   position: relative;
+  border-left: 3px solid transparent;
 }
 
-.header-kokos-submenu-content a::before {
+.header-submenu-link::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0;
-  bottom: 0;
+  top: 50%;
+  transform: translateY(-50%);
   width: 0;
+  height: 60%;
   background: #17a2b8;
   transition: width 0.2s ease;
+  border-radius: 0 4px 4px 0;
 }
 
-.header-kokos-submenu-content a:hover {
+.header-submenu-link:hover {
   background: linear-gradient(to right, #f0feff 0%, transparent 100%);
   padding-left: 28px;
   color: #17a2b8;
 }
 
-.header-kokos-submenu-content a:hover::before {
+.header-submenu-link:hover::before {
   width: 4px;
 }
 
-/* ===== ANIMACIONES ===== */
-@keyframes header-kokos-slideDown {
+.header-submenu-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.header-submenu-text {
+  flex: 1;
+}
+
+.header-submenu-arrow {
+  font-size: 14px;
+  font-weight: 700;
+  color: #adb5bd;
+  transition: transform 0.2s ease, color 0.2s ease;
+  margin-left: auto;
+}
+
+.header-submenu-item.has-children:hover
+  > .header-submenu-link
+  .header-submenu-arrow {
+  color: #17a2b8;
+}
+
+.header-submenu-item.open > .header-submenu-link .header-submenu-arrow {
+  transform: rotate(90deg);
+}
+
+.header-submenu-nested {
+  display: none;
+  padding-left: 16px;
+  border-left: 2px solid #e9ecef;
+  margin: 4px 0 4px 20px;
+  background: linear-gradient(to right, #f8f9fa 0%, transparent 100%);
+  border-radius: 0 8px 8px 0;
+}
+
+.header-submenu-nested.visible {
+  display: block;
+  animation: header-submenu-slideIn 0.3s ease;
+}
+
+@keyframes header-submenu-slideIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    max-height: 0;
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    max-height: 500px;
   }
 }
 
-@keyframes header-kokos-fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
+.header-submenu-nested .header-submenu-link {
+  font-size: 12px;
+  padding: 10px 16px;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1024px) {
-  .header-kokos-header-top {
-    padding: 12px 30px;
-    gap: 20px;
-  }
-
-  .header-kokos-menu {
-    gap: 30px;
-    padding: 10px 30px;
-  }
-
-  .header-kokos-logo-img {
-    max-height: 50px;
-  }
+.header-submenu-nested .header-submenu-icon {
+  font-size: 12px;
 }
 
-@media (max-width: 768px) {
-  .header-kokos-submenu-nested {
-    border-left: none;
-    margin-left: 0;
-  }
-  .header-kokos-submenu-item:hover > .header-kokos-submenu-nested {
+/* Desktop: Hover para mostrar submenús anidados */
+@media (min-width: 769px) {
+  .header-submenu-item.has-children:hover > .header-submenu-nested {
     display: block;
   }
-  .submenu-arrow {
-    display: inline-block; /* Mostrar flechas en móvil */
-    font-size: 12px;
-    color: #aaa;
-  }
-  .header-kokos-submenu-item a {
-    padding: 10px 24px 10px 35px; /* Más indentación */
-    font-size: 11px;
-  }
-  .header-kokos-submenu-nested .header-kokos-submenu-item a {
-    padding-left: 50px; /* Aún más indentación */
-  }
+}
 
-  .header-kokos-header-top {
-    grid-template-columns: 100px 1fr auto;
-    padding: 10px 20px;
-    gap: 15px;
-  }
-
-  .header-kokos-logo-img {
-    max-height: 45px;
-  }
-
-  .header-kokos-search input {
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-
-  .header-kokos-search button {
-    padding: 0 14px;
-  }
-
-  .header-kokos-actions {
-    display: none;
-  }
-
-  .header-kokos-mobile-menu-toggle {
-    display: flex;
-  }
-
-  .header-kokos-menu {
-    position: fixed;
-    top: 0;
-    right: -100%;
-    width: 280px;
-    height: 100vh;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    padding: 80px 0 20px;
-    background: white;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
-    transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Transición más suave */
-    overflow-y: auto;
-  }
-
-  .header-kokos-menu.header-kokos-mobile-open {
-    right: 0;
-  }
-
-  .header-kokos-menu-link {
-    color: #495057;
-    padding: 16px 24px;
-    border-bottom: 1px solid #f0f0f0;
-    width: 100%;
-  }
-
-  .header-kokos-menu-link::after {
-    display: none;
-  }
-
-  .header-kokos-menu-link:hover {
-    background: #f8f9fa;
-    color: #17a2b8;
-    padding-left: 32px;
-  }
-
-  .header-kokos-dropdown-menu {
-    width: 100%;
-  }
-
-  .header-kokos-dropdown-menu > .header-kokos-menu-link {
-    width: 100%;
-  }
-
+/* Mobile: Click para toggle */
+@media (max-width: 768px) {
   .header-kokos-submenu {
     position: static;
     transform: none;
     padding-top: 0;
-    display: block; /* Siempre visible dentro del menú padre */
-  }
-
-  .header-kokos-dropdown-menu:hover .header-kokos-submenu {
-    display: none;
-  }
-
-  .header-kokos-dropdown-menu.header-kokos-active .header-kokos-submenu {
     display: block;
   }
 
@@ -554,70 +486,32 @@
     box-shadow: none;
     border: none;
     border-radius: 0;
-    background: #f8f9fa; /* Fondo ligeramente diferente para anidados */
+    background: #f8f9fa;
     padding: 0;
+    max-height: none;
   }
 
-  .header-kokos-submenu-content a {
-    padding: 12px 24px 12px 40px;
+  .header-submenu-link {
+    padding: 14px 24px 14px 35px;
     font-size: 12px;
   }
 
-  .header-kokos-submenu-content a:hover {
-    padding-left: 48px;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-kokos-header-top {
-    grid-template-columns: 90px 1fr auto;
-    padding: 10px 15px;
+  .header-submenu-nested {
+    padding-left: 0;
+    margin-left: 15px;
+    border-left-color: #cbd5e0;
   }
 
-  .header-kokos-logo-img {
-    max-height: 40px;
+  .header-submenu-nested .header-submenu-link {
+    padding-left: 45px;
   }
 
-  .header-kokos-search input {
-    padding: 8px 14px;
+  .header-submenu-nested .header-submenu-nested .header-submenu-link {
+    padding-left: 55px;
+  }
+
+  .header-submenu-arrow {
+    display: inline-block;
     font-size: 12px;
-  }
-
-  .header-kokos-menu {
-    width: 100%;
-  }
-}
-
-.header-kokos-mobile-actions {
-  display: none;
-  padding: 20px 24px;
-  border-top: 1px solid #f0f0f0;
-  margin-top: auto;
-}
-
-@media (max-width: 768px) {
-  .header-kokos-menu.header-kokos-mobile-open .header-kokos-mobile-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .header-kokos-mobile-actions hr {
-    border: none;
-    border-top: 1px solid #f0f0f0;
-    margin: 8px 0;
-  }
-  .header-kokos-mobile-actions a,
-  .header-kokos-mobile-actions button {
-    color: #495057;
-    font-weight: 600;
-    text-decoration: none;
-    background: none;
-    border: none;
-    text-align: left;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .header-kokos-mobile-actions button {
-    color: #dc3545;
   }
 }

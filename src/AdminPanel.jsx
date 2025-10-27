@@ -19,7 +19,7 @@ import {
 import { uploadImage } from "./cloudinary";
 import { db } from "./App";
 import ProductForm from "./ProductForm";
-import "./styles/admin-panel.css";
+import "./styles/admin-panel.css"; // Asegúrate que la ruta sea correcta
 import {
   FaFolder,
   FaFolderOpen,
@@ -43,12 +43,18 @@ const buildCategoryTree = (categories) => {
     if (cat.parentId && map[cat.parentId]) {
       map[cat.parentId].children.push(map[cat.id]);
     } else {
-      roots.push(map[cat.id]);
+      // Solo añadir nodos raíz si no tienen padre o si el padre no existe (manejo de datos huérfanos)
+      if (!cat.parentId || !map[cat.parentId]) {
+        roots.push(map[cat.id]);
+      }
     }
   });
   // Ordenar hijos alfabéticamente
   Object.values(map).forEach((node) => {
-    node.children.sort((a, b) => a.name.localeCompare(b.name));
+    if (node.children) {
+      // Verificar si 'children' existe
+      node.children.sort((a, b) => a.name.localeCompare(b.name));
+    }
   });
   roots.sort((a, b) => a.name.localeCompare(b.name));
   return roots;
@@ -68,9 +74,15 @@ const getCategoryPath = (categoryId, categoriesMap) => {
 // --- NUEVO: Helper para obtener todos los IDs descendientes ---
 const getDescendantIds = (categoryId, categoriesMap) => {
   let ids = [categoryId];
-  const node = Object.values(categoriesMap).find((c) => c.id === categoryId);
-  if (node && node.children) {
-    node.children.forEach((child) => {
+  // Convertir el mapa a un array de nodos para buscar
+  const nodesArray = Object.values(categoriesMap);
+  const node = nodesArray.find((c) => c.id === categoryId);
+
+  // Encuentra los hijos directos del nodo actual en el mapa
+  const children = nodesArray.filter((c) => c.parentId === categoryId);
+
+  if (children.length > 0) {
+    children.forEach((child) => {
       ids = ids.concat(getDescendantIds(child.id, categoriesMap));
     });
   }
@@ -92,7 +104,7 @@ export default function AdminPanel() {
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
 
-  // Estados de UI (sin cambios excepto notificaciones y diálogos)
+  // Estados de UI
   const [view, setView] = useState("dashboard");
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -103,7 +115,7 @@ export default function AdminPanel() {
   const [clientsTab, setClientsTab] = useState("pendientes");
   const [expandedClient, setExpandedClient] = useState(null);
   const [approvalState, setApprovalState] = useState(1);
-  const [approvalDiscount, setApprovalDiscount] = useState(0); // NUEVO ESTADO
+  const [approvalDiscount, setApprovalDiscount] = useState(0);
 
   // Estados para gestión de pedidos
   const [ordersTab, setOrdersTab] = useState("pending");
@@ -113,7 +125,6 @@ export default function AdminPanel() {
   // Estados de filtros
   const [clientSearch, setClientSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
-  const [filterCategoryPath, setFilterCategoryPath] = useState([]); // <- CAMBIO: path para filtro
   const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState(""); // ID de hoja o nodo
 
   // Estados para editar inicio
@@ -128,10 +139,10 @@ export default function AdminPanel() {
   // Estados para aumento de precios
   const [increasePercentage, setIncreasePercentage] = useState(0);
   const [roundingZeros, setRoundingZeros] = useState(0);
-  const [priceCategoryFilterId, setPriceCategoryFilterId] = useState(""); // <- CAMBIO: ID para filtro de precios
+  const [priceCategoryFilterId, setPriceCategoryFilterId] = useState("");
   const [pricePreview, setPricePreview] = useState([]);
 
-  // Estados para gestión de categorías (NUEVOS)
+  // Estados para gestión de categorías
   const [editingCategory, setEditingCategory] = useState(null); // { id, name, parentId }
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryParentId, setNewCategoryParentId] = useState(null);
@@ -191,22 +202,20 @@ export default function AdminPanel() {
       setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    // Productos (sin cambios en la query inicial)
     const unsubProducts = onSnapshot(
       query(collection(db, "products"), orderBy("name")),
       (snap) => setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    // --- CAMBIO: Suscripción a Categorías ---
     const unsubCategories = onSnapshot(
-      query(collection(db, "categories"), orderBy("name")), // Ordenar por nombre
+      query(collection(db, "categories"), orderBy("name")),
       (snap) => {
         const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setCategories(flatList); // Guardar lista plana
+        setCategories(flatList);
         const map = {};
         flatList.forEach((cat) => (map[cat.id] = cat));
-        setCategoriesMap(map); // Guardar mapa
-        setCategoryTree(buildCategoryTree(flatList)); // Construir y guardar árbol
+        setCategoriesMap(map);
+        setCategoryTree(buildCategoryTree(flatList));
       }
     );
 
@@ -255,6 +264,7 @@ export default function AdminPanel() {
   // Funciones de autenticación
   const loginAdmin = () => {
     if (secret === "admin123") {
+      // Consider securely managing secrets
       setAuthed(true);
     } else {
       showNotification("Clave admin incorrecta", "error");
@@ -266,16 +276,24 @@ export default function AdminPanel() {
     showConfirm(
       `¿Aprobar este usuario con Lista ${approvalState} y ${approvalDiscount}% de descuento?`,
       async () => {
-        await updateDoc(doc(db, "clients", clientId), {
-          status: "aprobado",
-          state: approvalState,
-          descuento: Number(approvalDiscount) || 0,
-        });
-        showNotification(
-          `Usuario aprobado con Lista ${approvalState} y ${approvalDiscount}% de descuento`,
-          "success"
-        );
-        setExpandedClient(null);
+        setLoading(true);
+        try {
+          await updateDoc(doc(db, "clients", clientId), {
+            status: "aprobado",
+            state: approvalState,
+            descuento: Number(approvalDiscount) || 0,
+          });
+          showNotification(
+            `Usuario aprobado con Lista ${approvalState} y ${approvalDiscount}% de descuento`,
+            "success"
+          );
+          setExpandedClient(null);
+        } catch (error) {
+          console.error("Error approving client:", error);
+          showNotification("Error al aprobar cliente.", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
   };
@@ -284,43 +302,85 @@ export default function AdminPanel() {
     showConfirm(
       "¿Estás seguro de que deseas rechazar este usuario? Esto eliminará su cuenta.",
       async () => {
-        await deleteDoc(doc(db, "clients", clientId));
-        showNotification("Usuario rechazado y eliminado", "info");
-        setExpandedClient(null);
+        setLoading(true);
+        try {
+          await deleteDoc(doc(db, "clients", clientId));
+          showNotification("Usuario rechazado y eliminado", "info");
+          setExpandedClient(null);
+        } catch (error) {
+          console.error("Error rejecting client:", error);
+          showNotification("Error al rechazar cliente.", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
   };
 
-  // Funciones de clientes (actualizadas)
+  // Funciones de clientes
   const toggleState = async (id, state) => {
-    await updateDoc(doc(db, "clients", id), { state });
-    showNotification(`Lista actualizada a ${state}`);
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "clients", id), { state });
+      showNotification(`Lista actualizada a ${state}`);
+    } catch (error) {
+      console.error("Error updating client state:", error);
+      showNotification("Error al actualizar la lista.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateClientDiscount = async (id, newDiscount) => {
-    await updateDoc(doc(db, "clients", id), {
-      descuento: Number(newDiscount) || 0,
-    });
-    showNotification(`Descuento actualizado a ${newDiscount}%`);
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "clients", id), {
+        descuento: Number(newDiscount) || 0,
+      });
+      showNotification(`Descuento actualizado a ${newDiscount}%`);
+    } catch (error) {
+      console.error("Error updating client discount:", error);
+      showNotification("Error al actualizar el descuento.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteClient = async (id) => {
     showConfirm(
       "¿Estás seguro de que deseas eliminar este cliente?",
       async () => {
-        await deleteDoc(doc(db, "clients", id));
-        showNotification("Cliente eliminado");
-        setExpandedClient(null);
+        setLoading(true);
+        try {
+          await deleteDoc(doc(db, "clients", id));
+          showNotification("Cliente eliminado");
+          setExpandedClient(null);
+        } catch (error) {
+          console.error("Error deleting client:", error);
+          showNotification("Error al eliminar cliente.", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
   };
   // Funciones de Pedidos
   const updateOrderStatus = async (orderId, newStatus) => {
     showConfirm(
-      `¿Cambiar el estado de este pedido a "${newStatus}"?`,
+      `¿Cambiar el estado de este pedido a "${newStatus.replace("_", " ")}"?`,
       async () => {
-        await updateDoc(doc(db, "orders", orderId), { status: newStatus });
-        showNotification(`Pedido actualizado a "${newStatus}"`);
+        setLoading(true);
+        try {
+          await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+          showNotification(
+            `Pedido actualizado a "${newStatus.replace("_", " ")}"`
+          );
+        } catch (error) {
+          console.error("Error updating order status:", error);
+          showNotification("Error al actualizar estado del pedido.", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
   };
@@ -344,8 +404,7 @@ export default function AdminPanel() {
       }
 
       const uniqueUrls = Array.from(new Set(urls));
-      // --- CAMBIO: Obtener categoría y ruta ---
-      const categoryId = productData.category; // Ahora es el ID de la hoja
+      const categoryId = productData.category;
       const categoryPath = categoryId
         ? getCategoryPath(categoryId, categoriesMap)
         : [];
@@ -361,12 +420,13 @@ export default function AdminPanel() {
         stock: Number(productData.stock) || 0,
         cant_min: Number(productData.cant_min) || 1,
         ean: productData.ean,
-        categoryId: categoryId || "", // <- CAMBIO: Guardar ID de hoja
-        categoryPath: categoryPath, // <- NUEVO: Guardar ruta de nombres
+        categoryId: categoryId || "",
+        categoryPath: categoryPath,
         bulto: productData.bulto || "",
         colors: productData.colors || [],
         medidas: productData.medidas || [],
       };
+      // Remove legacy fields if they exist from form submission
       delete product.category;
       delete product.subcategory;
 
@@ -389,20 +449,28 @@ export default function AdminPanel() {
   };
 
   const getFilteredProductsForPriceIncrease = () => {
-    if (!priceCategoryFilterId) return products; // Todos si no hay filtro
-
+    if (!priceCategoryFilterId) return products;
     const descendantIds = getDescendantIds(
       priceCategoryFilterId,
       categoriesMap
     );
     return products.filter((p) => descendantIds.includes(p.categoryId));
   };
+
   const handlePricePreview = () => {
     if (increasePercentage === 0) {
-      showNotification("El porcentaje debe ser mayor a 0", "error");
+      showNotification("El porcentaje debe ser diferente a 0", "error");
       return;
     }
     const filtered = getFilteredProductsForPriceIncrease();
+    if (filtered.length === 0) {
+      showNotification(
+        "No hay productos en la categoría seleccionada para previsualizar.",
+        "info"
+      );
+      setPricePreview([]);
+      return;
+    }
     const factor = 1 + increasePercentage / 100;
     const roundingFactor = Math.pow(10, roundingZeros);
 
@@ -434,7 +502,10 @@ export default function AdminPanel() {
 
   const handlePriceIncrease = async () => {
     if (pricePreview.length === 0) {
-      showNotification("No hay precios para actualizar", "error");
+      showNotification(
+        "No hay precios previsualizados para actualizar",
+        "error"
+      );
       return;
     }
 
@@ -459,6 +530,7 @@ export default function AdminPanel() {
             "success"
           );
           setPricePreview([]);
+          setIncreasePercentage(0); // Reset percentage after applying
         } catch (error) {
           console.error("Error al actualizar precios:", error);
           showNotification("Error al actualizar precios", "error");
@@ -470,20 +542,36 @@ export default function AdminPanel() {
   };
 
   const toggleStock = async (id, stock) => {
-    await updateDoc(doc(db, "products", id), { stock });
-    showNotification(
-      stock === 1
-        ? "Producto marcado como disponible"
-        : "Producto marcado sin stock"
-    );
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "products", id), { stock });
+      showNotification(
+        stock === 1
+          ? "Producto marcado como disponible"
+          : "Producto marcado sin stock"
+      );
+    } catch (error) {
+      console.error("Error updating stock:", error);
+      showNotification("Error al actualizar el stock.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteProduct = async (id) => {
     showConfirm(
       "¿Estás seguro de que deseas eliminar este producto?",
       async () => {
-        await deleteDoc(doc(db, "products", id));
-        showNotification("Producto eliminado");
+        setLoading(true);
+        try {
+          await deleteDoc(doc(db, "products", id));
+          showNotification("Producto eliminado");
+        } catch (error) {
+          console.error("Error deleting product:", error);
+          showNotification("Error al eliminar el producto.", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
   };
@@ -493,7 +581,7 @@ export default function AdminPanel() {
     setView("editProduct");
   };
 
-  // --- NUEVAS Funciones de categorías ---
+  // --- Funciones de categorías ---
   const handleAddCategory = async () => {
     const name = newCategoryName.trim();
     if (!name) {
@@ -504,7 +592,7 @@ export default function AdminPanel() {
     try {
       await addDoc(collection(db, "categories"), {
         name: name,
-        parentId: newCategoryParentId || null, // Asegurar null si es raíz
+        parentId: newCategoryParentId || null,
       });
       showNotification(`Categoría "${name}" agregada`);
       setNewCategoryName("");
@@ -589,6 +677,7 @@ export default function AdminPanel() {
     setEditingCategory(category);
     setNewCategoryName(category.name);
     setNewCategoryParentId(category.parentId || null);
+    scrollTop(); // Scroll up to see the form
   };
 
   const cancelEditingCategory = () => {
@@ -600,6 +689,7 @@ export default function AdminPanel() {
   // Funciones para editar inicio - Banner
   const handleBannerUpload = async (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
     setLoading(true);
     try {
       const currentMaxPos =
@@ -611,10 +701,10 @@ export default function AdminPanel() {
         const url = await uploadImage(file);
         if (url) {
           const nextPos = currentMaxPos + index + 1;
-          const nextId = `banner_images${Date.now()}_${index}`;
+          const nextId = `banner_${Date.now()}_${index}`; // Use a more descriptive ID
           await setDoc(doc(db, "images/banner_images/urls", nextId), {
             url,
-            redirect: "novedades",
+            redirect: "ninguno", // Default to 'ninguno'
             pos: nextPos,
           });
         }
@@ -626,75 +716,127 @@ export default function AdminPanel() {
       showNotification("Error al subir imágenes: " + err.message, "error");
     } finally {
       setLoading(false);
+      e.target.value = null; // Reset file input
     }
   };
 
   const updateBannerRedirect = async (id, redirect) => {
-    await updateDoc(doc(db, "images/banner_images/urls", id), { redirect });
-    showNotification("Redirección actualizada");
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "images/banner_images/urls", id), { redirect });
+      showNotification("Redirección actualizada");
+    } catch (error) {
+      console.error("Error updating banner redirect:", error);
+      showNotification("Error al actualizar redirección.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteBannerImage = async (id) => {
     showConfirm(
       "¿Estás seguro de que deseas eliminar esta imagen del banner?",
       async () => {
-        await deleteDoc(doc(db, "images/banner_images/urls", id));
-        await reorderBannerPositions();
-        showNotification("Imagen eliminada");
+        setLoading(true);
+        try {
+          await deleteDoc(doc(db, "images/banner_images/urls", id));
+          // No es necesario llamar a reorder aquí explícitamente si el useEffect ya escucha cambios
+          showNotification("Imagen eliminada");
+        } catch (error) {
+          console.error("Error deleting banner image:", error);
+          showNotification("Error al eliminar imagen.", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
   };
 
-  const reorderBannerPositions = async () => {
-    const remainingImages = bannerImages.filter((img) => img.id);
-    const updatePromises = remainingImages.map((img, index) =>
-      updateDoc(doc(db, "images/banner_images/urls", img.id), {
-        pos: index + 1,
-      })
-    );
-    await Promise.all(updatePromises);
-  };
+  // Reordenar posiciones después de eliminar o al arrastrar
+  useEffect(() => {
+    if (!authed || view !== "editHome") return; // Solo reordenar si estamos en la vista correcta y autenticados
+
+    const reorderBannerPositions = async () => {
+      const needsReorder = bannerImages.some(
+        (img, index) => (img.pos || 0) !== index + 1
+      );
+      if (!needsReorder) return;
+
+      setLoading(true); // Indicar carga durante la reordenación
+      try {
+        const batch = writeBatch(db);
+        bannerImages.forEach((img, index) => {
+          batch.update(doc(db, "images/banner_images/urls", img.id), {
+            pos: index + 1,
+          });
+        });
+        await batch.commit();
+        // No mostrar notificación aquí para evitar spam durante drag/drop
+      } catch (err) {
+        console.error("Error reordering banner:", err);
+        showNotification("Error al reordenar banners", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Reordenar si el número de imágenes cambia (ej. al eliminar)
+    reorderBannerPositions();
+  }, [bannerImages.length, authed, view]); // Depender de la longitud para detectar eliminaciones
 
   const handleDragStart = (index) => {
     setDraggedIndex(index);
   };
 
   const handleDragOver = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Necesario para permitir el drop
   };
 
   const handleDrop = async (dropIndex) => {
-    if (draggedIndex === null || draggedIndex === dropIndex) return;
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
 
+    // Optimistic UI update
     const newImages = [...bannerImages];
     const [draggedItem] = newImages.splice(draggedIndex, 1);
     newImages.splice(dropIndex, 0, draggedItem);
-
-    setBannerImages(newImages);
+    setBannerImages(newImages); // Actualiza el estado local inmediatamente
     setDraggedIndex(null);
 
+    // Actualizar Firestore en segundo plano
+    setLoading(true);
     try {
-      const updatePromises = newImages.map((img, index) =>
-        updateDoc(doc(db, "images/banner_images/urls", img.id), {
+      const batch = writeBatch(db);
+      newImages.forEach((img, index) => {
+        batch.update(doc(db, "images/banner_images/urls", img.id), {
           pos: index + 1,
-        })
-      );
-      await Promise.all(updatePromises);
-      showNotification("Orden actualizado");
+        });
+      });
+      await batch.commit();
+      showNotification("Orden del banner actualizado");
     } catch (err) {
-      showNotification("Error al reordenar: " + err.message, "error");
+      console.error("Error saving banner order:", err);
+      showNotification("Error al guardar el nuevo orden", "error");
+      // Revertir si falla? (Opcional, podría causar parpadeo)
+      // const revertUnsub = onSnapshot(...) // Volver a cargar desde Firestore
+    } finally {
+      setLoading(false);
     }
   };
 
   // Funciones para categorías de inicio
   const handleHomeCategoryUpload = async (categoryKey, file) => {
+    if (!file) return;
     setLoading(true);
     try {
       const url = await uploadImage(file);
       if (url) {
+        const currentData = homeCategories[categoryKey] || {};
         const newData = {
           url,
-          redirect: homeCategories[categoryKey]?.redirect || "novedades",
+          redirect: currentData.redirect || "ninguno", // Conservar redirect existente o default
         };
         await setDoc(doc(db, "images", categoryKey), newData);
 
@@ -713,32 +855,48 @@ export default function AdminPanel() {
   };
 
   const updateHomeCategoryRedirect = async (categoryKey, redirect) => {
-    await updateDoc(doc(db, "images", categoryKey), { redirect });
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "images", categoryKey), { redirect });
 
-    setHomeCategories((prev) => ({
-      ...prev,
-      [categoryKey]: {
-        ...prev[categoryKey],
-        redirect: redirect,
-      },
-    }));
+      setHomeCategories((prev) => ({
+        ...prev,
+        [categoryKey]: {
+          ...prev[categoryKey],
+          redirect: redirect,
+        },
+      }));
 
-    showNotification("Redirección actualizada");
+      showNotification("Redirección actualizada");
+    } catch (error) {
+      console.error("Error updating home category redirect:", error);
+      showNotification("Error al actualizar redirección.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteHomeCategoryImage = async (categoryKey) => {
     showConfirm(
       "¿Estás seguro de que deseas eliminar esta imagen?",
       async () => {
-        const newData = { url: "", redirect: "" };
-        await setDoc(doc(db, "images", categoryKey), newData);
+        setLoading(true);
+        try {
+          const newData = { url: "", redirect: "" };
+          await setDoc(doc(db, "images", categoryKey), newData);
 
-        setHomeCategories((prev) => ({
-          ...prev,
-          [categoryKey]: newData,
-        }));
+          setHomeCategories((prev) => ({
+            ...prev,
+            [categoryKey]: newData,
+          }));
 
-        showNotification("Imagen eliminada");
+          showNotification("Imagen eliminada");
+        } catch (error) {
+          console.error("Error deleting home category image:", error);
+          showNotification("Error al eliminar imagen.", "error");
+        } finally {
+          setLoading(false);
+        }
       }
     );
   };
@@ -748,11 +906,14 @@ export default function AdminPanel() {
     const options = [
       { value: "ninguno", label: "Ninguno" },
       { value: "novedades", label: "Novedades" },
+      // Agrega otras rutas estáticas si existen, p.ej. /nosotros, /contacto
+      // { value: "/nosotros", label: "Nosotros" },
     ];
     const traverse = (nodes, prefix = "") => {
       nodes.forEach((node) => {
         const label = prefix ? `${prefix} > ${node.name}` : node.name;
-        options.push({ value: node.id, label });
+        // Usar el ID como valor para redireccionar a la categoría
+        options.push({ value: node.id, label: `Categoría: ${label}` });
         if (node.children && node.children.length > 0) {
           traverse(node.children, label);
         }
@@ -762,7 +923,7 @@ export default function AdminPanel() {
     return options;
   }, [categoryTree]);
 
-  // Filtrar clientes pendientes y aprobados
+  // Filtrar clientes
   const pendingClients = clients.filter(
     (c) =>
       c.status === "pendiente" &&
@@ -779,17 +940,14 @@ export default function AdminPanel() {
         c.nombre?.toLowerCase().includes(clientSearch.toLowerCase()))
   );
 
-  // --- CAMBIO: Filtros de productos ---
+  // Filtrar productos
   const filteredProducts = products.filter((p) => {
-    // Búsqueda por texto (sin cambios)
+    const searchLower = productSearch.toLowerCase();
     const matchSearch =
-      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-      (p.description || "")
-        .toLowerCase()
-        .includes(productSearch.toLowerCase()) ||
-      (p.code || "").toLowerCase().includes(productSearch.toLowerCase());
+      p.name.toLowerCase().includes(searchLower) ||
+      (p.description || "").toLowerCase().includes(searchLower) ||
+      (p.code || "").toLowerCase().includes(searchLower);
 
-    // Filtro por categoría (NUEVO)
     let matchCategory = true;
     if (selectedFilterCategoryId) {
       const descendantIds = getDescendantIds(
@@ -801,7 +959,8 @@ export default function AdminPanel() {
 
     return matchSearch && matchCategory;
   });
-  // Filtrar pedidos por estado y búsqueda
+
+  // Filtrar pedidos
   const filteredOrders = orders.filter((order) => {
     if (order.status !== ordersTab) return false;
 
@@ -843,8 +1002,10 @@ export default function AdminPanel() {
       </div>
     );
   }
+
   const CategoryTreeNode = ({ node, level = 0, onEdit, onDelete }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const hasChildren = node.children && node.children.length > 0;
 
     return (
       <div
@@ -853,22 +1014,22 @@ export default function AdminPanel() {
       >
         <div className="admin-panel-category-tree-item">
           <span
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => hasChildren && setIsOpen(!isOpen)}
             style={{
-              cursor: "pointer",
+              cursor: hasChildren ? "pointer" : "default",
               display: "flex",
               alignItems: "center",
               gap: "5px",
             }}
           >
-            {node.children && node.children.length > 0 ? (
+            {hasChildren ? (
               isOpen ? (
                 <FaFolderOpen />
               ) : (
                 <FaFolder />
               )
             ) : (
-              <FaFile style={{ marginLeft: "18px" }} /> // Placeholder for alignment
+              <FaFile style={{ marginLeft: "18px", color: "#ccc" }} /> // Placeholder con ícono
             )}
             {node.name}
           </span>
@@ -884,7 +1045,7 @@ export default function AdminPanel() {
             </button>
           </div>
         </div>
-        {isOpen && node.children && node.children.length > 0 && (
+        {isOpen && hasChildren && (
           <div className="admin-panel-category-tree-children">
             {node.children.map((child) => (
               <CategoryTreeNode
@@ -900,32 +1061,42 @@ export default function AdminPanel() {
       </div>
     );
   };
-  // --- FIN NUEVO Componente ---
 
-  // --- NUEVO: Componente para seleccionar categoría padre ---
   const CategoryParentSelector = ({
-    categories,
-    value,
-    onChange,
-    currentCategoryId = null,
+    categories, // Lista plana de categorías
+    categoryTree, // Árbol para estructura
+    categoriesMap, // Mapa para lookup rápido
+    value, // ID del padre seleccionado (puede ser null)
+    onChange, // Función para manejar cambio
+    currentCategoryId = null, // ID de la categoría que se está editando (para evitar ciclos)
   }) => {
     const options = [{ id: null, name: "Raíz (sin padre)", level: 0 }];
 
     const buildOptions = (nodes, level = 0) => {
       nodes.forEach((node) => {
-        // No permitir seleccionarse a sí mismo o a sus descendientes como padre
-        if (
-          node.id !== currentCategoryId &&
-          !getDescendantIds(node.id, categoriesMap).includes(currentCategoryId)
-        ) {
+        // Prevenir seleccionarse a sí mismo o a sus descendientes
+        let isDescendant = false;
+        if (currentCategoryId) {
+          const descendants = getDescendantIds(node.id, categoriesMap);
+          isDescendant = descendants.includes(currentCategoryId);
+        }
+
+        if (node.id !== currentCategoryId && !isDescendant) {
           options.push({ id: node.id, name: node.name, level });
-          if (node.children && node.children.length > 0) {
-            buildOptions(node.children, level + 1);
+          const children = categories.filter((c) => c.parentId === node.id); // Encuentra hijos en la lista plana
+          children.sort((a, b) => a.name.localeCompare(b.name)); // Ordena hijos
+          if (children.length > 0) {
+            buildOptions(children, level + 1);
           }
         }
       });
     };
-    buildOptions(categoryTree);
+
+    // Construye las opciones desde el árbol para mantener la jerarquía visual
+    const sortedRoots = categoryTree.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+    buildOptions(sortedRoots); // Usa el árbol ordenado
 
     return (
       <select
@@ -933,16 +1104,16 @@ export default function AdminPanel() {
         onChange={(e) =>
           onChange(e.target.value === "" ? null : e.target.value)
         }
+        className="admin-panel-filter-select" // Reutiliza estilo existente
       >
         {options.map((opt) => (
           <option key={opt.id || "root"} value={opt.id === null ? "" : opt.id}>
-            {`${"--".repeat(opt.level)} ${opt.name}`}
+            {"--".repeat(opt.level) + " " + opt.name}
           </option>
         ))}
       </select>
     );
   };
-  // --- FIN NUEVO Componente ---
 
   // Panel principal
   return (
@@ -1011,7 +1182,10 @@ export default function AdminPanel() {
           </button>
           <button
             className={view === "orders" ? "admin-panel-active" : ""}
-            onClick={() => setView("orders")}
+            onClick={() => {
+              setView("orders");
+              setExpandedOrder(null);
+            }}
           >
             🛒 Pedidos
           </button>
@@ -1032,13 +1206,20 @@ export default function AdminPanel() {
           </button>
           <button
             className={view === "increasePrices" ? "admin-panel-active" : ""}
-            onClick={() => setView("increasePrices")}
+            onClick={() => {
+              setView("increasePrices");
+              setPricePreview([]); // Reset preview when switching view
+              setIncreasePercentage(0);
+            }}
           >
             💲 Aumento de Precios
           </button>
           <button
             className={view === "categories" ? "admin-panel-active" : ""}
-            onClick={() => setView("categories")}
+            onClick={() => {
+              setView("categories");
+              cancelEditingCategory(); // Reset form when switching to categories view
+            }}
           >
             🏷️ Categorías
           </button>
@@ -1052,10 +1233,12 @@ export default function AdminPanel() {
       </aside>
 
       <main className="admin-panel-content" ref={mainContentRef}>
+        {/* Dashboard */}
         {view === "dashboard" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Dashboard</h2>
             <div className="admin-panel-dashboard-stats">
+              {/* Stat Cards */}
               <div className="admin-panel-stat-card">
                 <div className="admin-panel-stat-icon">⏳</div>
                 <div className="admin-panel-stat-info">
@@ -1077,13 +1260,23 @@ export default function AdminPanel() {
                   <p>Productos</p>
                 </div>
               </div>
+              <div className="admin-panel-stat-card">
+                <div className="admin-panel-stat-icon">🛒</div>
+                <div className="admin-panel-stat-info">
+                  <h3>{orders.filter((o) => o.status === "pending").length}</h3>
+                  <p>Pedidos Pendientes</p>
+                </div>
+              </div>
             </div>
 
+            {/* Category Structure Preview */}
             <div className="admin-panel-dashboard-categories">
               <h3>Estructura de Categorías</h3>
               <div className="admin-panel-category-list">
                 {categoryTree.length === 0 ? (
-                  <p>No hay categorías creadas.</p>
+                  <p className="admin-panel-empty-message">
+                    No hay categorías creadas.
+                  </p>
                 ) : (
                   categoryTree.map((rootNode) => (
                     <div
@@ -1104,11 +1297,12 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* Clients */}
         {view === "clients" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Gestión de Clientes</h2>
 
-            {/* Tabs para Pendientes/Aprobados */}
+            {/* Tabs */}
             <div className="admin-panel-clients-tabs">
               <button
                 className={`admin-panel-clients-tab ${
@@ -1138,6 +1332,7 @@ export default function AdminPanel() {
               </button>
             </div>
 
+            {/* Search */}
             <div className="admin-panel-search-box">
               <input
                 type="text"
@@ -1148,7 +1343,7 @@ export default function AdminPanel() {
               />
             </div>
 
-            {/* Lista de Clientes Pendientes */}
+            {/* Client Lists */}
             {clientsTab === "pendientes" && (
               <div className="admin-panel-clients-list">
                 {pendingClients.length === 0 ? (
@@ -1159,6 +1354,7 @@ export default function AdminPanel() {
                 ) : (
                   pendingClients.map((c) => (
                     <div key={c.id} className="admin-panel-client-card-new">
+                      {/* Summary */}
                       <div
                         className="admin-panel-client-summary"
                         onClick={() =>
@@ -1168,14 +1364,14 @@ export default function AdminPanel() {
                         }
                       >
                         <div className="admin-panel-client-main-info">
-                          <h4>{c.razonSocial || "Sin razón social"}</h4>
+                          <h4>{c.razonSocial || c.nombre || "Sin Nombre"}</h4>
                           <p className="admin-panel-client-email">{c.email}</p>
                           <div className="admin-panel-client-badges">
                             <span className="admin-panel-admin-badge admin-panel-admin-badge-pending">
                               Pendiente
                             </span>
                             <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
-                              {c.posicionFiscal || "Sin posición fiscal"}
+                              {c.posicionFiscal || "N/A"}
                             </span>
                           </div>
                         </div>
@@ -1183,40 +1379,41 @@ export default function AdminPanel() {
                           {expandedClient === c.id ? "▲" : "▼"}
                         </div>
                       </div>
-
+                      {/* Details (Expanded) */}
                       {expandedClient === c.id && (
                         <div className="admin-panel-client-details">
+                          {/* ... grid con detalles ... */}
                           <div className="admin-panel-detail-grid">
                             <div className="admin-panel-detail-item">
-                              <strong>Nombre:</strong>
+                              <strong>Nombre:</strong>{" "}
                               <span>{c.nombre || "N/A"}</span>
                             </div>
                             <div className="admin-panel-detail-item">
-                              <strong>Apellido:</strong>
+                              <strong>Apellido:</strong>{" "}
                               <span>{c.apellido || "N/A"}</span>
                             </div>
                             <div className="admin-panel-detail-item">
-                              <strong>CUIT:</strong>
+                              <strong>CUIT:</strong>{" "}
                               <span>{c.cuit || "N/A"}</span>
                             </div>
                             <div className="admin-panel-detail-item">
-                              <strong>Teléfono:</strong>
+                              <strong>Teléfono:</strong>{" "}
                               <span>{c.telefonoMovil || "N/A"}</span>
                             </div>
                             <div className="admin-panel-detail-item">
-                              <strong>Provincia:</strong>
+                              <strong>Provincia:</strong>{" "}
                               <span>{c.provincia || "N/A"}</span>
                             </div>
                             <div className="admin-panel-detail-item">
-                              <strong>Ciudad:</strong>
+                              <strong>Ciudad:</strong>{" "}
                               <span>{c.ciudad || "N/A"}</span>
                             </div>
                             <div className="admin-panel-detail-item">
-                              <strong>Código Postal:</strong>
+                              <strong>Código Postal:</strong>{" "}
                               <span>{c.codigoPostal || "N/A"}</span>
                             </div>
                             <div className="admin-panel-detail-item">
-                              <strong>Fecha de Registro:</strong>
+                              <strong>Registro:</strong>{" "}
                               <span>
                                 {c.createdAt
                                   ? new Date(c.createdAt).toLocaleDateString(
@@ -1226,14 +1423,12 @@ export default function AdminPanel() {
                               </span>
                             </div>
                           </div>
-
+                          {/* Approval Section */}
                           <div className="admin-panel-approval-section">
+                            {/* ... controles de aprobación ... */}
                             <div className="admin-panel-approval-header">
                               <h4>Aprobar Usuario</h4>
-                              <p>
-                                Selecciona la lista y el descuento con el que
-                                será aprobado
-                              </p>
+                              <p>Selecciona la lista y el descuento</p>
                             </div>
                             <div className="admin-panel-approval-controls">
                               <div className="admin-panel-state-selector">
@@ -1258,8 +1453,20 @@ export default function AdminPanel() {
                                   Lista 2
                                 </button>
                               </div>
-                              <div className="admin-panel-form-group">
-                                <label>Descuento (%)</label>
+                              <div
+                                className="admin-panel-form-group"
+                                style={{ maxWidth: "120px" }}
+                              >
+                                {" "}
+                                {/* Inline style for quick fix */}
+                                <label
+                                  style={{
+                                    fontSize: "12px",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  Descuento (%)
+                                </label>
                                 <input
                                   type="number"
                                   value={approvalDiscount}
@@ -1267,7 +1474,9 @@ export default function AdminPanel() {
                                     setApprovalDiscount(e.target.value)
                                   }
                                   placeholder="0"
-                                />
+                                  className="admin-panel-login-input"
+                                />{" "}
+                                {/* Reusing login input style */}
                               </div>
                               <div className="admin-panel-approval-actions">
                                 <button
@@ -1293,152 +1502,171 @@ export default function AdminPanel() {
               </div>
             )}
 
-            {/* Lista de Clientes Aprobados */}
             {clientsTab === "aprobados" && (
-              <>
-                <div className="admin-panel-clients-list">
-                  {approvedClients.length === 0 ? (
-                    <div className="admin-panel-empty-state">
-                      <div className="admin-panel-empty-icon">📭</div>
-                      <p>No hay clientes aprobados</p>
-                    </div>
-                  ) : (
-                    approvedClients.map((c) => (
-                      <div key={c.id} className="admin-panel-client-card-new">
-                        <div
-                          className="admin-panel-client-summary"
-                          onClick={() =>
-                            setExpandedClient(
-                              expandedClient === c.id ? null : c.id
-                            )
-                          }
-                        >
-                          <div className="admin-panel-client-main-info">
-                            <h4>{c.razonSocial || c.email}</h4>
-                            <p className="admin-panel-client-email">
-                              {c.email}
-                            </p>
-                            <div className="admin-panel-client-badges">
-                              <span
-                                className={`admin-panel-admin-badge ${
-                                  c.state === 1
-                                    ? "admin-panel-admin-badge-state1"
-                                    : "admin-panel-admin-badge-state2"
-                                }`}
-                              >
-                                Lista {c.state || 1}
+              <div className="admin-panel-clients-list">
+                {approvedClients.length === 0 ? (
+                  <div className="admin-panel-empty-state">
+                    <div className="admin-panel-empty-icon">✅</div>
+                    <p>No hay clientes aprobados aún</p>
+                  </div>
+                ) : (
+                  approvedClients.map((c) => (
+                    <div key={c.id} className="admin-panel-client-card-new">
+                      <div
+                        className="admin-panel-client-summary"
+                        onClick={() =>
+                          setExpandedClient(
+                            expandedClient === c.id ? null : c.id
+                          )
+                        }
+                      >
+                        <div className="admin-panel-client-main-info">
+                          <h4>{c.razonSocial || c.email}</h4>
+                          <p className="admin-panel-client-email">{c.email}</p>
+                          <div className="admin-panel-client-badges">
+                            <span
+                              className={`admin-panel-admin-badge ${
+                                c.state === 1
+                                  ? "admin-panel-admin-badge-state1"
+                                  : "admin-panel-admin-badge-state2"
+                              }`}
+                            >
+                              Lista {c.state || 1}
+                            </span>
+                            {c.descuento > 0 && (
+                              <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
+                                {c.descuento}% OFF
                               </span>
-                              {c.descuento > 0 && (
-                                <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
-                                  {c.descuento}% OFF
-                                </span>
-                              )}
-                              {c.posicionFiscal && (
-                                <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
-                                  {c.posicionFiscal}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="admin-panel-expand-icon">
-                            {expandedClient === c.id ? "▲" : "▼"}
+                            )}
+                            {c.posicionFiscal && (
+                              <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
+                                {c.posicionFiscal}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        {expandedClient === c.id && (
-                          <div className="admin-panel-client-details">
-                            <div className="admin-panel-detail-grid">
-                              <div className="admin-panel-detail-item">
-                                <strong>Nombre:</strong>
-                                <span>{c.nombre || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Apellido:</strong>
-                                <span>{c.apellido || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>CUIT:</strong>
-                                <span>{c.cuit || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Teléfono:</strong>
-                                <span>{c.telefonoMovil || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Provincia:</strong>
-                                <span>{c.provincia || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Ciudad:</strong>
-                                <span>{c.ciudad || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Código Postal:</strong>
-                                <span>{c.codigoPostal || "N/A"}</span>
-                              </div>
-                              <div className="admin-panel-detail-item">
-                                <strong>Fecha de Registro:</strong>
-                                <span>
-                                  {c.createdAt
-                                    ? new Date(c.createdAt).toLocaleDateString(
-                                        "es-AR"
-                                      )
-                                    : "N/A"}
-                                </span>
-                              </div>
-                            </div>
+                        <div className="admin-panel-expand-icon">
+                          {expandedClient === c.id ? "▲" : "▼"}
+                        </div>
+                      </div>
 
-                            <div className="admin-panel-client-actions-section">
-                              <h4>Acciones</h4>
-                              <div className="admin-panel-client-actions">
-                                <button
-                                  onClick={() => toggleState(c.id, 1)}
-                                  className={`admin-panel-btn-small ${
-                                    c.state === 1 ? "admin-panel-active" : ""
-                                  }`}
-                                >
-                                  Lista 1
-                                </button>
-                                <button
-                                  onClick={() => toggleState(c.id, 2)}
-                                  className={`admin-panel-btn-small ${
-                                    c.state === 2 ? "admin-panel-active" : ""
-                                  }`}
-                                >
-                                  Lista 2
-                                </button>
-                                <div className="admin-panel-form-group">
-                                  <label>Descuento (%)</label>
-                                  <input
-                                    type="number"
-                                    defaultValue={c.descuento || 0}
-                                    onBlur={(e) =>
-                                      updateClientDiscount(c.id, e.target.value)
-                                    }
-                                    placeholder="0"
-                                    style={{ maxWidth: "100px" }}
-                                  />
-                                </div>
-                                <button
-                                  onClick={() => deleteClient(c.id)}
-                                  className="admin-panel-btn-small admin-panel-btn-danger"
-                                >
-                                  Eliminar
-                                </button>
-                              </div>
+                      {expandedClient === c.id && (
+                        <div className="admin-panel-client-details">
+                          <div className="admin-panel-detail-grid">
+                            {/* ... Client details like pending ... */}
+                            <div className="admin-panel-detail-item">
+                              <strong>Nombre:</strong>{" "}
+                              <span>{c.nombre || "N/A"}</span>
+                            </div>
+                            <div className="admin-panel-detail-item">
+                              <strong>Apellido:</strong>{" "}
+                              <span>{c.apellido || "N/A"}</span>
+                            </div>
+                            <div className="admin-panel-detail-item">
+                              <strong>CUIT:</strong>{" "}
+                              <span>{c.cuit || "N/A"}</span>
+                            </div>
+                            <div className="admin-panel-detail-item">
+                              <strong>Teléfono:</strong>{" "}
+                              <span>{c.telefonoMovil || "N/A"}</span>
+                            </div>
+                            <div className="admin-panel-detail-item">
+                              <strong>Provincia:</strong>{" "}
+                              <span>{c.provincia || "N/A"}</span>
+                            </div>
+                            <div className="admin-panel-detail-item">
+                              <strong>Ciudad:</strong>{" "}
+                              <span>{c.ciudad || "N/A"}</span>
+                            </div>
+                            <div className="admin-panel-detail-item">
+                              <strong>Código Postal:</strong>{" "}
+                              <span>{c.codigoPostal || "N/A"}</span>
+                            </div>
+                            <div className="admin-panel-detail-item">
+                              <strong>Registro:</strong>{" "}
+                              <span>
+                                {c.createdAt
+                                  ? new Date(c.createdAt).toLocaleDateString(
+                                      "es-AR"
+                                    )
+                                  : "N/A"}
+                              </span>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </>
+
+                          <div className="admin-panel-client-actions-section">
+                            <h4>Acciones</h4>
+                            <div className="admin-panel-client-actions">
+                              <button
+                                onClick={() => toggleState(c.id, 1)}
+                                className={`admin-panel-btn-small ${
+                                  c.state === 1 ? "admin-panel-active" : ""
+                                }`}
+                              >
+                                Lista 1
+                              </button>
+                              <button
+                                onClick={() => toggleState(c.id, 2)}
+                                className={`admin-panel-btn-small ${
+                                  c.state === 2 ? "admin-panel-active" : ""
+                                }`}
+                              >
+                                Lista 2
+                              </button>
+                              <div
+                                className="admin-panel-form-group"
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                <label
+                                  style={{
+                                    marginBottom: 0,
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Desc %:
+                                </label>
+                                <input
+                                  type="number"
+                                  defaultValue={c.descuento || 0}
+                                  onBlur={(e) =>
+                                    updateClientDiscount(c.id, e.target.value)
+                                  }
+                                  placeholder="0"
+                                  className="admin-panel-login-input" /* Reusing style */
+                                  style={{
+                                    maxWidth: "80px",
+                                    padding: "8px 10px",
+                                  }}
+                                />
+                              </div>
+                              <button
+                                onClick={() => deleteClient(c.id)}
+                                className="admin-panel-btn-small admin-panel-btn-danger"
+                                style={{ marginLeft: "auto" }}
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             )}
           </div>
         )}
+
+        {/* Orders */}
         {view === "orders" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Gestión de Pedidos</h2>
+            {/* Order Tabs */}
             <div className="admin-panel-clients-tabs">
               <button
                 className={`admin-panel-clients-tab ${
@@ -1446,7 +1674,10 @@ export default function AdminPanel() {
                     ? "admin-panel-clients-tab-active"
                     : ""
                 }`}
-                onClick={() => setOrdersTab("pending")}
+                onClick={() => {
+                  setOrdersTab("pending");
+                  setExpandedOrder(null);
+                }}
               >
                 Pendientes (
                 {orders.filter((o) => o.status === "pending").length})
@@ -1457,7 +1688,10 @@ export default function AdminPanel() {
                     ? "admin-panel-clients-tab-active"
                     : ""
                 }`}
-                onClick={() => setOrdersTab("in_progress")}
+                onClick={() => {
+                  setOrdersTab("in_progress");
+                  setExpandedOrder(null);
+                }}
               >
                 En Proceso (
                 {orders.filter((o) => o.status === "in_progress").length})
@@ -1468,7 +1702,10 @@ export default function AdminPanel() {
                     ? "admin-panel-clients-tab-active"
                     : ""
                 }`}
-                onClick={() => setOrdersTab("completed")}
+                onClick={() => {
+                  setOrdersTab("completed");
+                  setExpandedOrder(null);
+                }}
               >
                 Completados (
                 {orders.filter((o) => o.status === "completed").length})
@@ -1479,36 +1716,46 @@ export default function AdminPanel() {
                     ? "admin-panel-clients-tab-active"
                     : ""
                 }`}
-                onClick={() => setOrdersTab("cancelled")}
+                onClick={() => {
+                  setOrdersTab("cancelled");
+                  setExpandedOrder(null);
+                }}
               >
                 Cancelados (
                 {orders.filter((o) => o.status === "cancelled").length})
               </button>
             </div>
-            {/* **NUEVO: Barra de Búsqueda de Pedidos** */}
+            {/* Order Search */}
             <div className="admin-panel-search-box">
               <input
                 type="text"
-                placeholder="🔍 Buscar por N° de pedido, razón social o email..."
+                placeholder="🔍 Buscar por N° pedido, razón social o email..."
                 value={orderSearch}
                 onChange={(e) => setOrderSearch(e.target.value)}
                 className="admin-panel-search-input"
               />
             </div>
+
+            {/* Orders List */}
             <div className="admin-panel-orders-list">
               {filteredOrders.length === 0 ? (
                 <div className="admin-panel-empty-state">
-                  <p>No hay pedidos que coincidan con la búsqueda.</p>
+                  <p>
+                    No hay pedidos en estado "{ordersTab.replace("_", " ")}"{" "}
+                    {orderSearch && " que coincidan con la búsqueda"}.
+                  </p>
                 </div>
               ) : (
                 filteredOrders.map((order) => {
                   const client = clients.find((c) => c.id === order.clientId);
                   const total = order.items.reduce(
-                    (sum, item) => sum + item.price * item.qty,
+                    (sum, item) =>
+                      sum + (item.finalPrice ?? item.price) * item.qty,
                     0
-                  );
+                  ); // Use finalPrice if available
                   return (
                     <div key={order.id} className="admin-panel-order-card">
+                      {/* Order Summary */}
                       <div
                         className="admin-panel-order-summary"
                         onClick={() =>
@@ -1521,15 +1768,26 @@ export default function AdminPanel() {
                           <h4>
                             Pedido #{order.id.substring(0, 7).toUpperCase()}
                           </h4>
-                          <p>{client?.razonSocial || order.clientEmail}</p>
+                          <p>
+                            {client?.razonSocial ||
+                              order.clientEmail ||
+                              "Cliente Desconocido"}
+                          </p>
                           <span>
                             {new Date(order.createdAt).toLocaleDateString(
-                              "es-AR"
+                              "es-AR",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
                             )}
                           </span>
                         </div>
                         <div className="admin-panel-order-meta">
-                          <span>{order.items.length} items</span>
+                          <span>{order.items.length} item(s)</span>
                           <strong>{formatMoney(total)}</strong>
                           <div
                             className={`admin-panel-order-status-badge admin-panel-order-status-${order.status}`}
@@ -1541,21 +1799,35 @@ export default function AdminPanel() {
                           {expandedOrder === order.id ? "▲" : "▼"}
                         </div>
                       </div>
+                      {/* Order Details (Expanded) */}
                       {expandedOrder === order.id && (
                         <div className="admin-panel-order-details">
                           <h5>Detalle del Cliente</h5>
                           <div className="admin-panel-order-client-details">
                             <p>
                               <strong>Razón Social:</strong>{" "}
-                              {client?.razonSocial}
+                              {client?.razonSocial || "N/A"}
                             </p>
                             <p>
-                              <strong>Email:</strong> {client?.email}
+                              <strong>Email:</strong> {client?.email || "N/A"}
                             </p>
                             <p>
-                              <strong>Teléfono:</strong> {client?.telefonoMovil}
+                              <strong>Teléfono:</strong>{" "}
+                              {client?.telefonoMovil || "N/A"}
+                            </p>
+                            <p>
+                              <strong>CUIT:</strong> {client?.cuit || "N/A"}
+                            </p>
+                            <p>
+                              <strong>Lista Asignada:</strong>{" "}
+                              {client?.state || "N/A"}
+                            </p>
+                            <p>
+                              <strong>Descuento Aplicado:</strong>{" "}
+                              {order.discountApplied || 0}%
                             </p>
                           </div>
+
                           <h5>Productos</h5>
                           <div className="admin-panel-order-items-list">
                             {order.items.map((item) => (
@@ -1563,55 +1835,86 @@ export default function AdminPanel() {
                                 key={item.id}
                                 className="admin-panel-order-item"
                               >
-                                <img src={item.image} alt={item.name} />
+                                <img
+                                  src={item.image || "placeholder.png"}
+                                  alt={item.name}
+                                />
                                 <div className="admin-panel-order-item-info">
                                   <span>{item.name}</span>
-                                  <small>Código: {item.code}</small>
+                                  <small>Cod: {item.code}</small>
                                 </div>
                                 <div className="admin-panel-order-item-pricing">
                                   <span>
-                                    {item.qty} x {formatMoney(item.price)}
+                                    {item.qty} x {formatMoney(item.price)} (
+                                    {order.discountApplied || 0}% off) ={" "}
+                                    {formatMoney(item.finalPrice ?? item.price)}{" "}
+                                    c/u
                                   </span>
                                   <strong>
-                                    {formatMoney(item.qty * item.price)}
+                                    {formatMoney(
+                                      (item.finalPrice ?? item.price) * item.qty
+                                    )}
                                   </strong>
                                 </div>
                               </div>
                             ))}
                           </div>
+
+                          {order.comments && (
+                            <>
+                              <h5>Comentarios del Cliente</h5>
+                              <p
+                                style={{
+                                  fontStyle: "italic",
+                                  background: "#eee",
+                                  padding: "10px",
+                                  borderRadius: "5px",
+                                }}
+                              >
+                                {order.comments}
+                              </p>
+                            </>
+                          )}
+
                           <div className="admin-panel-order-actions">
                             <h5>Cambiar Estado</h5>
                             <div className="admin-panel-order-status-buttons">
-                              {order.status !== "in_progress" && (
-                                <button
-                                  onClick={() =>
-                                    updateOrderStatus(order.id, "in_progress")
-                                  }
-                                  className="admin-panel-btn-small"
-                                >
-                                  A "En Proceso"
-                                </button>
-                              )}
-                              {order.status !== "completed" && (
-                                <button
-                                  onClick={() =>
-                                    updateOrderStatus(order.id, "completed")
-                                  }
-                                  className="admin-panel-btn-small admin-panel-btn-approve"
-                                >
-                                  A "Completado"
-                                </button>
-                              )}
-                              {order.status !== "cancelled" && (
-                                <button
-                                  onClick={() =>
-                                    updateOrderStatus(order.id, "cancelled")
-                                  }
-                                  className="admin-panel-btn-small admin-panel-btn-danger"
-                                >
-                                  A "Cancelado"
-                                </button>
-                              )}
+                              <button
+                                onClick={() =>
+                                  updateOrderStatus(order.id, "pending")
+                                }
+                                className="admin-panel-btn-small"
+                                disabled={order.status === "pending"}
+                              >
+                                A Pendiente
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updateOrderStatus(order.id, "in_progress")
+                                }
+                                className="admin-panel-btn-small"
+                                disabled={order.status === "in_progress"}
+                              >
+                                A En Proceso
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updateOrderStatus(order.id, "completed")
+                                }
+                                className="admin-panel-btn-small admin-panel-btn-approve"
+                                disabled={order.status === "completed"}
+                              >
+                                A Completado
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updateOrderStatus(order.id, "cancelled")
+                                }
+                                className="admin-panel-btn-small admin-panel-btn-danger"
+                                disabled={order.status === "cancelled"}
+                              >
+                                A Cancelado
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -1624,10 +1927,11 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* Products */}
         {view === "products" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Gestión de Productos</h2>
-
+            {/* Product Filters */}
             <div className="admin-panel-filters-section">
               <input
                 type="text"
@@ -1636,12 +1940,11 @@ export default function AdminPanel() {
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="admin-panel-search-input"
               />
-              <div
-                className="admin-panel-filter-row"
-                style={{ marginTop: "12px" }}
-              >
+              <div className="admin-panel-filter-row">
                 <CategoryParentSelector
                   categories={categories}
+                  categoryTree={categoryTree}
+                  categoriesMap={categoriesMap}
                   value={selectedFilterCategoryId}
                   onChange={(id) => setSelectedFilterCategoryId(id)}
                 />
@@ -1653,61 +1956,100 @@ export default function AdminPanel() {
                 </button>
               </div>
             </div>
-
+            {/* Products List */}
             <div className="admin-panel-products-list">
-              {filteredProducts.map((p) => (
-                <div key={p.id} className="admin-panel-product-card-admin">
-                  <div className="admin-panel-product-info">
-                    <h4>{p.name}</h4>
-                    <p className="admin-panel-product-code">Código: {p.code}</p>
-                    <p className="admin-panel-product-category">
-                      {p.categoryPath
-                        ? p.categoryPath.join(" > ")
-                        : "Sin categoría"}
-                    </p>
-                    <div className="admin-panel-product-prices">
-                      <span>Precio 1: ${p.price_state1}</span>
-                      <span>Precio 2: ${p.price_state2}</span>
-                    </div>
-                  </div>
-                  <div className="admin-panel-product-actions">
-                    <span
-                      className={`admin-panel-stock-badge ${
-                        p.stock === 1
-                          ? "admin-panel-in-stock"
-                          : "admin-panel-out-stock"
-                      }`}
-                    >
-                      {p.stock === 1 ? "En stock" : "Sin stock"}
-                    </span>
-                    <div className="admin-panel-action-buttons">
-                      <button
-                        onClick={() => toggleStock(p.id, p.stock === 1 ? 0 : 1)}
-                        className="admin-panel-btn-small"
-                      >
-                        {p.stock === 1
-                          ? "Marcar sin stock"
-                          : "Marcar disponible"}
-                      </button>
-                      <button
-                        onClick={() => editProduct(p)}
-                        className="admin-panel-btn-small admin-panel-btn-edit"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => deleteProduct(p.id)}
-                        className="admin-panel-btn-small admin-panel-btn-danger"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </div>
+              {filteredProducts.length === 0 ? (
+                <div className="admin-panel-empty-state">
+                  <p>
+                    No hay productos{" "}
+                    {productSearch || selectedFilterCategoryId
+                      ? "que coincidan con los filtros"
+                      : ""}
+                    .
+                  </p>
                 </div>
-              ))}
+              ) : (
+                filteredProducts.map((p) => (
+                  <div key={p.id} className="admin-panel-product-card-admin">
+                    <div className="admin-panel-product-info">
+                      <h4>{p.name}</h4>
+                      <p className="admin-panel-product-code">
+                        Código: {p.code || "N/A"}
+                      </p>
+                      <p className="admin-panel-product-category">
+                        {p.categoryPath && p.categoryPath.length > 0
+                          ? p.categoryPath.join(" > ")
+                          : "Sin categoría"}
+                      </p>
+                      <div className="admin-panel-product-prices">
+                        <span>Lista 1: {formatMoney(p.price_state1)}</span>
+                        <span>Lista 2: {formatMoney(p.price_state2)}</span>
+                      </div>
+                    </div>
+                    <div className="admin-panel-product-actions">
+                      <span
+                        className={`admin-panel-stock-badge ${
+                          p.stock === 1
+                            ? "admin-panel-in-stock"
+                            : "admin-panel-out-stock"
+                        }`}
+                      >
+                        {p.stock === 1 ? "En stock" : "Sin stock"}
+                      </span>
+                      <div className="admin-panel-action-buttons">
+                        <button
+                          onClick={() =>
+                            toggleStock(p.id, p.stock === 1 ? 0 : 1)
+                          }
+                          className="admin-panel-btn-small"
+                        >
+                          {p.stock === 1
+                            ? "Marcar sin stock"
+                            : "Marcar disponible"}
+                        </button>
+                        <button
+                          onClick={() => editProduct(p)}
+                          className="admin-panel-btn-small admin-panel-btn-edit"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => deleteProduct(p.id)}
+                          className="admin-panel-btn-small admin-panel-btn-danger"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
+
+        {/* Add/Edit Product Form */}
+        {(view === "addProduct" ||
+          (view === "editProduct" && editingProduct)) && (
+          <div className="admin-panel-card">
+            <h2 className="admin-panel-title">
+              {editingProduct ? "Editar Producto" : "Agregar Nuevo Producto"}
+            </h2>
+            <ProductForm
+              initialData={editingProduct || {}}
+              categoriesMap={categoriesMap}
+              categoryTree={categoryTree}
+              onSubmit={handleSubmitProduct}
+              loading={loading}
+              onCancel={() => {
+                resetProductForm();
+                setView("products");
+              }}
+            />
+          </div>
+        )}
+
+        {/* Increase Prices */}
         {view === "increasePrices" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Aumento de Precios General</h2>
@@ -1717,12 +2059,12 @@ export default function AdminPanel() {
               </h3>
               <div className="admin-panel-form-grid">
                 <div className="admin-panel-form-group">
-                  <label>Porcentaje de Aumento (%)</label>
+                  <label>Porcentaje de Aumento/Disminución (%)</label>
                   <input
                     type="number"
                     value={increasePercentage}
                     onChange={(e) => setIncreasePercentage(e.target.value)}
-                    placeholder="Ej: 15"
+                    placeholder="Ej: 15 (para aumento), -10 (para disminución)"
                   />
                 </div>
                 <div className="admin-panel-form-group">
@@ -1730,8 +2072,9 @@ export default function AdminPanel() {
                   <select
                     value={roundingZeros}
                     onChange={(e) => setRoundingZeros(Number(e.target.value))}
+                    className="admin-panel-filter-select" // Reusing style
                   >
-                    <option value={0}>Sin redondeo (ej: $123)</option>
+                    <option value={0}>Sin redondeo (ej: $123.45)</option>
                     <option value={1}>Terminación en 0 (ej: $120)</option>
                     <option value={2}>Terminación en 00 (ej: $100)</option>
                     <option value={3}>Terminación en 000 (ej: $1000)</option>
@@ -1741,10 +2084,12 @@ export default function AdminPanel() {
               <div className="admin-panel-filter-row">
                 <CategoryParentSelector
                   categories={categories}
+                  categoryTree={categoryTree}
+                  categoriesMap={categoriesMap}
                   value={priceCategoryFilterId}
                   onChange={(id) => {
                     setPriceCategoryFilterId(id);
-                    setPricePreview([]); // Resetear preview al cambiar filtro
+                    setPricePreview([]); // Reset preview on filter change
                   }}
                 />
                 <button
@@ -1770,32 +2115,48 @@ export default function AdminPanel() {
                   className="admin-panel-btn-submit"
                   disabled={loading || pricePreview.length === 0}
                 >
-                  {loading ? "Actualizando..." : "Aplicar Aumento"}
+                  {loading ? "Actualizando..." : "Aplicar Cambios"}
                 </button>
               </div>
             </div>
+
             {pricePreview.length > 0 && (
               <div className="admin-panel-form-section">
                 <h3 className="admin-panel-section-title">
-                  Previsualización de Precios ({pricePreview.length} productos)
+                  Previsualización ({pricePreview.length} productos)
                 </h3>
                 <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                  <table style={{ width: "100%" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                      <tr>
-                        <th>Producto</th>
-                        <th>Precio 1 Actual</th>
-                        <th>Precio 1 Nuevo</th>
-                        <th>Precio 2 Actual</th>
-                        <th>Precio 2 Nuevo</th>
+                      <tr style={{ background: "#f0f2f5" }}>
+                        <th style={{ padding: "8px", textAlign: "left" }}>
+                          Producto
+                        </th>
+                        <th style={{ padding: "8px", textAlign: "right" }}>
+                          Lista 1 Actual
+                        </th>
+                        <th style={{ padding: "8px", textAlign: "right" }}>
+                          Lista 1 Nueva
+                        </th>
+                        <th style={{ padding: "8px", textAlign: "right" }}>
+                          Lista 2 Actual
+                        </th>
+                        <th style={{ padding: "8px", textAlign: "right" }}>
+                          Lista 2 Nueva
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {pricePreview.map((p) => (
-                        <tr key={p.id}>
-                          <td>{p.name}</td>
-                          <td>{formatMoney(p.oldPrice1)}</td>
-                          <td>
+                        <tr
+                          key={p.id}
+                          style={{ borderBottom: "1px solid #e5e7eb" }}
+                        >
+                          <td style={{ padding: "8px" }}>{p.name}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>
+                            {formatMoney(p.oldPrice1)}
+                          </td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>
                             <input
                               type="number"
                               value={p.newPrice1}
@@ -1806,11 +2167,20 @@ export default function AdminPanel() {
                                   e.target.value
                                 )
                               }
-                              className="admin-panel-price-input"
+                              className="admin-panel-price-input" // Add a specific class if needed
+                              style={{
+                                textAlign: "right",
+                                width: "100px",
+                                padding: "4px",
+                                border: "1px solid #ccc",
+                                borderRadius: "4px",
+                              }}
                             />
                           </td>
-                          <td>{formatMoney(p.oldPrice2)}</td>
-                          <td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>
+                            {formatMoney(p.oldPrice2)}
+                          </td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>
                             <input
                               type="number"
                               value={p.newPrice2}
@@ -1821,7 +2191,14 @@ export default function AdminPanel() {
                                   e.target.value
                                 )
                               }
-                              className="admin-panel-price-input"
+                              className="admin-panel-price-input" // Add a specific class if needed
+                              style={{
+                                textAlign: "right",
+                                width: "100px",
+                                padding: "4px",
+                                border: "1px solid #ccc",
+                                borderRadius: "4px",
+                              }}
                             />
                           </td>
                         </tr>
@@ -1834,31 +2211,11 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* Agregar/Editar Producto */}
-        {(view === "addProduct" ||
-          (view === "editProduct" && editingProduct)) && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">
-              {editingProduct ? "Editar Producto" : "Agregar Nuevo Producto"}
-            </h2>
-            <ProductForm // <- ProductForm recibirá `categoriesMap` y `categoryTree`
-              initialData={editingProduct || {}}
-              categoriesMap={categoriesMap} // <- Pasar mapa
-              categoryTree={categoryTree} // <- Pasar árbol
-              onSubmit={handleSubmitProduct}
-              loading={loading}
-              onCancel={() => {
-                resetProductForm();
-                setView("products");
-              }}
-            />
-          </div>
-        )}
-
+        {/* Categories */}
         {view === "categories" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Gestión de Categorías</h2>
-            {/* --- NUEVO: Formulario para Agregar/Editar Categoría --- */}
+            {/* Add/Edit Form */}
             <div
               className="admin-panel-form-section"
               style={{ marginBottom: "30px" }}
@@ -1877,15 +2234,18 @@ export default function AdminPanel() {
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Nombre de la categoría"
                     required
+                    className="admin-panel-login-input" // Reusing style
                   />
                 </div>
                 <div className="admin-panel-form-group">
                   <label>Categoría Padre</label>
                   <CategoryParentSelector
-                    categories={categories}
+                    categories={categories} // Lista plana
+                    categoryTree={categoryTree} // Árbol
+                    categoriesMap={categoriesMap} // Mapa
                     value={newCategoryParentId}
                     onChange={setNewCategoryParentId}
-                    currentCategoryId={editingCategory?.id} // Para evitar ciclos
+                    currentCategoryId={editingCategory?.id}
                   />
                 </div>
               </div>
@@ -1916,6 +2276,7 @@ export default function AdminPanel() {
                 </button>
               </div>
             </div>
+            {/* Category Tree */}
             <div className="admin-panel-categories-tree">
               <h3 className="admin-panel-section-title">Estructura</h3>
               {categoryTree.length === 0 ? (
@@ -1936,14 +2297,18 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* Edit Home */}
         {view === "editHome" && (
           <div className="admin-panel-card">
             <h2 className="admin-panel-title">Editar Página de Inicio</h2>
+            {/* Banner Section */}
             <div className="admin-panel-home-section">
-              <h3 className="admin-panel-section-title">Banner del Inicio</h3>
+              <h3 className="admin-panel-section-title">
+                Banner Principal (Carrusel)
+              </h3>
               <div className="admin-panel-banner-upload-section">
                 <label className="admin-panel-btn-upload">
-                  📤 Subir imágenes al banner
+                  📤 Subir Imágenes
                   <input
                     type="file"
                     multiple
@@ -1953,47 +2318,60 @@ export default function AdminPanel() {
                     disabled={loading}
                   />
                 </label>
+                <p
+                  style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}
+                >
+                  Puedes arrastrar las imágenes para reordenarlas.
+                </p>
               </div>
               <div className="admin-panel-banner-images-list">
-                {bannerImages.map((img, index) => (
-                  <div
-                    key={img.id}
-                    className="admin-panel-banner-image-item"
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={handleDragOver}
-                    onDrop={() => handleDrop(index)}
-                  >
-                    <div className="admin-panel-drag-handle">⋮⋮</div>
-                    <img src={img.url} alt={`Banner ${index + 1}`} />
-                    <div className="admin-panel-banner-controls">
-                      <select
-                        value={img.redirect}
-                        onChange={(e) =>
-                          updateBannerRedirect(img.id, e.target.value)
-                        }
-                        className="admin-panel-redirect-select"
-                      >
-                        {getRedirectOptions().map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => deleteBannerImage(img.id)}
-                        className="admin-panel-btn-remove-inline"
-                      >
-                        Eliminar
-                      </button>
+                {bannerImages.length === 0 ? (
+                  <p className="admin-panel-empty-message">
+                    No hay imágenes en el banner.
+                  </p>
+                ) : (
+                  bannerImages.map((img, index) => (
+                    <div
+                      key={img.id}
+                      className="admin-panel-banner-image-item"
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={handleDragOver}
+                      onDrop={() => handleDrop(index)}
+                      style={{ opacity: draggedIndex === index ? 0.5 : 1 }} // Visual feedback for dragging
+                    >
+                      <div className="admin-panel-drag-handle">⋮⋮</div>
+                      <img src={img.url} alt={`Banner ${index + 1}`} />
+                      <div className="admin-panel-banner-controls">
+                        <select
+                          value={img.redirect || "ninguno"}
+                          onChange={(e) =>
+                            updateBannerRedirect(img.id, e.target.value)
+                          }
+                          className="admin-panel-redirect-select"
+                        >
+                          {getRedirectOptions().map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => deleteBannerImage(img.id)}
+                          className="admin-panel-btn-remove-inline"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
+            {/* Home Categories Section */}
             <div className="admin-panel-home-section">
               <h3 className="admin-panel-section-title">
-                Categorías del Inicio (3)
+                Categorías Destacadas (3 Imágenes)
               </h3>
               <div className="admin-panel-home-categories-grid">
                 {["img1", "img2", "img3"].map((key, index) => (
@@ -2001,10 +2379,14 @@ export default function AdminPanel() {
                     <h4>Categoría {index + 1}</h4>
                     {homeCategories[key]?.url ? (
                       <div className="admin-panel-home-category-preview">
-                        <img src={homeCategories[key].url} alt={key} />
+                        <img
+                          src={homeCategories[key].url}
+                          alt={`Categoría Destacada ${index + 1}`}
+                        />
                         <button
                           onClick={() => deleteHomeCategoryImage(key)}
                           className="admin-panel-btn-remove"
+                          title="Eliminar imagen"
                         >
                           ×
                         </button>
@@ -2012,7 +2394,7 @@ export default function AdminPanel() {
                     ) : (
                       <div className="admin-panel-home-category-empty">
                         <label className="admin-panel-btn-upload-small">
-                          📤 Subir imagen
+                          📤 Subir
                           <input
                             type="file"
                             accept="image/*"
@@ -2027,12 +2409,12 @@ export default function AdminPanel() {
                       </div>
                     )}
                     <select
-                      value={homeCategories[key]?.redirect || "novedades"}
+                      value={homeCategories[key]?.redirect || "ninguno"}
                       onChange={(e) =>
                         updateHomeCategoryRedirect(key, e.target.value)
                       }
                       className="admin-panel-redirect-select-full"
-                      disabled={!homeCategories[key]?.url}
+                      disabled={!homeCategories[key]?.url || loading}
                     >
                       {getRedirectOptions().map((opt) => (
                         <option key={opt.value} value={opt.value}>

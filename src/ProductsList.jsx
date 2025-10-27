@@ -1,20 +1,14 @@
 // ProductsList.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  getDocs,
-} from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { useAuth } from "./App";
 import { db } from "./App";
-import "./styles/products-list.css";
-import { ChevronLeft, ChevronRight, ArrowUpDown, Filter } from "lucide-react"; // Añadir Filter
+import "./styles/products-list.css"; // Asegúrate que la ruta sea correcta
+import { ChevronLeft, ChevronRight, ArrowUpDown, Filter } from "lucide-react";
 import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
-// --- NUEVO: Helper para construir árbol (igual que en Header/Admin) ---
+
+// --- Helper para construir árbol (igual que en Header/Admin) ---
 const buildCategoryTree = (categories) => {
   const map = {};
   const roots = [];
@@ -24,29 +18,35 @@ const buildCategoryTree = (categories) => {
   categories.forEach((cat) => {
     if (cat.parentId && map[cat.parentId]) {
       map[cat.parentId].children.push(map[cat.id]);
-    } else {
+    } else if (!cat.parentId) {
+      // Solo añadir nodos raíz si no tienen padre
       roots.push(map[cat.id]);
     }
   });
   // Ordenar hijos alfabéticamente
   Object.values(map).forEach((node) => {
-    node.children.sort((a, b) => a.name.localeCompare(b.name));
+    if (node.children) {
+      node.children.sort((a, b) => a.name.localeCompare(b.name));
+    }
   });
   roots.sort((a, b) => a.name.localeCompare(b.name));
   return roots;
 };
+
 const getDescendantIds = (categoryId, categoriesMap) => {
   let ids = [categoryId];
-  const node = Object.values(categoriesMap).find((c) => c.id === categoryId);
-  if (node && node.children) {
-    node.children.forEach((child) => {
+  const nodesArray = Object.values(categoriesMap);
+  const children = nodesArray.filter((c) => c.parentId === categoryId);
+
+  if (children.length > 0) {
+    children.forEach((child) => {
       ids = ids.concat(getDescendantIds(child.id, categoriesMap));
     });
   }
   return ids;
 };
 
-// --- NUEVO: Componente para Filtro de Categorías en Árbol ---
+// --- Componente para Filtro de Categorías en Árbol ---
 const CategoryFilterTree = ({
   categoryTree,
   selectedCategoryId,
@@ -75,7 +75,12 @@ const CategoryFilterTree = ({
         let current = map[id];
         while (current && current.parentId) {
           ancestors[current.parentId] = true;
-          current = Object.values(map).find((c) => c.id === current.parentId); // Lento, mejor usar un mapa de IDs
+          // Buscar el padre usando Object.values puede ser lento, mejor si `map` es accesible aquí
+          // O si tienes acceso a categoriesMap directamente
+          const parentNode = Object.values(map).find(
+            (c) => c.id === current.parentId
+          );
+          current = parentNode;
         }
         return ancestors;
       };
@@ -111,7 +116,7 @@ const CategoryFilterTree = ({
         }}
         onClick={() => onSelectCategory(node.id)}
       >
-        {node.children && node.children.length > 0 && (
+        {node.children && node.children.length > 0 ? (
           <span
             onClick={(e) => {
               e.stopPropagation();
@@ -125,19 +130,17 @@ const CategoryFilterTree = ({
               <FaFolder size={14} />
             )}
           </span>
+        ) : (
+          <span
+            style={{
+              display: "inline-block",
+              width: "16px",
+              color: "#cbd5e1",
+            }}
+          >
+            <FaFile size={12} />
+          </span>
         )}
-        {!node.children ||
-          (node.children.length === 0 && (
-            <span
-              style={{
-                display: "inline-block",
-                width: "16px",
-                color: "#cbd5e1",
-              }}
-            >
-              <FaFile size={12} />
-            </span>
-          ))}
         <span>{node.name}</span>
       </div>
       {node.children && node.children.length > 0 && openNodes[node.id] && (
@@ -149,21 +152,21 @@ const CategoryFilterTree = ({
   );
 
   return (
-    <div className="category-filter-tree">
+    <div className="products-list-category-filter-tree">
+      {" "}
+      {/* Clase específica */}
       {categoryTree.map((node) => renderNode(node))}
     </div>
   );
 };
-// --- FIN NUEVO Componente ---
+// --- FIN Componente ---
 
 export default function ProductsList() {
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
-  // --- CAMBIO: Estados para categorías ---
-  const [allCategories, setAllCategories] = useState([]); // Lista plana
-  const [categoriesMap, setCategoriesMap] = useState({}); // Mapa
-  const [categoryTree, setCategoryTree] = useState([]); // Árbol
-  // --- FIN CAMBIO ---
+  const [allCategories, setAllCategories] = useState([]);
+  const [categoriesMap, setCategoriesMap] = useState({});
+  const [categoryTree, setCategoryTree] = useState([]);
   const [pendingFilters, setPendingFilters] = useState({
     search: "",
     categoryId: "",
@@ -178,27 +181,25 @@ export default function ProductsList() {
   });
   const [sortBy, setSortBy] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9; // Reducido para mejor visualización
+  const itemsPerPage = 9;
 
-  const [showMobileFilters, setShowMobileFilters] = useState(false); // Para filtros móviles
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [hovered, setHovered] = useState(null);
 
-  // 🔹 SINCRONIZACIÓN: Leer parámetros desde la URL e inicializar filtros
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const categoryIdParam = params.get("categoryId"); // <- CAMBIO
+    const categoryIdParam = params.get("categoryId");
     const searchParam = params.get("search");
     const minPriceParam = params.get("minPrice");
     const maxPriceParam = params.get("maxPrice");
 
-    // Actualizar filtros desde la URL
     const urlFilters = {
       search: searchParam || "",
-      categoryId: categoryIdParam || "", // <- CAMBIO
+      categoryId: categoryIdParam || "",
       minPrice: minPriceParam || "",
       maxPrice: maxPriceParam || "",
     };
@@ -206,7 +207,6 @@ export default function ProductsList() {
     setPendingFilters(urlFilters);
     setAppliedFilters(urlFilters);
 
-    // Traer TODAS las categorías una vez
     const qCategories = query(collection(db, "categories"), orderBy("name"));
     const unsubCategories = onSnapshot(qCategories, (snap) => {
       const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -217,7 +217,6 @@ export default function ProductsList() {
       setCategoryTree(buildCategoryTree(flatList));
     });
 
-    // Traer TODOS los productos una vez
     const qProducts = query(collection(db, "products"), orderBy("name"));
     const unsubProducts = onSnapshot(qProducts, (snap) => {
       setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
@@ -227,78 +226,69 @@ export default function ProductsList() {
       unsubCategories();
       unsubProducts();
     };
-  }, []); // Solo se ejecuta al montar
+  }, [location.search]); // Depender de location.search para reaccionar a cambios en URL
 
-  // 🔹 Aplicar filtros y ordenamiento (se ejecuta cuando cambian los productos o filtros aplicados)
   useEffect(() => {
     let result = [...products];
     const { categoryId, search, minPrice, maxPrice } = appliedFilters;
 
-    // --- CAMBIO: Filtrar por categoryId (incluyendo descendientes) ---
-    if (categoryId) {
+    if (categoryId && Object.keys(categoriesMap).length > 0) {
+      // Asegurar que categoriesMap esté cargado
       const descendantIds = getDescendantIds(categoryId, categoriesMap);
       result = result.filter((p) => descendantIds.includes(p.categoryId));
     }
+
     if (search.trim()) {
-      // Función para normalizar texto (quitar tildes y convertir a minúsculas)
-      const normalizeText = (text) => {
-        return text
+      const normalizeText = (text) =>
+        text
           .toLowerCase()
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "");
-      };
-
-      // Dividir el término de búsqueda en palabras y normalizarlas
       const searchTerms = normalizeText(search.trim()).split(/\s+/);
-
       result = result.filter((p) => {
-        const productName = normalizeText(p.name || "");
-        const productCode = normalizeText(p.code || "");
-
-        // Concatenar todos los campos donde buscar
-        const searchableText = `${productName} ${productCode}`;
-
-        // Verificar que TODAS las palabras estén presentes en alguno de los campos
+        const searchableText = `${normalizeText(p.name || "")} ${normalizeText(
+          p.code || ""
+        )}`;
         return searchTerms.every((term) => searchableText.includes(term));
       });
     }
-    if (user) {
+
+    if (minPrice || maxPrice) {
+      // Filtrar por precio solo si hay valores
       result = result.filter((p) => {
-        const price = user.state === 2 ? p.price_state2 : p.price_state1;
-        if (!price) return false;
-        if (minPrice && price < parseFloat(minPrice)) return false;
-        if (maxPrice && price > parseFloat(maxPrice)) return false;
-        return true;
+        const price = user?.state === 2 ? p.price_state2 : p.price_state1;
+        if (price === undefined || price === null) return false; // Ignorar productos sin precio definido para el estado
+        const numericPrice = Number(price);
+        const min = minPrice ? parseFloat(minPrice) : -Infinity;
+        const max = maxPrice ? parseFloat(maxPrice) : Infinity;
+        return numericPrice >= min && numericPrice <= max;
       });
     }
 
-    // Aplicar ordenamiento
     if (sortBy === "az") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === "za") {
       result.sort((a, b) => b.name.localeCompare(a.name));
-    } else if (sortBy === "price-asc" && user) {
+    } else if (sortBy.startsWith("price-") && user) {
+      // Comprobar si existe user
+      const sortOrder = sortBy === "price-asc" ? 1 : -1;
       result.sort((a, b) => {
         const priceA = user.state === 2 ? a.price_state2 : a.price_state1;
         const priceB = user.state === 2 ? b.price_state2 : b.price_state1;
-        return priceA - priceB;
-      });
-    } else if (sortBy === "price-desc" && user) {
-      result.sort((a, b) => {
-        const priceA = user.state === 2 ? a.price_state2 : a.price_state1;
-        const priceB = user.state === 2 ? b.price_state2 : b.price_state1;
-        return priceB - priceA;
+        // Manejar precios nulos o indefinidos
+        const numPriceA = priceA ?? (sortOrder === 1 ? Infinity : -Infinity);
+        const numPriceB = priceB ?? (sortOrder === 1 ? Infinity : -Infinity);
+        return (numPriceA - numPriceB) * sortOrder;
       });
     }
 
     setFiltered(result);
-    setCurrentPage(1); // Resetear página al filtrar/ordenar
-  }, [products, appliedFilters, user, sortBy, categoriesMap]); // <- Añadir categoriesMap
+    setCurrentPage(1);
+  }, [products, appliedFilters, user, sortBy, categoriesMap]);
 
-  // 🔹 Aplicar filtros pendientes y actualizar URL
   const handleApplyFilters = () => {
     setAppliedFilters({ ...pendingFilters });
-    setShowMobileFilters(false); // Cerrar filtros móviles
+    setShowMobileFilters(false);
 
     const newParams = new URLSearchParams();
     if (pendingFilters.categoryId)
@@ -310,21 +300,18 @@ export default function ProductsList() {
     if (pendingFilters.maxPrice)
       newParams.set("maxPrice", pendingFilters.maxPrice);
 
-    navigate({ search: newParams.toString() }, { replace: true });
+    navigate(`?${newParams.toString()}`, { replace: true });
   };
 
-  // 🔹 MEJORADO: Limpiar filtros manteniendo solo la categoría
-  // 🔹 Limpiar filtros
   const handleClearFilters = () => {
     const cleared = { search: "", minPrice: "", maxPrice: "", categoryId: "" };
     setPendingFilters(cleared);
     setAppliedFilters(cleared);
     setSortBy("");
     setShowMobileFilters(false);
-    navigate({ search: "" }, { replace: true }); // Limpiar URL
+    navigate("", { replace: true }); // Limpiar URL
   };
 
-  // Paginación
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -335,7 +322,6 @@ export default function ProductsList() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 🔹 Precargar imágenes hover de los productos actuales
   useEffect(() => {
     currentProducts.forEach((p) => {
       if (p.multimedia && p.multimedia.length > 1) {
@@ -345,53 +331,50 @@ export default function ProductsList() {
     });
   }, [currentProducts]);
 
-  // Obtener nombre de categoría actual para título (NUEVO)
   const getCurrentCategoryName = () => {
     if (appliedFilters.categoryId && categoriesMap[appliedFilters.categoryId]) {
       return categoriesMap[appliedFilters.categoryId].name;
     }
-    return "Todos los Productos"; // Título por defecto
+    return "Todos los Productos";
   };
 
   return (
     <div className="products-list-page">
-      {/* Header */}
       <div className="products-list-header">
         <h1 className="products-list-title">{getCurrentCategoryName()}</h1>
         <p className="products-list-subtitle">
           Explora nuestra selección completa
         </p>
       </div>
-      {/* Botón Filtros Móvil (NUEVO) */}
+
       <button
-        className="products-mobile-filter-btn"
+        className="products-list-mobile-filter-btn" // Corregido
         onClick={() => setShowMobileFilters(true)}
       >
         <Filter size={18} /> Filtrar (
         {Object.values(appliedFilters).filter((v) => v).length})
       </button>
 
-      {/* Layout: Sidebar + Content */}
       <div className="products-list-layout">
-        {/* Sidebar de Filtros */}
         <aside
-          className={`products-filters-sidebar ${
-            showMobileFilters ? "mobile-visible" : ""
+          className={`products-list-filters-sidebar ${
+            // Corregido
+            showMobileFilters ? "products-list-mobile-visible" : "" // Corregido
           }`}
         >
-          {/* Botón cerrar móvil */}
           <button
-            className="products-mobile-close-btn"
+            className="products-list-mobile-close-btn" // Corregido
             onClick={() => setShowMobileFilters(false)}
           >
             ✕
           </button>
 
-          <h3 className="products-filters-title">Filtros</h3>
+          <h3 className="products-list-filters-title">Filtros</h3>
 
-          <div className="products-filters-list">
-            {/* --- CAMBIO: Filtro de Categoría Árbol --- */}
-            <div className="products-filter-group">
+          <div className="products-list-filters-list">
+            <div className="products-list-filter-group">
+              {" "}
+              {/* Corregido */}
               <label>Categoría</label>
               <CategoryFilterTree
                 categoryTree={categoryTree}
@@ -401,12 +384,14 @@ export default function ProductsList() {
                 }
               />
             </div>
-            {/* --- FIN CAMBIO --- */}
 
-            {/* Filtro de Precio (sin cambios estructurales) */}
-            <div className="products-filter-group products-filter-price">
+            <div className="products-list-filter-group products-list-filter-price">
+              {" "}
+              {/* Corregido */}
               <label>Precio</label>
-              <div className="products-price-inputs">
+              <div className="products-list-price-inputs">
+                {" "}
+                {/* Corregido */}
                 <input
                   type="number"
                   placeholder="Mín"
@@ -417,6 +402,7 @@ export default function ProductsList() {
                       minPrice: e.target.value,
                     })
                   }
+                  min="0" // Añadir min="0"
                 />
                 <span>-</span>
                 <input
@@ -429,37 +415,45 @@ export default function ProductsList() {
                       maxPrice: e.target.value,
                     })
                   }
+                  min="0" // Añadir min="0"
                 />
               </div>
             </div>
           </div>
 
-          <div className="products-filters-actions">
+          <div className="products-list-filters-actions">
             <button
               onClick={handleApplyFilters}
-              className="products-btn-primary"
+              className="products-list-btn-apply-filters"
             >
+              {" "}
+              {/* Corregido */}
               Aplicar Filtros
             </button>
             <button
               onClick={handleClearFilters}
-              className="products-btn-secondary"
+              className="products-list-btn-clear-filters"
             >
+              {" "}
+              {/* Corregido */}
               Limpiar Todo
             </button>
           </div>
         </aside>
 
-        {/* Contenido Principal */}
         <div className="products-list-content">
-          {/* Toolbar */}
-          <div className="products-toolbar">
-            <div className="products-results-count">
+          <div className="products-list-toolbar">
+            {" "}
+            {/* Corregido */}
+            <div className="products-list-results-count">
+              {" "}
+              {/* Corregido */}
               Mostrando <strong>{currentProducts.length}</strong> de{" "}
               <strong>{filtered.length}</strong> productos
             </div>
-
-            <div className="products-sort-section">
+            <div className="products-list-sort-section">
+              {" "}
+              {/* Corregido */}
               <ArrowUpDown size={18} />
               <label>Ordenar:</label>
               <select
@@ -475,14 +469,17 @@ export default function ProductsList() {
             </div>
           </div>
 
-          {/* Grid de Productos */}
           {currentProducts.length === 0 ? (
             <div className="products-list-no-results">
+              {" "}
+              {/* Corregido */}
               <p>No se encontraron productos con los filtros seleccionados</p>
             </div>
           ) : (
             <>
               <div className="products-list-grid">
+                {" "}
+                {/* Corregido */}
                 {currentProducts.map((p) => {
                   let priceContent;
                   if (!user) {
@@ -494,61 +491,70 @@ export default function ProductsList() {
                   } else {
                     const price =
                       user.state === 2 ? p.price_state2 : p.price_state1;
-                    priceContent = (
-                      <p className="products-list-price">
-                        ${price?.toLocaleString()}
-                      </p>
-                    );
+                    priceContent =
+                      price !== undefined && price !== null ? (
+                        <p className="products-list-price">
+                          ${price?.toLocaleString()}
+                        </p>
+                      ) : (
+                        <p className="products-list-login-msg">
+                          Precio no disponible
+                        </p>
+                      );
                   }
 
                   const images =
-                    p.multimedia && p.multimedia.length > 1
+                    p.multimedia?.length > 0
                       ? p.multimedia
-                      : [
-                          (p.multimedia && p.multimedia[0]) ||
-                            "https://via.placeholder.com/300",
-                        ];
+                      : ["https://via.placeholder.com/300"];
                   const mainImg = images[0];
-                  const hoverImg = images[1] || images[0];
+                  const hoverImg = images[1] || mainImg;
 
                   return (
                     <div
                       key={p.id}
-                      className="products-list-card"
+                      className="products-list-card" // Corregido
                       onMouseEnter={() => setHovered(p.id)}
                       onMouseLeave={() => setHovered(null)}
                     >
                       <div className="products-list-image-container">
+                        {" "}
+                        {/* Corregido */}
                         <Link to={`/product/${p.id}`}>
                           <img
                             src={hovered === p.id ? hoverImg : mainImg}
                             alt={p.name}
-                            className="products-list-image"
+                            className="products-list-image" // Corregido
                           />
                         </Link>
                         {p.stock === 0 && (
                           <span className="products-list-badge-out-stock">
                             Sin Stock
                           </span>
-                        )}
+                        )}{" "}
+                        {/* Corregido */}
                       </div>
-
                       <div className="products-list-info">
+                        {" "}
+                        {/* Corregido */}
                         <Link
                           to={`/product/${p.id}`}
                           className="products-list-name"
                         >
                           {p.name}
-                        </Link>
-                        <p className="products-list-code">Código: {p.code}</p>
+                        </Link>{" "}
+                        {/* Corregido */}
+                        <p className="products-list-code">
+                          Código: {p.code}
+                        </p>{" "}
+                        {/* Corregido */}
                         {priceContent}
                       </div>
-
                       <Link
                         to={`/product/${p.id}`}
-                        className={`products-list-btn-buy ${
+                        className={`products-list-btn-view ${
                           p.stock === 0 ? "products-list-disabled" : ""
-                        }`}
+                        }`} // Corregido
                       >
                         {p.stock === 0 ? "Sin Stock" : "Ver Producto"}
                       </Link>
@@ -557,18 +563,22 @@ export default function ProductsList() {
                 })}
               </div>
 
-              {/* Paginación */}
               {totalPages > 1 && (
                 <div className="products-list-pagination">
+                  {" "}
+                  {/* Corregido */}
                   <button
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="products-list-pagination-btn"
                   >
+                    {" "}
+                    {/* Corregido */}
                     <ChevronLeft size={20} />
                   </button>
-
                   <div className="products-list-pagination-numbers">
+                    {" "}
+                    {/* Corregido */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                       (page) => {
                         if (
@@ -584,7 +594,7 @@ export default function ProductsList() {
                                 page === currentPage
                                   ? "products-list-active"
                                   : ""
-                              }`}
+                              }`} // Corregido
                             >
                               {page}
                             </button>
@@ -601,17 +611,21 @@ export default function ProductsList() {
                               ...
                             </span>
                           );
+                          {
+                            /* Corregido */
+                          }
                         }
                         return null;
                       }
                     )}
                   </div>
-
                   <button
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="products-list-pagination-btn"
                   >
+                    {" "}
+                    {/* Corregido */}
                     <ChevronRight size={20} />
                   </button>
                 </div>
@@ -620,10 +634,10 @@ export default function ProductsList() {
           )}
         </div>
       </div>
-      {/* Overlay para cerrar filtros móviles */}
+
       {showMobileFilters && (
         <div
-          className="products-mobile-filter-overlay"
+          className="products-list-mobile-filter-overlay" // Corregido
           onClick={() => setShowMobileFilters(false)}
         ></div>
       )}
