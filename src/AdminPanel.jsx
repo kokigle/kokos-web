@@ -6,88 +6,34 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  arrayUnion,
-  arrayRemove,
   setDoc,
   getDoc,
   query,
   orderBy,
   writeBatch,
-  where, // <- Importar where
-  getDocs, // <- Importar getDocs
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { uploadImage } from "./cloudinary";
 import { db } from "./App";
-import ProductForm from "./ProductForm";
-import "./styles/admin-panel.css"; // Asegúrate que la ruta sea correcta
+import ProductForm from "./ProductForm"; // Asumiendo que ProductForm está en src/
+import AdminSidebar from "./components/admin/AdminSidebar";
+import AdminLogin from "./components/admin/AdminLogin";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminClients from "./components/admin/AdminClients";
+import AdminOrders from "./components/admin/AdminOrders";
+import AdminProducts from "./components/admin/AdminProducts";
+import AdminCategories from "./components/admin/AdminCategories";
+import AdminEditHome from "./components/admin/AdminEditHome";
+import AdminIncreasePrices from "./components/admin/AdminIncreasePrices";
+import AdminNotifications from "./components/admin/AdminNotifications";
 import {
-  FaFolder,
-  FaFolderOpen,
-  FaFile,
-  FaPlus,
-  FaTrash,
-  FaPencilAlt,
-} from "react-icons/fa";
-// Helper para formatear dinero
-const formatMoney = (n) =>
-  `$${Number(n).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
+  buildCategoryTree,
+  getCategoryPath,
+  getDescendantIds,
+} from "./utils/categoryUtils"; // Importar helpers
 
-// --- NUEVO: Helper para construir el árbol de categorías ---
-const buildCategoryTree = (categories) => {
-  const map = {};
-  const roots = [];
-  categories.forEach((cat) => {
-    map[cat.id] = { ...cat, children: [] };
-  });
-  categories.forEach((cat) => {
-    if (cat.parentId && map[cat.parentId]) {
-      map[cat.parentId].children.push(map[cat.id]);
-    } else {
-      // Solo añadir nodos raíz si no tienen padre o si el padre no existe (manejo de datos huérfanos)
-      if (!cat.parentId || !map[cat.parentId]) {
-        roots.push(map[cat.id]);
-      }
-    }
-  });
-  // Ordenar hijos alfabéticamente
-  Object.values(map).forEach((node) => {
-    if (node.children) {
-      // Verificar si 'children' existe
-      node.children.sort((a, b) => a.name.localeCompare(b.name));
-    }
-  });
-  roots.sort((a, b) => a.name.localeCompare(b.name));
-  return roots;
-};
-
-// --- NUEVO: Helper para obtener la ruta de una categoría ---
-const getCategoryPath = (categoryId, categoriesMap) => {
-  const path = [];
-  let current = categoriesMap[categoryId];
-  while (current) {
-    path.unshift(current.name); // Añadir al principio
-    current = categoriesMap[current.parentId];
-  }
-  return path;
-};
-
-// --- NUEVO: Helper para obtener todos los IDs descendientes ---
-const getDescendantIds = (categoryId, categoriesMap) => {
-  let ids = [categoryId];
-  // Convertir el mapa a un array de nodos para buscar
-  const nodesArray = Object.values(categoriesMap);
-  const node = nodesArray.find((c) => c.id === categoryId);
-
-  // Encuentra los hijos directos del nodo actual en el mapa
-  const children = nodesArray.filter((c) => c.parentId === categoryId);
-
-  if (children.length > 0) {
-    children.forEach((child) => {
-      ids = ids.concat(getDescendantIds(child.id, categoriesMap));
-    });
-  }
-  return ids;
-};
+import "./styles/admin-panel.css";
 
 export default function AdminPanel() {
   const mainContentRef = useRef(null);
@@ -98,10 +44,10 @@ export default function AdminPanel() {
 
   // Estados de datos
   const [clients, setClients] = useState([]);
-  const [categoriesMap, setCategoriesMap] = useState({}); // <- Mapa para acceso rápido
-  const [categoryTree, setCategoryTree] = useState([]); // <- Estructura de árbol
+  const [categoriesMap, setCategoriesMap] = useState({});
+  const [categoryTree, setCategoryTree] = useState([]);
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([]); // Keep flat list for selectors
   const [orders, setOrders] = useState([]);
 
   // Estados de UI
@@ -111,62 +57,32 @@ export default function AdminPanel() {
   const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
-  // Estados para gestión de clientes
-  const [clientsTab, setClientsTab] = useState("pendientes");
-  const [expandedClient, setExpandedClient] = useState(null);
-  const [approvalState, setApprovalState] = useState(1);
-  const [approvalDiscount, setApprovalDiscount] = useState(0);
-
-  // Estados para gestión de pedidos
-  const [ordersTab, setOrdersTab] = useState("pending");
-  const [expandedOrder, setExpandedOrder] = useState(null);
-  const [orderSearch, setOrderSearch] = useState("");
-
-  // Estados de filtros
+  // Estados específicos de vistas (pasados como props)
   const [clientSearch, setClientSearch] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
-  const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState(""); // ID de hoja o nodo
-
-  // Estados para editar inicio
+  const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState("");
   const [bannerImages, setBannerImages] = useState([]);
   const [homeCategories, setHomeCategories] = useState({
-    img1: { url: "", redirect: "" },
-    img2: { url: "", redirect: "" },
-    img3: { url: "", redirect: "" },
+    img1: {},
+    img2: {},
+    img3: {},
   });
   const [draggedIndex, setDraggedIndex] = useState(null);
-
-  // Estados para aumento de precios
   const [increasePercentage, setIncreasePercentage] = useState(0);
   const [roundingZeros, setRoundingZeros] = useState(0);
   const [priceCategoryFilterId, setPriceCategoryFilterId] = useState("");
   const [pricePreview, setPricePreview] = useState([]);
-
-  // Estados para gestión de categorías
-  const [editingCategory, setEditingCategory] = useState(null); // { id, name, parentId }
+  const [editingCategory, setEditingCategory] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryParentId, setNewCategoryParentId] = useState(null);
 
-  const scrollTop = () => {
-    if (mainContentRef.current) {
-      mainContentRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  useEffect(() => {
-    scrollTop();
-  }, [view]);
-
-  // Función para mostrar notificaciones
+  // --- Funciones (showNotification, showConfirm, etc. como antes) ---
   const showNotification = (message, type = "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Función para mostrar diálogo de confirmación
   const showConfirm = (message, onConfirm) => {
     setConfirmDialog({ message, onConfirm });
   };
@@ -178,23 +94,33 @@ export default function AdminPanel() {
     setConfirmDialog(null);
   };
 
-  const handleCancel = () => {
+  const handleCancelConfirm = () => {
+    // Renombrado para evitar conflicto
     setConfirmDialog(null);
   };
 
-  // Función para resetear el formulario completamente
   const resetProductForm = () => {
     setEditingProduct(null);
+    // No es necesario resetear formData aquí, ProductForm lo maneja con useEffect
   };
 
-  // Efecto para manejar el cambio de vista
+  const scrollTop = () => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    scrollTop();
+  }, [view]);
+
   useEffect(() => {
     if (view === "addProduct") {
       resetProductForm();
     }
   }, [view]);
 
-  // Suscripciones a Firestore
+  // --- Suscripciones a Firestore (como antes) ---
   useEffect(() => {
     if (!authed) return;
 
@@ -211,11 +137,11 @@ export default function AdminPanel() {
       query(collection(db, "categories"), orderBy("name")),
       (snap) => {
         const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setCategories(flatList);
+        setCategories(flatList); // Guardar lista plana
         const map = {};
         flatList.forEach((cat) => (map[cat.id] = cat));
-        setCategoriesMap(map);
-        setCategoryTree(buildCategoryTree(flatList));
+        setCategoriesMap(map); // Guardar mapa
+        setCategoryTree(buildCategoryTree(flatList)); // Crear árbol
       }
     );
 
@@ -227,6 +153,7 @@ export default function AdminPanel() {
       setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
+    // Suscripción al Banner
     const unsubBanner = onSnapshot(
       collection(db, "images/banner_images/urls"),
       (snap) => {
@@ -237,18 +164,29 @@ export default function AdminPanel() {
       }
     );
 
+    // Carga inicial de Home Categories
     const loadHomeCategories = async () => {
       const cats = { img1: {}, img2: {}, img3: {} };
-      for (let i = 1; i <= 3; i++) {
-        const docRef = doc(db, "images", `img${i}`);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          cats[`img${i}`] = docSnap.data();
-        } else {
-          cats[`img${i}`] = { url: "", redirect: "" };
+      try {
+        for (let i = 1; i <= 3; i++) {
+          const docRef = doc(db, "images", `img${i}`);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            cats[`img${i}`] = docSnap.data();
+          } else {
+            cats[`img${i}`] = { url: "", redirect: "" }; // Default empty object
+          }
         }
+        setHomeCategories(cats);
+      } catch (error) {
+        console.error("Error loading home categories:", error);
+        // Set defaults even if loading fails
+        setHomeCategories({
+          img1: { url: "", redirect: "" },
+          img2: { url: "", redirect: "" },
+          img3: { url: "", redirect: "" },
+        });
       }
-      setHomeCategories(cats);
     };
     loadHomeCategories();
 
@@ -258,10 +196,11 @@ export default function AdminPanel() {
       unsubCategories();
       unsubOrders();
       unsubBanner();
+      // No hay unsub para loadHomeCategories ya que es una carga única
     };
   }, [authed]);
 
-  // Funciones de autenticación
+  // --- Funciones de Lógica (loginAdmin, approveClient, etc. como antes, pero ajustadas para usar showNotification/showConfirm) ---
   const loginAdmin = () => {
     if (secret === "admin123") {
       // Consider securely managing secrets
@@ -271,23 +210,21 @@ export default function AdminPanel() {
     }
   };
 
-  // Funciones para gestión de usuarios pendientes
-  const approveClient = async (clientId) => {
+  const approveClient = async (clientId, state, discount) => {
     showConfirm(
-      `¿Aprobar este usuario con Lista ${approvalState} y ${approvalDiscount}% de descuento?`,
+      `¿Aprobar este usuario con Lista ${state} y ${discount}% de descuento?`,
       async () => {
         setLoading(true);
         try {
           await updateDoc(doc(db, "clients", clientId), {
             status: "aprobado",
-            state: approvalState,
-            descuento: Number(approvalDiscount) || 0,
+            state: state, // Usar el estado pasado
+            descuento: Number(discount) || 0, // Usar el descuento pasado
           });
           showNotification(
-            `Usuario aprobado con Lista ${approvalState} y ${approvalDiscount}% de descuento`,
-            "success"
+            `Usuario aprobado con Lista ${state} y ${discount}% de descuento`
           );
-          setExpandedClient(null);
+          // No necesitas setExpandedClient(null) aquí si AdminClients maneja su propio estado expandido
         } catch (error) {
           console.error("Error approving client:", error);
           showNotification("Error al aprobar cliente.", "error");
@@ -306,7 +243,7 @@ export default function AdminPanel() {
         try {
           await deleteDoc(doc(db, "clients", clientId));
           showNotification("Usuario rechazado y eliminado", "info");
-          setExpandedClient(null);
+          // No necesitas setExpandedClient(null) aquí
         } catch (error) {
           console.error("Error rejecting client:", error);
           showNotification("Error al rechazar cliente.", "error");
@@ -317,7 +254,6 @@ export default function AdminPanel() {
     );
   };
 
-  // Funciones de clientes
   const toggleState = async (id, state) => {
     setLoading(true);
     try {
@@ -334,10 +270,13 @@ export default function AdminPanel() {
   const updateClientDiscount = async (id, newDiscount) => {
     setLoading(true);
     try {
-      await updateDoc(doc(db, "clients", id), {
-        descuento: Number(newDiscount) || 0,
-      });
-      showNotification(`Descuento actualizado a ${newDiscount}%`);
+      const discountValue = Number(newDiscount);
+      if (isNaN(discountValue) || discountValue < 0 || discountValue > 100) {
+        showNotification("Porcentaje de descuento inválido (0-100).", "error");
+        return; // Salir si el valor no es válido
+      }
+      await updateDoc(doc(db, "clients", id), { descuento: discountValue });
+      showNotification(`Descuento actualizado a ${discountValue}%`);
     } catch (error) {
       console.error("Error updating client discount:", error);
       showNotification("Error al actualizar el descuento.", "error");
@@ -354,7 +293,7 @@ export default function AdminPanel() {
         try {
           await deleteDoc(doc(db, "clients", id));
           showNotification("Cliente eliminado");
-          setExpandedClient(null);
+          // No necesitas setExpandedClient(null) aquí
         } catch (error) {
           console.error("Error deleting client:", error);
           showNotification("Error al eliminar cliente.", "error");
@@ -364,7 +303,7 @@ export default function AdminPanel() {
       }
     );
   };
-  // Funciones de Pedidos
+
   const updateOrderStatus = async (orderId, newStatus) => {
     showConfirm(
       `¿Cambiar el estado de este pedido a "${newStatus.replace("_", " ")}"?`,
@@ -375,6 +314,7 @@ export default function AdminPanel() {
           showNotification(
             `Pedido actualizado a "${newStatus.replace("_", " ")}"`
           );
+          // No necesitas setExpandedOrder(null) aquí
         } catch (error) {
           console.error("Error updating order status:", error);
           showNotification("Error al actualizar estado del pedido.", "error");
@@ -385,16 +325,14 @@ export default function AdminPanel() {
     );
   };
 
-  // Funciones de productos
   const handleSubmitProduct = async (productData) => {
     setLoading(true);
     try {
+      // Procesar imágenes como antes...
       const existingUrls = (productData.multimedia || []).filter(
         (u) => typeof u === "string" && !u.startsWith("blob:")
       );
-
       const urls = [...existingUrls];
-
       if (productData.files && productData.files.length > 0) {
         const uploadPromises = productData.files.map((file) =>
           uploadImage(file)
@@ -402,12 +340,12 @@ export default function AdminPanel() {
         const uploadedUrls = await Promise.all(uploadPromises);
         urls.push(...uploadedUrls.filter((url) => url));
       }
-
       const uniqueUrls = Array.from(new Set(urls));
-      const categoryId = productData.category;
+
+      const categoryId = productData.category; // Ya es categoryId
       const categoryPath = categoryId
         ? getCategoryPath(categoryId, categoriesMap)
-        : [];
+        : []; // Usar helper
 
       const product = {
         code: productData.code,
@@ -420,13 +358,13 @@ export default function AdminPanel() {
         stock: Number(productData.stock) || 0,
         cant_min: Number(productData.cant_min) || 1,
         ean: productData.ean,
-        categoryId: categoryId || "",
-        categoryPath: categoryPath,
+        categoryId: categoryId || "", // Guardar categoryId
+        categoryPath: categoryPath, // Guardar ruta calculada
         bulto: productData.bulto || "",
         colors: productData.colors || [],
         medidas: productData.medidas || [],
       };
-      // Remove legacy fields if they exist from form submission
+      // Eliminar campos antiguos si existen en productData (defensivo)
       delete product.category;
       delete product.subcategory;
 
@@ -437,108 +375,14 @@ export default function AdminPanel() {
         await addDoc(collection(db, "products"), product);
         showNotification("Producto agregado exitosamente");
       }
-
       resetProductForm();
-      setView("products");
+      setView("products"); // Volver a la lista
     } catch (err) {
       console.error(err);
       showNotification("Error al guardar producto: " + err.message, "error");
     } finally {
       setLoading(false);
     }
-  };
-
-  const getFilteredProductsForPriceIncrease = () => {
-    if (!priceCategoryFilterId) return products;
-    const descendantIds = getDescendantIds(
-      priceCategoryFilterId,
-      categoriesMap
-    );
-    return products.filter((p) => descendantIds.includes(p.categoryId));
-  };
-
-  const handlePricePreview = () => {
-    if (increasePercentage === 0) {
-      showNotification("El porcentaje debe ser diferente a 0", "error");
-      return;
-    }
-    const filtered = getFilteredProductsForPriceIncrease();
-    if (filtered.length === 0) {
-      showNotification(
-        "No hay productos en la categoría seleccionada para previsualizar.",
-        "info"
-      );
-      setPricePreview([]);
-      return;
-    }
-    const factor = 1 + increasePercentage / 100;
-    const roundingFactor = Math.pow(10, roundingZeros);
-
-    const previewData = filtered.map((product) => {
-      const newPrice1 = product.price_state1 * factor;
-      const newPrice2 = product.price_state2 * factor;
-
-      const roundedPrice1 =
-        Math.round(newPrice1 / roundingFactor) * roundingFactor;
-      const roundedPrice2 =
-        Math.round(newPrice2 / roundingFactor) * roundingFactor;
-      return {
-        id: product.id,
-        name: product.name,
-        oldPrice1: product.price_state1,
-        newPrice1: roundedPrice1,
-        oldPrice2: product.price_state2,
-        newPrice2: roundedPrice2,
-      };
-    });
-    setPricePreview(previewData);
-  };
-
-  const handlePriceChange = (id, priceType, value) => {
-    setPricePreview((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [priceType]: Number(value) } : p))
-    );
-  };
-
-  const handlePriceIncrease = async () => {
-    if (pricePreview.length === 0) {
-      showNotification(
-        "No hay precios previsualizados para actualizar",
-        "error"
-      );
-      return;
-    }
-
-    showConfirm(
-      `¿Estás seguro de que deseas actualizar los precios de ${pricePreview.length} productos? Esta acción es irreversible.`,
-      async () => {
-        setLoading(true);
-        try {
-          const batch = writeBatch(db);
-
-          pricePreview.forEach((product) => {
-            const productRef = doc(db, "products", product.id);
-            batch.update(productRef, {
-              price_state1: product.newPrice1,
-              price_state2: product.newPrice2,
-            });
-          });
-
-          await batch.commit();
-          showNotification(
-            `Precios actualizados para ${pricePreview.length} productos`,
-            "success"
-          );
-          setPricePreview([]);
-          setIncreasePercentage(0); // Reset percentage after applying
-        } catch (error) {
-          console.error("Error al actualizar precios:", error);
-          showNotification("Error al actualizar precios", "error");
-        } finally {
-          setLoading(false);
-        }
-      }
-    );
   };
 
   const toggleStock = async (id, stock) => {
@@ -579,9 +423,10 @@ export default function AdminPanel() {
   const editProduct = (product) => {
     setEditingProduct(product);
     setView("editProduct");
+    scrollTop(); // Asegurarse de que el form sea visible
   };
 
-  // --- Funciones de categorías ---
+  // --- Funciones de Categorías (como antes) ---
   const handleAddCategory = async () => {
     const name = newCategoryName.trim();
     if (!name) {
@@ -596,7 +441,7 @@ export default function AdminPanel() {
       });
       showNotification(`Categoría "${name}" agregada`);
       setNewCategoryName("");
-      setNewCategoryParentId(null);
+      setNewCategoryParentId(null); // Reset parent selector
     } catch (error) {
       console.error("Error adding category:", error);
       showNotification("Error al agregar categoría", "error");
@@ -612,6 +457,22 @@ export default function AdminPanel() {
       showNotification("El nombre no puede estar vacío", "error");
       return;
     }
+    if (newCategoryParentId === editingCategory.id) {
+      showNotification("Una categoría no puede ser su propio padre.", "error");
+      return;
+    }
+    // Add check to prevent making a category a child of its own descendant
+    if (newCategoryParentId) {
+      const descendants = getDescendantIds(editingCategory.id, categoriesMap);
+      if (descendants.includes(newCategoryParentId)) {
+        showNotification(
+          "No puedes mover una categoría dentro de una de sus subcategorías.",
+          "error"
+        );
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       await updateDoc(doc(db, "categories", editingCategory.id), {
@@ -619,9 +480,7 @@ export default function AdminPanel() {
         parentId: newCategoryParentId || null,
       });
       showNotification(`Categoría "${name}" actualizada`);
-      setEditingCategory(null);
-      setNewCategoryName("");
-      setNewCategoryParentId(null);
+      cancelEditingCategory(); // Resetear estado de edición
     } catch (error) {
       console.error("Error updating category:", error);
       showNotification("Error al actualizar categoría", "error");
@@ -647,7 +506,7 @@ export default function AdminPanel() {
           const productBatch = writeBatch(db);
           productsSnapshot.forEach((productDoc) => {
             productBatch.update(doc(db, "products", productDoc.id), {
-              categoryId: "",
+              categoryId: "", // O null, según prefieras
               categoryPath: [],
             });
           });
@@ -663,6 +522,7 @@ export default function AdminPanel() {
           showNotification(
             `Categoría "${categoryName}" y sus subcategorías eliminadas`
           );
+          cancelEditingCategory(); // Si se estaba editando una categoría eliminada
         } catch (error) {
           console.error("Error deleting category:", error);
           showNotification("Error al eliminar categoría", "error");
@@ -686,7 +546,7 @@ export default function AdminPanel() {
     setNewCategoryParentId(null);
   };
 
-  // Funciones para editar inicio - Banner
+  // --- Funciones Editar Inicio (Banner y Categorías Home - como antes) ---
   const handleBannerUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -701,12 +561,9 @@ export default function AdminPanel() {
         const url = await uploadImage(file);
         if (url) {
           const nextPos = currentMaxPos + index + 1;
-          const nextId = `banner_${Date.now()}_${index}`; // Use a more descriptive ID
-          await setDoc(doc(db, "images/banner_images/urls", nextId), {
-            url,
-            redirect: "ninguno", // Default to 'ninguno'
-            pos: nextPos,
-          });
+          // Usar un ID más único y predecible podría ser mejor si necesitas referenciarlo
+          const docRef = doc(collection(db, "images/banner_images/urls"));
+          await setDoc(docRef, { url, redirect: "ninguno", pos: nextPos });
         }
       });
 
@@ -740,7 +597,7 @@ export default function AdminPanel() {
         setLoading(true);
         try {
           await deleteDoc(doc(db, "images/banner_images/urls", id));
-          // No es necesario llamar a reorder aquí explícitamente si el useEffect ya escucha cambios
+          // La reordenación se hará por el useEffect que escucha bannerImages.length
           showNotification("Imagen eliminada");
         } catch (error) {
           console.error("Error deleting banner image:", error);
@@ -752,44 +609,50 @@ export default function AdminPanel() {
     );
   };
 
-  // Reordenar posiciones después de eliminar o al arrastrar
+  // Reordenar banner (ajustado para useEffect)
   useEffect(() => {
-    if (!authed || view !== "editHome") return; // Solo reordenar si estamos en la vista correcta y autenticados
+    if (!authed || view !== "editHome" || bannerImages.length === 0) return;
 
     const reorderBannerPositions = async () => {
+      // Comprobar si realmente necesita reordenar
       const needsReorder = bannerImages.some(
         (img, index) => (img.pos || 0) !== index + 1
       );
       if (!needsReorder) return;
 
-      setLoading(true); // Indicar carga durante la reordenación
+      console.log("Reordenando posiciones del banner...");
+      // setLoading(true); // Opcional: mostrar loading durante reordenamiento
       try {
         const batch = writeBatch(db);
         bannerImages.forEach((img, index) => {
-          batch.update(doc(db, "images/banner_images/urls", img.id), {
-            pos: index + 1,
-          });
+          // Solo actualizar si la posición es incorrecta
+          if ((img.pos || 0) !== index + 1) {
+            batch.update(doc(db, "images/banner_images/urls", img.id), {
+              pos: index + 1,
+            });
+          }
         });
         await batch.commit();
-        // No mostrar notificación aquí para evitar spam durante drag/drop
+        console.log("Reordenación completada.");
       } catch (err) {
         console.error("Error reordering banner:", err);
         showNotification("Error al reordenar banners", "error");
       } finally {
-        setLoading(false);
+        // setLoading(false);
       }
     };
 
-    // Reordenar si el número de imágenes cambia (ej. al eliminar)
-    reorderBannerPositions();
-  }, [bannerImages.length, authed, view]); // Depender de la longitud para detectar eliminaciones
+    // Usar un pequeño retraso para evitar ejecuciones múltiples rápidas
+    const timer = setTimeout(reorderBannerPositions, 500);
+    return () => clearTimeout(timer);
+  }, [bannerImages, authed, view]); // Depender de bannerImages completo
 
   const handleDragStart = (index) => {
     setDraggedIndex(index);
   };
 
   const handleDragOver = (e) => {
-    e.preventDefault(); // Necesario para permitir el drop
+    e.preventDefault();
   };
 
   const handleDrop = async (dropIndex) => {
@@ -802,31 +665,19 @@ export default function AdminPanel() {
     const newImages = [...bannerImages];
     const [draggedItem] = newImages.splice(draggedIndex, 1);
     newImages.splice(dropIndex, 0, draggedItem);
-    setBannerImages(newImages); // Actualiza el estado local inmediatamente
+    // Actualizar pos temporalmente para la UI antes del guardado
+    const updatedImagesForUI = newImages.map((img, index) => ({
+      ...img,
+      pos: index + 1,
+    }));
+    setBannerImages(updatedImagesForUI); // Actualiza estado local con nuevas posiciones
     setDraggedIndex(null);
 
-    // Actualizar Firestore en segundo plano
-    setLoading(true);
-    try {
-      const batch = writeBatch(db);
-      newImages.forEach((img, index) => {
-        batch.update(doc(db, "images/banner_images/urls", img.id), {
-          pos: index + 1,
-        });
-      });
-      await batch.commit();
-      showNotification("Orden del banner actualizado");
-    } catch (err) {
-      console.error("Error saving banner order:", err);
-      showNotification("Error al guardar el nuevo orden", "error");
-      // Revertir si falla? (Opcional, podría causar parpadeo)
-      // const revertUnsub = onSnapshot(...) // Volver a cargar desde Firestore
-    } finally {
-      setLoading(false);
-    }
+    // La actualización de Firestore ahora la maneja el useEffect
+    // No es necesario llamar a setLoading o batch.commit aquí directamente
+    showNotification("Orden actualizado. Guardando...", "info"); // Notificación opcional
   };
 
-  // Funciones para categorías de inicio
   const handleHomeCategoryUpload = async (categoryKey, file) => {
     if (!file) return;
     setLoading(true);
@@ -834,17 +685,10 @@ export default function AdminPanel() {
       const url = await uploadImage(file);
       if (url) {
         const currentData = homeCategories[categoryKey] || {};
-        const newData = {
-          url,
-          redirect: currentData.redirect || "ninguno", // Conservar redirect existente o default
-        };
+        const newData = { url, redirect: currentData.redirect || "ninguno" };
         await setDoc(doc(db, "images", categoryKey), newData);
-
-        setHomeCategories((prev) => ({
-          ...prev,
-          [categoryKey]: newData,
-        }));
-
+        // Actualizar estado local
+        setHomeCategories((prev) => ({ ...prev, [categoryKey]: newData }));
         showNotification("Imagen subida exitosamente");
       }
     } catch (err) {
@@ -858,15 +702,11 @@ export default function AdminPanel() {
     setLoading(true);
     try {
       await updateDoc(doc(db, "images", categoryKey), { redirect });
-
+      // Actualizar estado local
       setHomeCategories((prev) => ({
         ...prev,
-        [categoryKey]: {
-          ...prev[categoryKey],
-          redirect: redirect,
-        },
+        [categoryKey]: { ...prev[categoryKey], redirect: redirect },
       }));
-
       showNotification("Redirección actualizada");
     } catch (error) {
       console.error("Error updating home category redirect:", error);
@@ -882,14 +722,10 @@ export default function AdminPanel() {
       async () => {
         setLoading(true);
         try {
-          const newData = { url: "", redirect: "" };
+          const newData = { url: "", redirect: "" }; // Resetear
           await setDoc(doc(db, "images", categoryKey), newData);
-
-          setHomeCategories((prev) => ({
-            ...prev,
-            [categoryKey]: newData,
-          }));
-
+          // Actualizar estado local
+          setHomeCategories((prev) => ({ ...prev, [categoryKey]: newData }));
           showNotification("Imagen eliminada");
         } catch (error) {
           console.error("Error deleting home category image:", error);
@@ -901,29 +737,141 @@ export default function AdminPanel() {
     );
   };
 
-  // Obtener todas las opciones de redirección
+  // --- Funciones Aumento de Precios ---
+  const getFilteredProductsForPriceIncrease = () => {
+    if (!priceCategoryFilterId) return products;
+    const descendantIds = getDescendantIds(
+      priceCategoryFilterId,
+      categoriesMap
+    );
+    return products.filter((p) => descendantIds.includes(p.categoryId));
+  };
+
+  const handlePricePreview = () => {
+    const percentage = parseFloat(increasePercentage);
+    if (isNaN(percentage) || percentage === 0) {
+      showNotification(
+        "El porcentaje debe ser un número diferente a 0.",
+        "error"
+      );
+      setPricePreview([]);
+      return;
+    }
+
+    const filtered = getFilteredProductsForPriceIncrease();
+    if (filtered.length === 0) {
+      showNotification(
+        "No hay productos en la categoría seleccionada.",
+        "info"
+      );
+      setPricePreview([]);
+      return;
+    }
+
+    const factor = 1 + percentage / 100;
+    const roundingFactor = Math.pow(10, roundingZeros);
+
+    const previewData = filtered.map((product) => {
+      const newPrice1 = product.price_state1 * factor;
+      const newPrice2 = product.price_state2 * factor;
+
+      // Redondeo: dividir, redondear, multiplicar
+      const roundedPrice1 =
+        roundingFactor === 1
+          ? Math.round(newPrice1)
+          : Math.round(newPrice1 / roundingFactor) * roundingFactor;
+      const roundedPrice2 =
+        roundingFactor === 1
+          ? Math.round(newPrice2)
+          : Math.round(newPrice2 / roundingFactor) * roundingFactor;
+
+      // Asegurarse de que los precios no sean negativos
+      const finalPrice1 = Math.max(0, roundedPrice1);
+      const finalPrice2 = Math.max(0, roundedPrice2);
+
+      return {
+        id: product.id,
+        name: product.name,
+        oldPrice1: product.price_state1,
+        newPrice1: finalPrice1,
+        oldPrice2: product.price_state2,
+        newPrice2: finalPrice2,
+      };
+    });
+    setPricePreview(previewData);
+    showNotification(
+      `Previsualización generada para ${previewData.length} productos.`
+    );
+  };
+
+  const handlePriceChange = (id, priceType, value) => {
+    // Validar que el valor sea un número no negativo
+    const numericValue = Number(value);
+    if (isNaN(numericValue) || numericValue < 0) {
+      showNotification("El precio debe ser un número positivo.", "error");
+      return; // No actualizar si no es válido
+    }
+    setPricePreview((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [priceType]: numericValue } : p))
+    );
+  };
+
+  const handlePriceIncrease = async () => {
+    if (pricePreview.length === 0) {
+      showNotification("Primero debes previsualizar los cambios.", "error");
+      return;
+    }
+    showConfirm(
+      `¿Estás seguro de que deseas actualizar los precios de ${pricePreview.length} productos según la previsualización? Esta acción es irreversible.`,
+      async () => {
+        setLoading(true);
+        try {
+          const batch = writeBatch(db);
+          pricePreview.forEach((product) => {
+            const productRef = doc(db, "products", product.id);
+            batch.update(productRef, {
+              price_state1: product.newPrice1,
+              price_state2: product.newPrice2,
+            });
+          });
+          await batch.commit();
+          showNotification(
+            `Precios actualizados para ${pricePreview.length} productos.`
+          );
+          setPricePreview([]); // Limpiar previsualización
+          setIncreasePercentage(0); // Opcional: resetear porcentaje
+        } catch (error) {
+          console.error("Error al actualizar precios:", error);
+          showNotification("Error al actualizar precios.", "error");
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
+  };
+
+  // --- useCallback para getRedirectOptions ---
   const getRedirectOptions = useCallback(() => {
     const options = [
       { value: "ninguno", label: "Ninguno" },
       { value: "novedades", label: "Novedades" },
-      // Agrega otras rutas estáticas si existen, p.ej. /nosotros, /contacto
-      // { value: "/nosotros", label: "Nosotros" },
+      // Agrega otras rutas estáticas si es necesario
     ];
     const traverse = (nodes, prefix = "") => {
       nodes.forEach((node) => {
         const label = prefix ? `${prefix} > ${node.name}` : node.name;
-        // Usar el ID como valor para redireccionar a la categoría
+        // Usar el ID como valor
         options.push({ value: node.id, label: `Categoría: ${label}` });
         if (node.children && node.children.length > 0) {
           traverse(node.children, label);
         }
       });
     };
-    traverse(categoryTree);
+    traverse(categoryTree); // Usar el árbol
     return options;
-  }, [categoryTree]);
+  }, [categoryTree]); // Depender del árbol
 
-  // Filtrar clientes
+  // --- Filtrado (movido fuera de useEffect para que esté siempre actualizado) ---
   const pendingClients = clients.filter(
     (c) =>
       c.status === "pendiente" &&
@@ -931,7 +879,6 @@ export default function AdminPanel() {
         c.razonSocial?.toLowerCase().includes(clientSearch.toLowerCase()) ||
         c.nombre?.toLowerCase().includes(clientSearch.toLowerCase()))
   );
-
   const approvedClients = clients.filter(
     (c) =>
       c.status === "aprobado" &&
@@ -940,7 +887,6 @@ export default function AdminPanel() {
         c.nombre?.toLowerCase().includes(clientSearch.toLowerCase()))
   );
 
-  // Filtrar productos
   const filteredProducts = products.filter((p) => {
     const searchLower = productSearch.toLowerCase();
     const matchSearch =
@@ -949,1086 +895,93 @@ export default function AdminPanel() {
       (p.code || "").toLowerCase().includes(searchLower);
 
     let matchCategory = true;
-    if (selectedFilterCategoryId) {
+    if (selectedFilterCategoryId && Object.keys(categoriesMap).length > 0) {
+      // Check if map is loaded
       const descendantIds = getDescendantIds(
         selectedFilterCategoryId,
         categoriesMap
-      );
-      matchCategory = descendantIds.includes(p.categoryId);
+      ); // Use helper
+      matchCategory = descendantIds.includes(p.categoryId); // Check categoryId
     }
 
     return matchSearch && matchCategory;
   });
 
-  // Filtrar pedidos
-  const filteredOrders = orders.filter((order) => {
-    if (order.status !== ordersTab) return false;
+  // --- Renderizado ---
 
-    if (orderSearch.trim() === "") return true;
-
-    const searchTerm = orderSearch.toLowerCase();
-    const client = clients.find((c) => c.id === order.clientId);
-
-    const matchOrderId = order.id.toLowerCase().includes(searchTerm);
-    const matchClientName = client?.razonSocial
-      ?.toLowerCase()
-      .includes(searchTerm);
-    const matchClientEmail = client?.email?.toLowerCase().includes(searchTerm);
-
-    return matchOrderId || matchClientName || matchClientEmail;
-  });
-
-  // Pantalla de login
   if (!authed) {
     return (
-      <div className="admin-panel-login-container">
-        <div className="admin-panel-login-card">
-          <div className="admin-panel-login-header">
-            <h2>Panel Administrativo</h2>
-            <p>Ingrese la clave para continuar</p>
-          </div>
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && loginAdmin()}
-            placeholder="Clave de administrador"
-            className="admin-panel-login-input"
-          />
-          <button onClick={loginAdmin} className="admin-panel-login-btn">
-            Acceder
-          </button>
-        </div>
-      </div>
+      <AdminLogin
+        secret={secret}
+        setSecret={setSecret}
+        loginAdmin={loginAdmin}
+      />
     );
   }
 
-  const CategoryTreeNode = ({ node, level = 0, onEdit, onDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const hasChildren = node.children && node.children.length > 0;
-
-    return (
-      <div
-        style={{ marginLeft: `${level * 20}px` }}
-        className="admin-panel-category-tree-node"
-      >
-        <div className="admin-panel-category-tree-item">
-          <span
-            onClick={() => hasChildren && setIsOpen(!isOpen)}
-            style={{
-              cursor: hasChildren ? "pointer" : "default",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-            }}
-          >
-            {hasChildren ? (
-              isOpen ? (
-                <FaFolderOpen />
-              ) : (
-                <FaFolder />
-              )
-            ) : (
-              <FaFile style={{ marginLeft: "18px", color: "#ccc" }} /> // Placeholder con ícono
-            )}
-            {node.name}
-          </span>
-          <div className="admin-panel-category-tree-actions">
-            <button onClick={() => onEdit(node)} title="Editar">
-              <FaPencilAlt />
-            </button>
-            <button
-              onClick={() => onDelete(node.id, node.name)}
-              title="Eliminar"
-            >
-              <FaTrash />
-            </button>
-          </div>
-        </div>
-        {isOpen && hasChildren && (
-          <div className="admin-panel-category-tree-children">
-            {node.children.map((child) => (
-              <CategoryTreeNode
-                key={child.id}
-                node={child}
-                level={level + 1}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const CategoryParentSelector = ({
-    categories, // Lista plana de categorías
-    categoryTree, // Árbol para estructura
-    categoriesMap, // Mapa para lookup rápido
-    value, // ID del padre seleccionado (puede ser null)
-    onChange, // Función para manejar cambio
-    currentCategoryId = null, // ID de la categoría que se está editando (para evitar ciclos)
-  }) => {
-    const options = [{ id: null, name: "Raíz (sin padre)", level: 0 }];
-
-    const buildOptions = (nodes, level = 0) => {
-      nodes.forEach((node) => {
-        // Prevenir seleccionarse a sí mismo o a sus descendientes
-        let isDescendant = false;
-        if (currentCategoryId) {
-          const descendants = getDescendantIds(node.id, categoriesMap);
-          isDescendant = descendants.includes(currentCategoryId);
-        }
-
-        if (node.id !== currentCategoryId && !isDescendant) {
-          options.push({ id: node.id, name: node.name, level });
-          const children = categories.filter((c) => c.parentId === node.id); // Encuentra hijos en la lista plana
-          children.sort((a, b) => a.name.localeCompare(b.name)); // Ordena hijos
-          if (children.length > 0) {
-            buildOptions(children, level + 1);
-          }
-        }
-      });
-    };
-
-    // Construye las opciones desde el árbol para mantener la jerarquía visual
-    const sortedRoots = categoryTree.sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-    buildOptions(sortedRoots); // Usa el árbol ordenado
-
-    return (
-      <select
-        value={value === null ? "" : value}
-        onChange={(e) =>
-          onChange(e.target.value === "" ? null : e.target.value)
-        }
-        className="admin-panel-filter-select" // Reutiliza estilo existente
-      >
-        {options.map((opt) => (
-          <option key={opt.id || "root"} value={opt.id === null ? "" : opt.id}>
-            {"--".repeat(opt.level) + " " + opt.name}
-          </option>
-        ))}
-      </select>
-    );
-  };
-
-  // Panel principal
   return (
     <div className="admin-panel-layout">
-      {/* Notificaciones */}
-      {notification && (
-        <div
-          className={`admin-panel-notification admin-panel-notification-${notification.type}`}
-        >
-          {notification.message}
-        </div>
-      )}
+      <AdminNotifications
+        notification={notification}
+        confirmDialog={confirmDialog}
+        handleCancel={handleCancelConfirm}
+        handleConfirm={handleConfirm}
+        loading={loading}
+      />
 
-      {/* Diálogo de Confirmación */}
-      {confirmDialog && (
-        <div className="admin-panel-confirm-overlay">
-          <div className="admin-panel-confirm-dialog">
-            <div className="admin-panel-confirm-icon">⚠️</div>
-            <h3>Confirmación</h3>
-            <p>{confirmDialog.message}</p>
-            <div className="admin-panel-confirm-actions">
-              <button
-                onClick={handleCancel}
-                className="admin-panel-btn-confirm-cancel"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirm}
-                className="admin-panel-btn-confirm-ok"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="admin-panel-loading-overlay">
-          <div className="admin-panel-loading-spinner"></div>
-          <p>Procesando...</p>
-        </div>
-      )}
-
-      <aside className="admin-panel-sidebar">
-        <div className="admin-panel-brand">
-          <h3>KOKOS Admin</h3>
-        </div>
-        <nav className="admin-panel-nav">
-          <button
-            className={view === "dashboard" ? "admin-panel-active" : ""}
-            onClick={() => setView("dashboard")}
-          >
-            📊 Dashboard
-          </button>
-          <button
-            className={view === "clients" ? "admin-panel-active" : ""}
-            onClick={() => {
-              setView("clients");
-              setExpandedClient(null);
-            }}
-          >
-            👥 Clientes
-          </button>
-          <button
-            className={view === "orders" ? "admin-panel-active" : ""}
-            onClick={() => {
-              setView("orders");
-              setExpandedOrder(null);
-            }}
-          >
-            🛒 Pedidos
-          </button>
-          <button
-            className={view === "products" ? "admin-panel-active" : ""}
-            onClick={() => setView("products")}
-          >
-            📦 Productos
-          </button>
-          <button
-            className={view === "addProduct" ? "admin-panel-active" : ""}
-            onClick={() => {
-              resetProductForm();
-              setView("addProduct");
-            }}
-          >
-            ➕ Agregar Producto
-          </button>
-          <button
-            className={view === "increasePrices" ? "admin-panel-active" : ""}
-            onClick={() => {
-              setView("increasePrices");
-              setPricePreview([]); // Reset preview when switching view
-              setIncreasePercentage(0);
-            }}
-          >
-            💲 Aumento de Precios
-          </button>
-          <button
-            className={view === "categories" ? "admin-panel-active" : ""}
-            onClick={() => {
-              setView("categories");
-              cancelEditingCategory(); // Reset form when switching to categories view
-            }}
-          >
-            🏷️ Categorías
-          </button>
-          <button
-            className={view === "editHome" ? "admin-panel-active" : ""}
-            onClick={() => setView("editHome")}
-          >
-            🏠 Editar inicio
-          </button>
-        </nav>
-      </aside>
+      <AdminSidebar
+        view={view}
+        setView={setView}
+        resetProductForm={resetProductForm}
+      />
 
       <main className="admin-panel-content" ref={mainContentRef}>
-        {/* Dashboard */}
         {view === "dashboard" && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">Dashboard</h2>
-            <div className="admin-panel-dashboard-stats">
-              {/* Stat Cards */}
-              <div className="admin-panel-stat-card">
-                <div className="admin-panel-stat-icon">⏳</div>
-                <div className="admin-panel-stat-info">
-                  <h3>{pendingClients.length}</h3>
-                  <p>Usuarios Pendientes</p>
-                </div>
-              </div>
-              <div className="admin-panel-stat-card">
-                <div className="admin-panel-stat-icon">👥</div>
-                <div className="admin-panel-stat-info">
-                  <h3>{approvedClients.length}</h3>
-                  <p>Clientes Aprobados</p>
-                </div>
-              </div>
-              <div className="admin-panel-stat-card">
-                <div className="admin-panel-stat-icon">📦</div>
-                <div className="admin-panel-stat-info">
-                  <h3>{products.length}</h3>
-                  <p>Productos</p>
-                </div>
-              </div>
-              <div className="admin-panel-stat-card">
-                <div className="admin-panel-stat-icon">🛒</div>
-                <div className="admin-panel-stat-info">
-                  <h3>{orders.filter((o) => o.status === "pending").length}</h3>
-                  <p>Pedidos Pendientes</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Category Structure Preview */}
-            <div className="admin-panel-dashboard-categories">
-              <h3>Estructura de Categorías</h3>
-              <div className="admin-panel-category-list">
-                {categoryTree.length === 0 ? (
-                  <p className="admin-panel-empty-message">
-                    No hay categorías creadas.
-                  </p>
-                ) : (
-                  categoryTree.map((rootNode) => (
-                    <div
-                      key={rootNode.id}
-                      className="admin-panel-category-item"
-                    >
-                      <strong>{rootNode.name}</strong>
-                      <span className="admin-panel-badge">
-                        {getDescendantIds(rootNode.id, categoriesMap).length -
-                          1}{" "}
-                        subcategorías
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+          <AdminDashboard
+            pendingClients={pendingClients}
+            approvedClients={approvedClients}
+            products={products}
+            orders={orders}
+            categoryTree={categoryTree}
+            categoriesMap={categoriesMap}
+          />
         )}
-
-        {/* Clients */}
         {view === "clients" && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">Gestión de Clientes</h2>
-
-            {/* Tabs */}
-            <div className="admin-panel-clients-tabs">
-              <button
-                className={`admin-panel-clients-tab ${
-                  clientsTab === "pendientes"
-                    ? "admin-panel-clients-tab-active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setClientsTab("pendientes");
-                  setExpandedClient(null);
-                }}
-              >
-                ⏳ Pendientes ({pendingClients.length})
-              </button>
-              <button
-                className={`admin-panel-clients-tab ${
-                  clientsTab === "aprobados"
-                    ? "admin-panel-clients-tab-active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setClientsTab("aprobados");
-                  setExpandedClient(null);
-                }}
-              >
-                ✅ Aprobados ({approvedClients.length})
-              </button>
-            </div>
-
-            {/* Search */}
-            <div className="admin-panel-search-box">
-              <input
-                type="text"
-                placeholder="🔍 Buscar por email, razón social o nombre..."
-                value={clientSearch}
-                onChange={(e) => setClientSearch(e.target.value)}
-                className="admin-panel-search-input"
-              />
-            </div>
-
-            {/* Client Lists */}
-            {clientsTab === "pendientes" && (
-              <div className="admin-panel-clients-list">
-                {pendingClients.length === 0 ? (
-                  <div className="admin-panel-empty-state">
-                    <div className="admin-panel-empty-icon">📭</div>
-                    <p>No hay usuarios pendientes de aprobación</p>
-                  </div>
-                ) : (
-                  pendingClients.map((c) => (
-                    <div key={c.id} className="admin-panel-client-card-new">
-                      {/* Summary */}
-                      <div
-                        className="admin-panel-client-summary"
-                        onClick={() =>
-                          setExpandedClient(
-                            expandedClient === c.id ? null : c.id
-                          )
-                        }
-                      >
-                        <div className="admin-panel-client-main-info">
-                          <h4>{c.razonSocial || c.nombre || "Sin Nombre"}</h4>
-                          <p className="admin-panel-client-email">{c.email}</p>
-                          <div className="admin-panel-client-badges">
-                            <span className="admin-panel-admin-badge admin-panel-admin-badge-pending">
-                              Pendiente
-                            </span>
-                            <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
-                              {c.posicionFiscal || "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="admin-panel-expand-icon">
-                          {expandedClient === c.id ? "▲" : "▼"}
-                        </div>
-                      </div>
-                      {/* Details (Expanded) */}
-                      {expandedClient === c.id && (
-                        <div className="admin-panel-client-details">
-                          {/* ... grid con detalles ... */}
-                          <div className="admin-panel-detail-grid">
-                            <div className="admin-panel-detail-item">
-                              <strong>Nombre:</strong>{" "}
-                              <span>{c.nombre || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Apellido:</strong>{" "}
-                              <span>{c.apellido || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>CUIT:</strong>{" "}
-                              <span>{c.cuit || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Teléfono:</strong>{" "}
-                              <span>{c.telefonoMovil || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Provincia:</strong>{" "}
-                              <span>{c.provincia || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Ciudad:</strong>{" "}
-                              <span>{c.ciudad || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Código Postal:</strong>{" "}
-                              <span>{c.codigoPostal || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Registro:</strong>{" "}
-                              <span>
-                                {c.createdAt
-                                  ? new Date(c.createdAt).toLocaleDateString(
-                                      "es-AR"
-                                    )
-                                  : "N/A"}
-                              </span>
-                            </div>
-                          </div>
-                          {/* Approval Section */}
-                          <div className="admin-panel-approval-section">
-                            {/* ... controles de aprobación ... */}
-                            <div className="admin-panel-approval-header">
-                              <h4>Aprobar Usuario</h4>
-                              <p>Selecciona la lista y el descuento</p>
-                            </div>
-                            <div className="admin-panel-approval-controls">
-                              <div className="admin-panel-state-selector">
-                                <button
-                                  className={`admin-panel-state-btn ${
-                                    approvalState === 1
-                                      ? "admin-panel-state-btn-active"
-                                      : ""
-                                  }`}
-                                  onClick={() => setApprovalState(1)}
-                                >
-                                  Lista 1
-                                </button>
-                                <button
-                                  className={`admin-panel-state-btn ${
-                                    approvalState === 2
-                                      ? "admin-panel-state-btn-active"
-                                      : ""
-                                  }`}
-                                  onClick={() => setApprovalState(2)}
-                                >
-                                  Lista 2
-                                </button>
-                              </div>
-                              <div
-                                className="admin-panel-form-group"
-                                style={{ maxWidth: "120px" }}
-                              >
-                                {" "}
-                                {/* Inline style for quick fix */}
-                                <label
-                                  style={{
-                                    fontSize: "12px",
-                                    marginBottom: "4px",
-                                  }}
-                                >
-                                  Descuento (%)
-                                </label>
-                                <input
-                                  type="number"
-                                  value={approvalDiscount}
-                                  onChange={(e) =>
-                                    setApprovalDiscount(e.target.value)
-                                  }
-                                  placeholder="0"
-                                  className="admin-panel-login-input"
-                                />{" "}
-                                {/* Reusing login input style */}
-                              </div>
-                              <div className="admin-panel-approval-actions">
-                                <button
-                                  onClick={() => approveClient(c.id)}
-                                  className="admin-panel-btn-small admin-panel-btn-approve"
-                                >
-                                  ✓ Aprobar
-                                </button>
-                                <button
-                                  onClick={() => rejectClient(c.id)}
-                                  className="admin-panel-btn-small admin-panel-btn-danger"
-                                >
-                                  ✕ Rechazar
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {clientsTab === "aprobados" && (
-              <div className="admin-panel-clients-list">
-                {approvedClients.length === 0 ? (
-                  <div className="admin-panel-empty-state">
-                    <div className="admin-panel-empty-icon">✅</div>
-                    <p>No hay clientes aprobados aún</p>
-                  </div>
-                ) : (
-                  approvedClients.map((c) => (
-                    <div key={c.id} className="admin-panel-client-card-new">
-                      <div
-                        className="admin-panel-client-summary"
-                        onClick={() =>
-                          setExpandedClient(
-                            expandedClient === c.id ? null : c.id
-                          )
-                        }
-                      >
-                        <div className="admin-panel-client-main-info">
-                          <h4>{c.razonSocial || c.email}</h4>
-                          <p className="admin-panel-client-email">{c.email}</p>
-                          <div className="admin-panel-client-badges">
-                            <span
-                              className={`admin-panel-admin-badge ${
-                                c.state === 1
-                                  ? "admin-panel-admin-badge-state1"
-                                  : "admin-panel-admin-badge-state2"
-                              }`}
-                            >
-                              Lista {c.state || 1}
-                            </span>
-                            {c.descuento > 0 && (
-                              <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
-                                {c.descuento}% OFF
-                              </span>
-                            )}
-                            {c.posicionFiscal && (
-                              <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
-                                {c.posicionFiscal}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="admin-panel-expand-icon">
-                          {expandedClient === c.id ? "▲" : "▼"}
-                        </div>
-                      </div>
-
-                      {expandedClient === c.id && (
-                        <div className="admin-panel-client-details">
-                          <div className="admin-panel-detail-grid">
-                            {/* ... Client details like pending ... */}
-                            <div className="admin-panel-detail-item">
-                              <strong>Nombre:</strong>{" "}
-                              <span>{c.nombre || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Apellido:</strong>{" "}
-                              <span>{c.apellido || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>CUIT:</strong>{" "}
-                              <span>{c.cuit || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Teléfono:</strong>{" "}
-                              <span>{c.telefonoMovil || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Provincia:</strong>{" "}
-                              <span>{c.provincia || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Ciudad:</strong>{" "}
-                              <span>{c.ciudad || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Código Postal:</strong>{" "}
-                              <span>{c.codigoPostal || "N/A"}</span>
-                            </div>
-                            <div className="admin-panel-detail-item">
-                              <strong>Registro:</strong>{" "}
-                              <span>
-                                {c.createdAt
-                                  ? new Date(c.createdAt).toLocaleDateString(
-                                      "es-AR"
-                                    )
-                                  : "N/A"}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="admin-panel-client-actions-section">
-                            <h4>Acciones</h4>
-                            <div className="admin-panel-client-actions">
-                              <button
-                                onClick={() => toggleState(c.id, 1)}
-                                className={`admin-panel-btn-small ${
-                                  c.state === 1 ? "admin-panel-active" : ""
-                                }`}
-                              >
-                                Lista 1
-                              </button>
-                              <button
-                                onClick={() => toggleState(c.id, 2)}
-                                className={`admin-panel-btn-small ${
-                                  c.state === 2 ? "admin-panel-active" : ""
-                                }`}
-                              >
-                                Lista 2
-                              </button>
-                              <div
-                                className="admin-panel-form-group"
-                                style={{
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                }}
-                              >
-                                <label
-                                  style={{
-                                    marginBottom: 0,
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  Desc %:
-                                </label>
-                                <input
-                                  type="number"
-                                  defaultValue={c.descuento || 0}
-                                  onBlur={(e) =>
-                                    updateClientDiscount(c.id, e.target.value)
-                                  }
-                                  placeholder="0"
-                                  className="admin-panel-login-input" /* Reusing style */
-                                  style={{
-                                    maxWidth: "80px",
-                                    padding: "8px 10px",
-                                  }}
-                                />
-                              </div>
-                              <button
-                                onClick={() => deleteClient(c.id)}
-                                className="admin-panel-btn-small admin-panel-btn-danger"
-                                style={{ marginLeft: "auto" }}
-                              >
-                                Eliminar
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+          <AdminClients
+            clients={clients} // Pasar lista completa
+            clientSearch={clientSearch}
+            setClientSearch={setClientSearch}
+            approveClient={approveClient} // Pasar handlers
+            rejectClient={rejectClient}
+            toggleState={toggleState}
+            updateClientDiscount={updateClientDiscount}
+            deleteClient={deleteClient}
+          />
         )}
-
-        {/* Orders */}
         {view === "orders" && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">Gestión de Pedidos</h2>
-            {/* Order Tabs */}
-            <div className="admin-panel-clients-tabs">
-              <button
-                className={`admin-panel-clients-tab ${
-                  ordersTab === "pending"
-                    ? "admin-panel-clients-tab-active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setOrdersTab("pending");
-                  setExpandedOrder(null);
-                }}
-              >
-                Pendientes (
-                {orders.filter((o) => o.status === "pending").length})
-              </button>
-              <button
-                className={`admin-panel-clients-tab ${
-                  ordersTab === "in_progress"
-                    ? "admin-panel-clients-tab-active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setOrdersTab("in_progress");
-                  setExpandedOrder(null);
-                }}
-              >
-                En Proceso (
-                {orders.filter((o) => o.status === "in_progress").length})
-              </button>
-              <button
-                className={`admin-panel-clients-tab ${
-                  ordersTab === "completed"
-                    ? "admin-panel-clients-tab-active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setOrdersTab("completed");
-                  setExpandedOrder(null);
-                }}
-              >
-                Completados (
-                {orders.filter((o) => o.status === "completed").length})
-              </button>
-              <button
-                className={`admin-panel-clients-tab ${
-                  ordersTab === "cancelled"
-                    ? "admin-panel-clients-tab-active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setOrdersTab("cancelled");
-                  setExpandedOrder(null);
-                }}
-              >
-                Cancelados (
-                {orders.filter((o) => o.status === "cancelled").length})
-              </button>
-            </div>
-            {/* Order Search */}
-            <div className="admin-panel-search-box">
-              <input
-                type="text"
-                placeholder="🔍 Buscar por N° pedido, razón social o email..."
-                value={orderSearch}
-                onChange={(e) => setOrderSearch(e.target.value)}
-                className="admin-panel-search-input"
-              />
-            </div>
-
-            {/* Orders List */}
-            <div className="admin-panel-orders-list">
-              {filteredOrders.length === 0 ? (
-                <div className="admin-panel-empty-state">
-                  <p>
-                    No hay pedidos en estado "{ordersTab.replace("_", " ")}"{" "}
-                    {orderSearch && " que coincidan con la búsqueda"}.
-                  </p>
-                </div>
-              ) : (
-                filteredOrders.map((order) => {
-                  const client = clients.find((c) => c.id === order.clientId);
-                  const total = order.items.reduce(
-                    (sum, item) =>
-                      sum + (item.finalPrice ?? item.price) * item.qty,
-                    0
-                  ); // Use finalPrice if available
-                  return (
-                    <div key={order.id} className="admin-panel-order-card">
-                      {/* Order Summary */}
-                      <div
-                        className="admin-panel-order-summary"
-                        onClick={() =>
-                          setExpandedOrder(
-                            expandedOrder === order.id ? null : order.id
-                          )
-                        }
-                      >
-                        <div className="admin-panel-order-main-info">
-                          <h4>
-                            Pedido #{order.id.substring(0, 7).toUpperCase()}
-                          </h4>
-                          <p>
-                            {client?.razonSocial ||
-                              order.clientEmail ||
-                              "Cliente Desconocido"}
-                          </p>
-                          <span>
-                            {new Date(order.createdAt).toLocaleDateString(
-                              "es-AR",
-                              {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </span>
-                        </div>
-                        <div className="admin-panel-order-meta">
-                          <span>{order.items.length} item(s)</span>
-                          <strong>{formatMoney(total)}</strong>
-                          <div
-                            className={`admin-panel-order-status-badge admin-panel-order-status-${order.status}`}
-                          >
-                            {order.status.replace("_", " ")}
-                          </div>
-                        </div>
-                        <div className="admin-panel-expand-icon">
-                          {expandedOrder === order.id ? "▲" : "▼"}
-                        </div>
-                      </div>
-                      {/* Order Details (Expanded) */}
-                      {expandedOrder === order.id && (
-                        <div className="admin-panel-order-details">
-                          <h5>Detalle del Cliente</h5>
-                          <div className="admin-panel-order-client-details">
-                            <p>
-                              <strong>Razón Social:</strong>{" "}
-                              {client?.razonSocial || "N/A"}
-                            </p>
-                            <p>
-                              <strong>Email:</strong> {client?.email || "N/A"}
-                            </p>
-                            <p>
-                              <strong>Teléfono:</strong>{" "}
-                              {client?.telefonoMovil || "N/A"}
-                            </p>
-                            <p>
-                              <strong>CUIT:</strong> {client?.cuit || "N/A"}
-                            </p>
-                            <p>
-                              <strong>Lista Asignada:</strong>{" "}
-                              {client?.state || "N/A"}
-                            </p>
-                            <p>
-                              <strong>Descuento Aplicado:</strong>{" "}
-                              {order.discountApplied || 0}%
-                            </p>
-                          </div>
-
-                          <h5>Productos</h5>
-                          <div className="admin-panel-order-items-list">
-                            {order.items.map((item) => (
-                              <div
-                                key={item.id}
-                                className="admin-panel-order-item"
-                              >
-                                <img
-                                  src={item.image || "placeholder.png"}
-                                  alt={item.name}
-                                />
-                                <div className="admin-panel-order-item-info">
-                                  <span>{item.name}</span>
-                                  <small>Cod: {item.code}</small>
-                                </div>
-                                <div className="admin-panel-order-item-pricing">
-                                  <span>
-                                    {item.qty} x {formatMoney(item.price)} (
-                                    {order.discountApplied || 0}% off) ={" "}
-                                    {formatMoney(item.finalPrice ?? item.price)}{" "}
-                                    c/u
-                                  </span>
-                                  <strong>
-                                    {formatMoney(
-                                      (item.finalPrice ?? item.price) * item.qty
-                                    )}
-                                  </strong>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          {order.comments && (
-                            <>
-                              <h5>Comentarios del Cliente</h5>
-                              <p
-                                style={{
-                                  fontStyle: "italic",
-                                  background: "#eee",
-                                  padding: "10px",
-                                  borderRadius: "5px",
-                                }}
-                              >
-                                {order.comments}
-                              </p>
-                            </>
-                          )}
-
-                          <div className="admin-panel-order-actions">
-                            <h5>Cambiar Estado</h5>
-                            <div className="admin-panel-order-status-buttons">
-                              <button
-                                onClick={() =>
-                                  updateOrderStatus(order.id, "pending")
-                                }
-                                className="admin-panel-btn-small"
-                                disabled={order.status === "pending"}
-                              >
-                                A Pendiente
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateOrderStatus(order.id, "in_progress")
-                                }
-                                className="admin-panel-btn-small"
-                                disabled={order.status === "in_progress"}
-                              >
-                                A En Proceso
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateOrderStatus(order.id, "completed")
-                                }
-                                className="admin-panel-btn-small admin-panel-btn-approve"
-                                disabled={order.status === "completed"}
-                              >
-                                A Completado
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateOrderStatus(order.id, "cancelled")
-                                }
-                                className="admin-panel-btn-small admin-panel-btn-danger"
-                                disabled={order.status === "cancelled"}
-                              >
-                                A Cancelado
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+          <AdminOrders
+            orders={orders}
+            clients={clients}
+            updateOrderStatus={updateOrderStatus}
+            orderSearch={orderSearch}
+            setOrderSearch={setOrderSearch}
+          />
         )}
-
-        {/* Products */}
         {view === "products" && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">Gestión de Productos</h2>
-            {/* Product Filters */}
-            <div className="admin-panel-filters-section">
-              <input
-                type="text"
-                placeholder="🔍 Buscar por nombre, código o descripción..."
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                className="admin-panel-search-input"
-              />
-              <div className="admin-panel-filter-row">
-                <CategoryParentSelector
-                  categories={categories}
-                  categoryTree={categoryTree}
-                  categoriesMap={categoriesMap}
-                  value={selectedFilterCategoryId}
-                  onChange={(id) => setSelectedFilterCategoryId(id)}
-                />
-                <button
-                  onClick={() => setSelectedFilterCategoryId("")}
-                  className="admin-panel-btn-small"
-                >
-                  Quitar Filtro Cat.
-                </button>
-              </div>
-            </div>
-            {/* Products List */}
-            <div className="admin-panel-products-list">
-              {filteredProducts.length === 0 ? (
-                <div className="admin-panel-empty-state">
-                  <p>
-                    No hay productos{" "}
-                    {productSearch || selectedFilterCategoryId
-                      ? "que coincidan con los filtros"
-                      : ""}
-                    .
-                  </p>
-                </div>
-              ) : (
-                filteredProducts.map((p) => (
-                  <div key={p.id} className="admin-panel-product-card-admin">
-                    <div className="admin-panel-product-info">
-                      <h4>{p.name}</h4>
-                      <p className="admin-panel-product-code">
-                        Código: {p.code || "N/A"}
-                      </p>
-                      <p className="admin-panel-product-category">
-                        {p.categoryPath && p.categoryPath.length > 0
-                          ? p.categoryPath.join(" > ")
-                          : "Sin categoría"}
-                      </p>
-                      <div className="admin-panel-product-prices">
-                        <span>Lista 1: {formatMoney(p.price_state1)}</span>
-                        <span>Lista 2: {formatMoney(p.price_state2)}</span>
-                      </div>
-                    </div>
-                    <div className="admin-panel-product-actions">
-                      <span
-                        className={`admin-panel-stock-badge ${
-                          p.stock === 1
-                            ? "admin-panel-in-stock"
-                            : "admin-panel-out-stock"
-                        }`}
-                      >
-                        {p.stock === 1 ? "En stock" : "Sin stock"}
-                      </span>
-                      <div className="admin-panel-action-buttons">
-                        <button
-                          onClick={() =>
-                            toggleStock(p.id, p.stock === 1 ? 0 : 1)
-                          }
-                          className="admin-panel-btn-small"
-                        >
-                          {p.stock === 1
-                            ? "Marcar sin stock"
-                            : "Marcar disponible"}
-                        </button>
-                        <button
-                          onClick={() => editProduct(p)}
-                          className="admin-panel-btn-small admin-panel-btn-edit"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => deleteProduct(p.id)}
-                          className="admin-panel-btn-small admin-panel-btn-danger"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <AdminProducts
+            products={filteredProducts} // Pasar productos filtrados
+            productSearch={productSearch}
+            setProductSearch={setProductSearch}
+            selectedFilterCategoryId={selectedFilterCategoryId}
+            setSelectedFilterCategoryId={setSelectedFilterCategoryId}
+            categories={categories} // Pasar lista plana
+            categoryTree={categoryTree} // Pasar árbol
+            categoriesMap={categoriesMap} // Pasar mapa
+            toggleStock={toggleStock}
+            editProduct={editProduct}
+            deleteProduct={deleteProduct}
+          />
         )}
-
-        {/* Add/Edit Product Form */}
         {(view === "addProduct" ||
           (view === "editProduct" && editingProduct)) && (
           <div className="admin-panel-card">
@@ -2038,7 +991,7 @@ export default function AdminPanel() {
             <ProductForm
               initialData={editingProduct || {}}
               categoriesMap={categoriesMap}
-              categoryTree={categoryTree}
+              categoryTree={categoryTree} // Pasar árbol al form
               onSubmit={handleSubmitProduct}
               loading={loading}
               onCancel={() => {
@@ -2048,385 +1001,59 @@ export default function AdminPanel() {
             />
           </div>
         )}
-
-        {/* Increase Prices */}
-        {view === "increasePrices" && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">Aumento de Precios General</h2>
-            <div className="admin-panel-form-section">
-              <h3 className="admin-panel-section-title">
-                Configuración de Aumento
-              </h3>
-              <div className="admin-panel-form-grid">
-                <div className="admin-panel-form-group">
-                  <label>Porcentaje de Aumento/Disminución (%)</label>
-                  <input
-                    type="number"
-                    value={increasePercentage}
-                    onChange={(e) => setIncreasePercentage(e.target.value)}
-                    placeholder="Ej: 15 (para aumento), -10 (para disminución)"
-                  />
-                </div>
-                <div className="admin-panel-form-group">
-                  <label>Redondear a (cantidad de ceros)</label>
-                  <select
-                    value={roundingZeros}
-                    onChange={(e) => setRoundingZeros(Number(e.target.value))}
-                    className="admin-panel-filter-select" // Reusing style
-                  >
-                    <option value={0}>Sin redondeo (ej: $123.45)</option>
-                    <option value={1}>Terminación en 0 (ej: $120)</option>
-                    <option value={2}>Terminación en 00 (ej: $100)</option>
-                    <option value={3}>Terminación en 000 (ej: $1000)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="admin-panel-filter-row">
-                <CategoryParentSelector
-                  categories={categories}
-                  categoryTree={categoryTree}
-                  categoriesMap={categoriesMap}
-                  value={priceCategoryFilterId}
-                  onChange={(id) => {
-                    setPriceCategoryFilterId(id);
-                    setPricePreview([]); // Reset preview on filter change
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    setPriceCategoryFilterId("");
-                    setPricePreview([]);
-                  }}
-                  className="admin-panel-btn-small"
-                >
-                  Quitar Filtro Cat.
-                </button>
-              </div>
-              <div className="admin-panel-form-actions">
-                <button
-                  onClick={handlePricePreview}
-                  className="admin-panel-btn-cancel"
-                  disabled={loading}
-                >
-                  Previsualizar Cambios
-                </button>
-                <button
-                  onClick={handlePriceIncrease}
-                  className="admin-panel-btn-submit"
-                  disabled={loading || pricePreview.length === 0}
-                >
-                  {loading ? "Actualizando..." : "Aplicar Cambios"}
-                </button>
-              </div>
-            </div>
-
-            {pricePreview.length > 0 && (
-              <div className="admin-panel-form-section">
-                <h3 className="admin-panel-section-title">
-                  Previsualización ({pricePreview.length} productos)
-                </h3>
-                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ background: "#f0f2f5" }}>
-                        <th style={{ padding: "8px", textAlign: "left" }}>
-                          Producto
-                        </th>
-                        <th style={{ padding: "8px", textAlign: "right" }}>
-                          Lista 1 Actual
-                        </th>
-                        <th style={{ padding: "8px", textAlign: "right" }}>
-                          Lista 1 Nueva
-                        </th>
-                        <th style={{ padding: "8px", textAlign: "right" }}>
-                          Lista 2 Actual
-                        </th>
-                        <th style={{ padding: "8px", textAlign: "right" }}>
-                          Lista 2 Nueva
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pricePreview.map((p) => (
-                        <tr
-                          key={p.id}
-                          style={{ borderBottom: "1px solid #e5e7eb" }}
-                        >
-                          <td style={{ padding: "8px" }}>{p.name}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>
-                            {formatMoney(p.oldPrice1)}
-                          </td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>
-                            <input
-                              type="number"
-                              value={p.newPrice1}
-                              onChange={(e) =>
-                                handlePriceChange(
-                                  p.id,
-                                  "newPrice1",
-                                  e.target.value
-                                )
-                              }
-                              className="admin-panel-price-input" // Add a specific class if needed
-                              style={{
-                                textAlign: "right",
-                                width: "100px",
-                                padding: "4px",
-                                border: "1px solid #ccc",
-                                borderRadius: "4px",
-                              }}
-                            />
-                          </td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>
-                            {formatMoney(p.oldPrice2)}
-                          </td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>
-                            <input
-                              type="number"
-                              value={p.newPrice2}
-                              onChange={(e) =>
-                                handlePriceChange(
-                                  p.id,
-                                  "newPrice2",
-                                  e.target.value
-                                )
-                              }
-                              className="admin-panel-price-input" // Add a specific class if needed
-                              style={{
-                                textAlign: "right",
-                                width: "100px",
-                                padding: "4px",
-                                border: "1px solid #ccc",
-                                borderRadius: "4px",
-                              }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Categories */}
         {view === "categories" && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">Gestión de Categorías</h2>
-            {/* Add/Edit Form */}
-            <div
-              className="admin-panel-form-section"
-              style={{ marginBottom: "30px" }}
-            >
-              <h3 className="admin-panel-section-title">
-                {editingCategory
-                  ? `Editando "${editingCategory.name}"`
-                  : "Nueva Categoría"}
-              </h3>
-              <div className="admin-panel-form-grid">
-                <div className="admin-panel-form-group">
-                  <label>Nombre *</label>
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Nombre de la categoría"
-                    required
-                    className="admin-panel-login-input" // Reusing style
-                  />
-                </div>
-                <div className="admin-panel-form-group">
-                  <label>Categoría Padre</label>
-                  <CategoryParentSelector
-                    categories={categories} // Lista plana
-                    categoryTree={categoryTree} // Árbol
-                    categoriesMap={categoriesMap} // Mapa
-                    value={newCategoryParentId}
-                    onChange={setNewCategoryParentId}
-                    currentCategoryId={editingCategory?.id}
-                  />
-                </div>
-              </div>
-              <div className="admin-panel-form-actions">
-                {editingCategory && (
-                  <button
-                    type="button"
-                    onClick={cancelEditingCategory}
-                    className="admin-panel-btn-cancel"
-                    disabled={loading}
-                  >
-                    Cancelar Edición
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={
-                    editingCategory ? handleUpdateCategory : handleAddCategory
-                  }
-                  className="admin-panel-btn-submit"
-                  disabled={loading || !newCategoryName.trim()}
-                >
-                  {loading
-                    ? "Guardando..."
-                    : editingCategory
-                    ? "Actualizar"
-                    : "Agregar"}
-                </button>
-              </div>
-            </div>
-            {/* Category Tree */}
-            <div className="admin-panel-categories-tree">
-              <h3 className="admin-panel-section-title">Estructura</h3>
-              {categoryTree.length === 0 ? (
-                <p className="admin-panel-empty-message">
-                  No hay categorías creadas.
-                </p>
-              ) : (
-                categoryTree.map((rootNode) => (
-                  <CategoryTreeNode
-                    key={rootNode.id}
-                    node={rootNode}
-                    onEdit={startEditingCategory}
-                    onDelete={handleDeleteCategory}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+          <AdminCategories
+            categoryTree={categoryTree}
+            categories={categories} // Pasar lista plana
+            categoriesMap={categoriesMap} // Pasar mapa
+            editingCategory={editingCategory}
+            newCategoryName={newCategoryName}
+            setNewCategoryName={setNewCategoryName}
+            newCategoryParentId={newCategoryParentId}
+            setNewCategoryParentId={setNewCategoryParentId}
+            handleAddCategory={handleAddCategory}
+            handleUpdateCategory={handleUpdateCategory}
+            startEditingCategory={startEditingCategory}
+            handleDeleteCategory={handleDeleteCategory}
+            cancelEditingCategory={cancelEditingCategory}
+            loading={loading}
+          />
         )}
-
-        {/* Edit Home */}
         {view === "editHome" && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">Editar Página de Inicio</h2>
-            {/* Banner Section */}
-            <div className="admin-panel-home-section">
-              <h3 className="admin-panel-section-title">
-                Banner Principal (Carrusel)
-              </h3>
-              <div className="admin-panel-banner-upload-section">
-                <label className="admin-panel-btn-upload">
-                  📤 Subir Imágenes
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleBannerUpload}
-                    style={{ display: "none" }}
-                    disabled={loading}
-                  />
-                </label>
-                <p
-                  style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}
-                >
-                  Puedes arrastrar las imágenes para reordenarlas.
-                </p>
-              </div>
-              <div className="admin-panel-banner-images-list">
-                {bannerImages.length === 0 ? (
-                  <p className="admin-panel-empty-message">
-                    No hay imágenes en el banner.
-                  </p>
-                ) : (
-                  bannerImages.map((img, index) => (
-                    <div
-                      key={img.id}
-                      className="admin-panel-banner-image-item"
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={handleDragOver}
-                      onDrop={() => handleDrop(index)}
-                      style={{ opacity: draggedIndex === index ? 0.5 : 1 }} // Visual feedback for dragging
-                    >
-                      <div className="admin-panel-drag-handle">⋮⋮</div>
-                      <img src={img.url} alt={`Banner ${index + 1}`} />
-                      <div className="admin-panel-banner-controls">
-                        <select
-                          value={img.redirect || "ninguno"}
-                          onChange={(e) =>
-                            updateBannerRedirect(img.id, e.target.value)
-                          }
-                          className="admin-panel-redirect-select"
-                        >
-                          {getRedirectOptions().map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => deleteBannerImage(img.id)}
-                          className="admin-panel-btn-remove-inline"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            {/* Home Categories Section */}
-            <div className="admin-panel-home-section">
-              <h3 className="admin-panel-section-title">
-                Categorías Destacadas (3 Imágenes)
-              </h3>
-              <div className="admin-panel-home-categories-grid">
-                {["img1", "img2", "img3"].map((key, index) => (
-                  <div key={key} className="admin-panel-home-category-card">
-                    <h4>Categoría {index + 1}</h4>
-                    {homeCategories[key]?.url ? (
-                      <div className="admin-panel-home-category-preview">
-                        <img
-                          src={homeCategories[key].url}
-                          alt={`Categoría Destacada ${index + 1}`}
-                        />
-                        <button
-                          onClick={() => deleteHomeCategoryImage(key)}
-                          className="admin-panel-btn-remove"
-                          title="Eliminar imagen"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="admin-panel-home-category-empty">
-                        <label className="admin-panel-btn-upload-small">
-                          📤 Subir
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) =>
-                              e.target.files[0] &&
-                              handleHomeCategoryUpload(key, e.target.files[0])
-                            }
-                            style={{ display: "none" }}
-                            disabled={loading}
-                          />
-                        </label>
-                      </div>
-                    )}
-                    <select
-                      value={homeCategories[key]?.redirect || "ninguno"}
-                      onChange={(e) =>
-                        updateHomeCategoryRedirect(key, e.target.value)
-                      }
-                      className="admin-panel-redirect-select-full"
-                      disabled={!homeCategories[key]?.url || loading}
-                    >
-                      {getRedirectOptions().map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <AdminEditHome
+            bannerImages={bannerImages}
+            handleBannerUpload={handleBannerUpload}
+            updateBannerRedirect={updateBannerRedirect}
+            deleteBannerImage={deleteBannerImage}
+            handleDragStart={handleDragStart}
+            handleDragOver={handleDragOver}
+            handleDrop={handleDrop}
+            draggedIndex={draggedIndex}
+            homeCategories={homeCategories}
+            handleHomeCategoryUpload={handleHomeCategoryUpload}
+            updateHomeCategoryRedirect={updateHomeCategoryRedirect}
+            deleteHomeCategoryImage={deleteHomeCategoryImage}
+            getRedirectOptions={getRedirectOptions} // Pasar la función
+            loading={loading}
+          />
+        )}
+        {view === "increasePrices" && (
+          <AdminIncreasePrices
+            increasePercentage={increasePercentage}
+            setIncreasePercentage={setIncreasePercentage}
+            roundingZeros={roundingZeros}
+            setRoundingZeros={setRoundingZeros}
+            priceCategoryFilterId={priceCategoryFilterId}
+            setPriceCategoryFilterId={setPriceCategoryFilterId}
+            pricePreview={pricePreview}
+            handlePricePreview={handlePricePreview}
+            handlePriceIncrease={handlePriceIncrease}
+            handlePriceChange={handlePriceChange} // Pasar la nueva función
+            categories={categories} // Pasar lista plana
+            categoryTree={categoryTree} // Pasar árbol
+            categoriesMap={categoriesMap} // Pasar mapa
+            loading={loading}
+          />
         )}
       </main>
     </div>
