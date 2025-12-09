@@ -31,7 +31,7 @@ import {
   buildCategoryTree,
   getCategoryPath,
   getDescendantIds,
-} from "./utils/categoryUtils"; // Importar helpers
+} from "./utils/categoryutils"; // Importar helpers
 
 import "./styles/admin-panel.css";
 
