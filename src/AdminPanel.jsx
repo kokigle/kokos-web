@@ -1048,10 +1048,10 @@ export default function AdminPanel() {
             pricePreview={pricePreview}
             handlePricePreview={handlePricePreview}
             handlePriceIncrease={handlePriceIncrease}
-            handlePriceChange={handlePriceChange} // Pasar la nueva función
-            categories={categories} // Pasar lista plana
-            categoryTree={categoryTree} // Pasar árbol
-            categoriesMap={categoriesMap} // Pasar mapa
+            handlePriceChange={handlePriceChange}
+            categories={categories}
+            categoryTree={categoryTree}
+            categoriesMap={categoriesMap}
             loading={loading}
           />
         )}
