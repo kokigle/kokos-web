@@ -160,21 +160,100 @@
   font-size: 12px;
 }
 
-/* Filtro de árbol de categorías */
+/* ... (Mantén todo el CSS anterior hasta .products-list-category-filter-tree) ... */
+
+/* REEMPLAZAR LA SECCIÓN DE .products-list-category-filter-tree con esto: */
+
 .products-list-category-filter-tree {
-  max-height: 250px;
+  max-height: 400px;
   overflow-y: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 10px;
-  background: #f9fafb;
+  border: none; /* Quitamos borde */
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
+
+/* Scroll sutil */
 .products-list-category-filter-tree::-webkit-scrollbar {
   width: 4px;
 }
 .products-list-category-filter-tree::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #e2e8f0;
   border-radius: 4px;
+}
+
+/* Nodo del Árbol */
+.category-tree-node {
+  width: 100%;
+}
+
+.category-tree-content {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  color: #4b5563;
+  font-size: 14px;
+  position: relative;
+}
+
+.category-tree-content:hover {
+  background-color: #f3f4f6;
+  color: #1a1a1a;
+}
+
+/* Estado seleccionado */
+.category-tree-content.selected {
+  background-color: #f0feff;
+  color: #009ca6;
+  font-weight: 600;
+}
+/* Barra lateral indicadora de selección */
+.category-tree-content.selected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 3px;
+  background-color: #009ca6;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Flecha Toggle */
+.category-tree-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+  color: #9ca3af;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.category-tree-toggle:hover {
+  background-color: #e5e7eb;
+  color: #4b5563;
+}
+
+.category-tree-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-tree-children {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 /* Acciones de Filtros */

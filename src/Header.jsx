@@ -8,6 +8,7 @@ import "./styles/header-kokos.css";
 import { ProfileIcon } from "./icons/ProfileIcon";
 import { CartIcon } from "./icons/CartIcon.jsx";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { ChevronDown, ChevronRight } from "lucide-react"; // Flechas modernas
 
 const buildCategoryTree = (categories) => {
   const map = {};
@@ -17,14 +18,11 @@ const buildCategoryTree = (categories) => {
   });
   categories.forEach((cat) => {
     if (cat.parentId && map[cat.parentId]) {
-      // Asegurarse de que el padre exista antes de intentar añadirlo
       map[cat.parentId].children.push(map[cat.id]);
     } else if (!cat.parentId) {
-      // Solo añadir nodos raíz si no tienen padre
       roots.push(map[cat.id]);
     }
   });
-  // Ordenar hijos alfabéticamente
   Object.values(map).forEach((node) => {
     if (node.children) {
       node.children.sort((a, b) => a.name.localeCompare(b.name));
@@ -39,9 +37,12 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
   const hasChildren = item.children && item.children.length > 0;
   const linkTo = `/products?categoryId=${item.id}`;
 
-  const handleToggle = (e) => {
-    if (hasChildren && window.innerWidth <= 768) {
+  // En escritorio, dejamos que CSS :hover haga el trabajo para el flyout.
+  // En móvil, usamos el click.
+  const handleClick = (e) => {
+    if (window.innerWidth <= 768 && hasChildren) {
       e.preventDefault();
+      e.stopPropagation();
       setIsOpen(!isOpen);
     } else {
       closeMobileMenu();
@@ -50,25 +51,32 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
 
   return (
     <div
-      className={`header-submenu-item ${hasChildren ? "has-children" : ""} ${
-        isOpen ? "open" : ""
-      }`}
+      className={`header-submenu-item ${hasChildren ? "has-children" : ""}`}
+      // Eliminamos onMouseEnter/Leave de JS para que CSS maneje el hover puro
     >
-      <Link to={linkTo} onClick={handleToggle} className="header-submenu-link">
-        <span className="header-submenu-icon">
-          {hasChildren ? (isOpen ? "📂" : "📁") : ""}
-        </span>
+      <Link 
+        to={linkTo} 
+        onClick={handleClick}
+        className="header-submenu-link"
+        // Quitamos padding dinámico en escritorio para alineación uniforme
+        // En móvil podría ser útil, pero el CSS ya lo maneja bien.
+      >
         <span className="header-submenu-text">
-          {item.name.replace(/_/g, " ")}
+          {item.name.replace(/_/g, " ").toUpperCase()}
         </span>
+        
         {hasChildren && (
-          <span className="header-submenu-arrow">{isOpen ? "−" : "+"}</span>
+          <span className="header-submenu-arrow-icon">
+             {/* En desktop siempre es derecha porque expande a derecha */}
+             {window.innerWidth > 768 ? <ChevronRight size={14} /> : (isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
+          </span>
         )}
       </Link>
+      
       {hasChildren && (
         <div
           className={`header-submenu-nested ${
-            isOpen || window.innerWidth > 768 ? "visible" : ""
+            isOpen ? "visible" : "" /* 'visible' solo afecta a móvil ahora */
           }`}
         >
           {item.children.map((child) => (
@@ -85,10 +93,9 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
   );
 };
 
-// Función para añadir 'path' a cada nodo del árbol
 const addPathToTree = (nodes, currentPath = []) => {
   return nodes.map((node) => {
-    const nodePath = [...currentPath, node.name]; // O node.id si prefieres path de IDs
+    const nodePath = [...currentPath, node.name];
     const newNode = { ...node, path: nodePath };
     if (node.children && node.children.length > 0) {
       newNode.children = addPathToTree(node.children, nodePath);
@@ -104,16 +111,14 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeDropdown, setActiveDropdown] = useState(null); // Para manejar el dropdown móvil
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   useEffect(() => {
-    const q = query(collection(db, "categories"), orderBy("name")); // Ordenar raíces/nodos
+    const q = query(collection(db, "categories"), orderBy("name"));
     const unsub = onSnapshot(q, (snap) => {
       const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const tree = buildCategoryTree(flatList);
-      const treeWithPath = addPathToTree(tree); // Añadir la ruta a cada nodo
-      // Podrías filtrar aquí para obtener solo el árbol de "Juguetería" si es necesario
-      // O pasar el árbol completo y que el componente SubmenuItem filtre
+      const treeWithPath = addPathToTree(tree);
       setCategoryTree(treeWithPath);
     });
     return () => unsub();
@@ -123,9 +128,8 @@ export default function Header() {
     e.preventDefault();
     e.stopPropagation();
     if (searchQuery.trim()) {
-      // Podrías mantener la categoría actual si existe
       const params = new URLSearchParams(location.search);
-      const categoryId = params.get("categoryId"); // <- Usar categoryId
+      const categoryId = params.get("categoryId");
       const newParams = new URLSearchParams();
       if (categoryId) {
         newParams.set("categoryId", categoryId);
@@ -147,7 +151,7 @@ export default function Header() {
 
   const jugueteriaNode = categoryTree.find(
     (node) => node.name.toLowerCase() === "juguetería"
-  ); // Ajusta el nombre si es diferente
+  );
 
   return (
     <header className="header-kokos-header">
@@ -163,7 +167,6 @@ export default function Header() {
         </div>
 
         <div className="header-kokos-search">
-          {/* Asegúrate que este form no esté anidado dentro de otro form en el DOM final */}
           <form onSubmit={handleSearch}>
             <input
               type="text"
@@ -171,7 +174,6 @@ export default function Header() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Buscar productos"
-              // Quita 'required' si lo tenías, no debería ser obligatorio para la navegación
             />
             <button type="submit" aria-label="Buscar">
               <Search />
@@ -205,7 +207,6 @@ export default function Header() {
                     {user.razonSocial}
                   </span>
                 </div>
-                {/* NUEVO ENLACE A MI CUENTA */}
                 <Link
                   to="/my-account"
                   className="header-kokos-user-menu-item"
@@ -246,7 +247,7 @@ export default function Header() {
           className="header-kokos-mobile-menu-toggle"
           onClick={() => {
             setMobileMenuOpen(!mobileMenuOpen);
-            setActiveDropdown(null); // Reset dropdown on menu toggle
+            setActiveDropdown(null);
           }}
           aria-label="Toggle menu"
           aria-expanded={mobileMenuOpen}
@@ -269,22 +270,18 @@ export default function Header() {
         >
           INICIO
         </Link>
-        {/* Usamos onClick para manejar el dropdown en móvil */}
-        {jugueteriaNode && ( // Solo mostrar si existe la categoría raíz
+        {jugueteriaNode && (
           <div className="header-kokos-dropdown-menu">
             <Link
-              to={`/products?categoryId=${jugueteriaNode.id}`} // Enlace a la categoría raíz
+              to={`/products?categoryId=${jugueteriaNode.id}`}
               className="header-kokos-menu-link"
               onClick={(e) => {
-                // Prevenir en móvil SI hay hijos para abrir el dropdown interno
                 if (
                   window.innerWidth <= 768 &&
                   jugueteriaNode.children &&
                   jugueteriaNode.children.length > 0
                 ) {
                   e.preventDefault();
-                  // El toggle ahora lo maneja SubmenuItem, podríamos necesitar un estado aquí o refactorizar
-                  // setActiveDropdown(activeDropdown === "jugueteria" ? null : "jugueteria"); // Mantener algo similar?
                 } else {
                   setMobileMenuOpen(false);
                 }
@@ -329,7 +326,6 @@ export default function Header() {
           CONTACTO
         </Link>
 
-        {/* --- Menú Móvil Adicional --- */}
         {mobileMenuOpen && (
           <div className="header-kokos-mobile-actions">
             <hr />
@@ -357,7 +353,6 @@ export default function Header() {
             </Link>
           </div>
         )}
-        {/* --- Fin Menú Móvil Adicional --- */}
       </nav>
     </header>
   );
