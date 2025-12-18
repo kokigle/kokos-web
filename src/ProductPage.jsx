@@ -1,4 +1,4 @@
-// ProductPage.jsx - VERSIÓN FINAL COMPLETA
+// src/ProductPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -25,6 +25,8 @@ export default function ProductPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  // NUEVO ESTADO PARA EL VIDEO MODAL
+  const [activeVideo, setActiveVideo] = useState(null); 
   const { user } = useAuth();
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function ProductPage() {
     if (product.multimedia?.length > 0) {
       imagesToPreload.push(...product.multimedia);
     }
+    // Preload video thumbnails
     if (product.videos?.length > 0) {
       product.videos.forEach((videoUrl) => {
         const { id: videoId } = getYouTubeId(videoUrl);
@@ -44,6 +47,7 @@ export default function ProductPage() {
         }
       });
     }
+    // ...resto del preloader (sin cambios)...
     if (related.length > 0) {
       related.slice(0, 4).forEach((relProduct) => {
         if (relProduct.multimedia?.length >= 2) {
@@ -74,20 +78,44 @@ export default function ProductPage() {
 
   const getYouTubeId = (url) => {
     try {
+      if (!url) return { id: null, vertical: false };
       const u = new URL(url);
+      
+      // Caso 1: Shorts (ej: youtube.com/shorts/ID)
       if (u.pathname.includes("/shorts/")) {
-        return { id: u.pathname.split("/shorts/")[1], vertical: true };
+        const pathParts = u.pathname.split("/shorts/");
+        // Eliminar posibles parámetros extra después del ID
+        const id = pathParts[1].split("?")[0].split("&")[0];
+        return { id, vertical: true };
       }
+      
+      // Caso 2: URL estándar (ej: youtube.com/watch?v=ID)
       if (u.searchParams.get("v")) {
         return { id: u.searchParams.get("v"), vertical: false };
       }
+      
+      // Caso 3: URL corta (ej: youtu.be/ID)
+      if (u.hostname === "youtu.be") {
+        return { id: u.pathname.slice(1), vertical: false };
+      }
+      
+      // Caso 4: Embed directo (ej: youtube.com/embed/ID)
+      if (u.pathname.includes("/embed/")) {
+        return { id: u.pathname.split("/embed/")[1], vertical: false };
+      }
+
     } catch (e) {
+      console.error("Error parseando URL de video:", url, e);
       return { id: null, vertical: false };
     }
     return { id: null, vertical: false };
   };
 
   useEffect(() => {
+    // --- CORRECCIÓN DEL ERROR "n is undefined" ---
+    // Si no hay ID (ej. carga inicial extraña), no ejecutamos la llamada a Firebase
+    if (!id) return; 
+
     const docRef = doc(db, "products", id);
     getDoc(docRef)
       .then((d) => {
@@ -117,7 +145,8 @@ export default function ProductPage() {
           setProduct("not-found");
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Error fetching product:", error);
         setProduct("not-found");
       });
   }, [id]);
@@ -130,6 +159,11 @@ export default function ProductPage() {
       return () => clearInterval(interval);
     }
   }, [related]);
+
+  // Función para cerrar modal de video
+  const closeVideoModal = () => {
+    setActiveVideo(null);
+  };
 
   if (!product)
     return (
@@ -235,37 +269,33 @@ export default function ProductPage() {
                   alt={product.name}
                 />
               )}
+              
+              {/* --- CAMBIO PRINCIPAL: Renderizado del video --- */}
               {mainMedia?.type === "video" &&
                 (() => {
                   const { id: videoId, vertical } = getYouTubeId(mainMedia.url);
                   if (!videoId) return <p>Video inválido</p>;
-                  return vertical ? (
-                    <div className="product-page-short-container">
-                      <div
-                        className="product-page-short-bg"
-                        style={{
-                          backgroundImage: `url(https://img.youtube.com/vi/${videoId}/hqdefault.jpg)`,
-                        }}
-                      ></div>
-                      <iframe
-                        src={`https://www.youtube.com/embed/${videoId}`}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        title="Video vertical"
-                      ></iframe>
+                  
+                  // En lugar de iframe directo, mostramos portada + botón play
+                  return (
+                    <div 
+                      className="product-page-video-trigger"
+                      onClick={() => setActiveVideo(mainMedia.url)}
+                    >
+                       <img 
+                         src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                         alt="Video cover"
+                         className={`product-page-video-cover ${vertical ? 'is-vertical' : ''}`}
+                       />
+                       <div className="product-page-play-overlay-btn">
+                          <svg viewBox="0 0 24 24" fill="currentColor" height="48" width="48">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                       </div>
                     </div>
-                  ) : (
-                    <iframe
-                      className="product-page-video-normal"
-                      src={`https://www.youtube.com/embed/${videoId}`}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      title="Video del producto"
-                    ></iframe>
                   );
                 })()}
+              
               {thumbs.length > 1 && (
                 <button
                   className="product-page-main-arrow product-page-main-arrow-right"
@@ -275,6 +305,8 @@ export default function ProductPage() {
                 </button>
               )}
             </div>
+            
+            {/* Carrusel de Miniaturas */}
             {thumbs.length > 0 && (
               <div className="product-page-thumb-carousel">
                 <div className="product-page-thumb-grid">
@@ -317,6 +349,7 @@ export default function ProductPage() {
                 </div>
               </div>
             )}
+            
             {product.description && (
               <div className="product-page-description-box">
                 <h3 className="product-page-description-title">Descripción</h3>
@@ -326,7 +359,9 @@ export default function ProductPage() {
               </div>
             )}
           </div>
+          
           <div className="product-page-info">
+             {/* ... (Todo el contenido de info del producto se mantiene igual) ... */}
             <div className="product-page-header">
               <h1 className="product-page-title">{product.name}</h1>
               <div className="product-page-meta-actions">
@@ -378,7 +413,6 @@ export default function ProductPage() {
                   </div>
                 </div>
               )}
-              {/* SECCIÓN DE MEDIDAS AÑADIDA */}
               {product.medidas && product.medidas.length > 0 && (
                 <div className="product-page-spec-item">
                   <div className="product-page-spec-label">
@@ -486,15 +520,59 @@ export default function ProductPage() {
         )}
       </div>
 
-      {/* ✨ BOTÓN FLOTANTE DEL CARRITO */}
       <FloatingCartButton />
+
+      {/* --- MODAL DE VIDEO CORREGIDO --- */}
+      {activeVideo && (
+        <div 
+          className="product-page-video-modal-overlay" 
+          onClick={closeVideoModal}
+        >
+           <div 
+             className="product-page-video-modal-content" 
+             onClick={e => e.stopPropagation()}
+           >
+              <button 
+                className="product-page-video-modal-close" 
+                onClick={closeVideoModal}
+              >
+                ×
+              </button>
+              {(() => {
+                  const { id: videoId, vertical } = getYouTubeId(activeVideo);
+                  
+                  if (!videoId) {
+                    return <div style={{color: 'white', padding: '2rem', textAlign: 'center'}}>No se pudo cargar el video. ID no válido.</div>;
+                  }
+
+                  return (
+                    <div className={`product-page-video-frame-container ${vertical ? 'is-vertical-modal' : ''}`}>
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        // Usamos youtube-nocookie para evitar bloqueos de terceros
+                        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        // Lista de permisos estándar y simplificada
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  );
+              })()}
+           </div>
+        </div>
+      )}
 
       {showShareModal && (
         <div
           className="product-page-modal-overlay"
           onClick={() => setShowShareModal(false)}
         >
-          <div
+          {/* ... Modal de compartir existente ... */}
+           <div
             className="product-page-modal"
             onClick={(e) => e.stopPropagation()}
           >
@@ -539,9 +617,8 @@ export default function ProductPage() {
   );
 }
 
-// Al final de src/ProductPage.jsx
 function AddToCart({ product }) {
-  const { user, addToCart } = useAuth(); // Usamos el contexto
+  const { user, addToCart } = useAuth();
   const [qty, setQty] = useState(product.cant_min || 1);
 
   const handleAddToCart = () => {
@@ -557,8 +634,8 @@ function AddToCart({ product }) {
       image: product.multimedia?.[0] || null,
     };
 
-    addToCart(productData, qty); // Llamamos a la función del contexto
-    setQty(product.cant_min || 1); // Reseteamos la cantidad
+    addToCart(productData, qty);
+    setQty(product.cant_min || 1);
   };
 
   return (
