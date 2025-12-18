@@ -37,8 +37,6 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
   const hasChildren = item.children && item.children.length > 0;
   const linkTo = `/products?categoryId=${item.id}`;
 
-  // En escritorio, dejamos que CSS :hover haga el trabajo para el flyout.
-  // En móvil, usamos el click.
   const handleClick = (e) => {
     if (window.innerWidth <= 768 && hasChildren) {
       e.preventDefault();
@@ -52,14 +50,11 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
   return (
     <div
       className={`header-submenu-item ${hasChildren ? "has-children" : ""}`}
-      // Eliminamos onMouseEnter/Leave de JS para que CSS maneje el hover puro
     >
       <Link 
         to={linkTo} 
         onClick={handleClick}
         className="header-submenu-link"
-        // Quitamos padding dinámico en escritorio para alineación uniforme
-        // En móvil podría ser útil, pero el CSS ya lo maneja bien.
       >
         <span className="header-submenu-text">
           {item.name.replace(/_/g, " ").toUpperCase()}
@@ -67,7 +62,6 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
         
         {hasChildren && (
           <span className="header-submenu-arrow-icon">
-             {/* En desktop siempre es derecha porque expande a derecha */}
              {window.innerWidth > 768 ? <ChevronRight size={14} /> : (isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
           </span>
         )}
@@ -76,7 +70,7 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
       {hasChildren && (
         <div
           className={`header-submenu-nested ${
-            isOpen ? "visible" : "" /* 'visible' solo afecta a móvil ahora */
+            isOpen ? "visible" : "" 
           }`}
         >
           {item.children.map((child) => (
@@ -105,13 +99,16 @@ const addPathToTree = (nodes, currentPath = []) => {
 };
 
 export default function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, cart } = useAuth(); // [MODIFICADO] Agregamos 'cart'
   const [categoryTree, setCategoryTree] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [activeDropdown, setActiveDropdown] = useState(null);
+
+  // Calculamos la cantidad de items únicos (igual que en FloatingCartButton)
+  const cartCount = cart ? cart.length : 0;
 
   useEffect(() => {
     const q = query(collection(db, "categories"), orderBy("name"));
@@ -182,6 +179,7 @@ export default function Header() {
         </div>
 
         <div className="header-kokos-actions">
+          {/* BOTÓN CARRITO MODIFICADO */}
           <Link
             to="/cart"
             className="header-kokos-action-btn header-kokos-cart-btn"
@@ -189,6 +187,10 @@ export default function Header() {
           >
             <span className="header-kokos-action-icon">
               <CartIcon />
+              {/* Badge de contador */}
+              {cartCount > 0 && (
+                <span className="header-cart-badge">{cartCount}</span>
+              )}
             </span>
             <span className="header-kokos-action-text">Carrito</span>
           </Link>

@@ -427,6 +427,7 @@
   height: 100%;
 }
 .products-list-image {
+  background: white;
   width: 100%;
   height: 100%;
   object-fit: contain;

@@ -123,8 +123,8 @@
 .header-kokos-action-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 10px; /* Aumentado ligeramente para los iconos más grandes */
+  padding: 8px 18px; /* Un poco más de padding horizontal */
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
@@ -144,9 +144,33 @@
   transform: translateY(-2px);
 }
 
+/* MODIFICADO: Iconos más grandes y posición relativa para el badge */
 .header-kokos-action-icon {
-  font-size: 16px;
-  margin-top: 7px;
+  font-size: 24px; /* Aumentado de 16px a 24px */
+  margin-top: 0;   /* Centrado vertical con flex, eliminamos margen top */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* NUEVO: Estilo del badge numérico del carrito */
+.header-cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background-color: #009ca6; /* Rojo alerta/notificación */
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff; /* Borde blanco para separarlo del icono */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .header-kokos-action-text {
