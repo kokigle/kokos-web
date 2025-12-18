@@ -37,11 +37,12 @@ import {
   FaArrowLeft,
   FaShoppingBag,
   FaHistory,
+  FaSearch, // Agregado para el buscador
 } from "react-icons/fa";
 import "./styles/my-account.css";
 
-import { EyeIcon } from "./icons/EyeIcon"; // Import EyeIcon
-import { EyeSlashIcon } from "./icons/EyeSlashIcon"; // Import EyeSlashIcon
+import { EyeIcon } from "./icons/EyeIcon";
+import { EyeSlashIcon } from "./icons/EyeSlashIcon";
 
 // --- Sub-componente para el Resumen ---
 const AccountDashboard = ({ user, orders }) => {
@@ -89,6 +90,10 @@ const AccountDashboard = ({ user, orders }) => {
 // --- Sub-componente para MIS PEDIDOS ---
 const AccountOrders = ({ orders, loading, user }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
+  
+  // Estados para filtros y ordenamiento
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc"); // 'desc' = más recientes, 'asc' = más antiguos
 
   const downloadOrderAsPDF = (order, client) => {
     try {
@@ -178,7 +183,6 @@ const AccountOrders = ({ orders, loading, user }) => {
         `$${formatMoney((item.price || 0) * (item.qty || 0))}`,
       ]);
 
-      // --- CAMBIO CLAVE: CÓMO SE LLAMA A AUTOTABLE ---
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
@@ -201,7 +205,7 @@ const AccountOrders = ({ orders, loading, user }) => {
         },
       });
 
-      let finalY = doc.lastAutoTable.finalY; // Correcta obtención de la Y final
+      let finalY = doc.lastAutoTable.finalY;
 
       // ---- TOTALES ----
       const total = order.items.reduce(
@@ -233,6 +237,20 @@ const AccountOrders = ({ orders, loading, user }) => {
       );
     }
   };
+
+  // --- Lógica de filtrado y ordenamiento ---
+  const filteredAndSortedOrders = [...orders]
+    .filter((order) => {
+      // Filtrar por ID (buscando en los primeros caracteres o el ID completo)
+      const orderId = order.id.toUpperCase();
+      const term = searchTerm.toUpperCase();
+      return orderId.includes(term);
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
 
   if (loading) {
     return (
@@ -317,13 +335,36 @@ const AccountOrders = ({ orders, loading, user }) => {
   return (
     <div className="my-account-widget">
       <h3 className="my-account-widget-title">Mis Pedidos</h3>
-      {orders.length === 0 ? (
+      
+      {/* --- Controles de Filtro y Orden --- */}
+      <div className="my-account-orders-controls">
+        <div className="my-account-search-wrapper">
+          <FaSearch className="my-account-search-icon" />
+          <input
+            type="text"
+            placeholder="Buscar por N° de pedido..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="my-account-search-input"
+          />
+        </div>
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+          className="my-account-sort-select"
+        >
+          <option value="desc">Más recientes</option>
+          <option value="asc">Más antiguos</option>
+        </select>
+      </div>
+
+      {filteredAndSortedOrders.length === 0 ? (
         <p className="my-account-empty-section">
-          Aún no has realizado ningún pedido.
+          {searchTerm ? "No se encontraron pedidos con ese criterio." : "Aún no has realizado ningún pedido."}
         </p>
       ) : (
         <div className="my-account-orders-list">
-          {orders.map((order) => {
+          {filteredAndSortedOrders.map((order) => {
             const total = order.items.reduce(
               (sum, item) => sum + (item.price || 0) * (item.qty || 0),
               0
@@ -363,7 +404,6 @@ const AccountOrders = ({ orders, loading, user }) => {
 
 // --- Sub-componente DATOS DE LA CUENTA ---
 const AccountDetails = ({ user }) => (
-  // ... (sin cambios funcionales, pero se beneficiará de los nuevos estilos)
   <div className="my-account-widget">
     <h3 className="my-account-widget-title">Datos de la Cuenta</h3>
     <form className="my-account-form">
@@ -499,14 +539,13 @@ const AccountSecurity = () => {
       <form onSubmit={handleSubmit} className="my-account-form">
         <div className="my-account-form-group">
           <label>Contraseña Actual</label>
-          {/* Wrap input and icon */}
           <div className="password-input-wrapper">
             <input
-              type={showCurrentPassword ? "text" : "password"} // Toggle type
+              type={showCurrentPassword ? "text" : "password"}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="••••••••"
-              className="my-account-input" // Use existing class
+              className="my-account-input"
               required
             />
             <span
@@ -519,14 +558,13 @@ const AccountSecurity = () => {
         </div>
         <div className="my-account-form-group">
           <label>Nueva Contraseña</label>
-          {/* Wrap input and icon */}
           <div className="password-input-wrapper">
             <input
-              type={showNewPassword ? "text" : "password"} // Toggle type
+              type={showNewPassword ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
-              className="my-account-input" // Use existing class
+              className="my-account-input"
               required
             />
             <span
@@ -539,14 +577,13 @@ const AccountSecurity = () => {
         </div>
         <div className="my-account-form-group">
           <label>Confirmar Nueva Contraseña</label>
-          {/* Wrap input and icon */}
           <div className="password-input-wrapper">
             <input
-              type={showConfirmNewPassword ? "text" : "password"} // Toggle type
+              type={showConfirmNewPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="my-account-input" // Use existing class
+              className="my-account-input"
               required
             />
             <span

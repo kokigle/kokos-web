@@ -422,7 +422,7 @@ export default function ProductPage() {
                         Precio mayorista
                       </span>
                       <span className="product-page-price">
-                        ${price.toLocaleString()}
+                        ${price.toLocaleString()} + IVA
                       </span>
                     </div>
                     <div

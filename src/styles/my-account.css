@@ -327,12 +327,71 @@
   font-size: 15px;
 }
 
-/* Lista de Pedidos */
+/* Lista de Pedidos y Controles */
 .my-account-orders-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+
+/* --- Nuevos Controles de Filtro y Orden --- */
+.my-account-orders-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.my-account-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.my-account-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.my-account-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 38px; /* Espacio para el icono */
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #f9fafb;
+  color: #374151;
+  transition: all 0.2s ease-in-out;
+}
+
+.my-account-search-input:focus {
+  outline: none;
+  border-color: #009ca6;
+  box-shadow: 0 0 0 3px rgba(0, 156, 166, 0.1);
+}
+
+.my-account-sort-select {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.my-account-sort-select:focus {
+  outline: none;
+  border-color: #009ca6;
+  box-shadow: 0 0 0 3px rgba(0, 156, 166, 0.1);
+}
+/* -------------------------------------- */
 
 .my-account-order-card {
   display: flex;
@@ -530,5 +589,14 @@
   }
   .my-account-quick-stats {
     grid-template-columns: 1fr;
+  }
+  
+  /* Ajuste responsive para los controles de búsqueda */
+  .my-account-orders-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .my-account-sort-select {
+    width: 100%;
   }
 }
