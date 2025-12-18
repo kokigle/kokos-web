@@ -234,7 +234,7 @@ export default function Contacto() {
                 <div className="contact-detail-content">
                   <strong>Horario de Atención</strong>
                   <p>Lunes a Viernes</p>
-                  <p>9:00 AM - 4:00 PM</p>
+                  <p>08:00 AM - 17:00 PM</p>
                 </div>
               </div>
 

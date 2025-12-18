@@ -1,4 +1,4 @@
-// Register.jsx
+// src/Register.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
@@ -16,10 +16,11 @@ import {
   FaCheckCircle,
   FaTimesCircle,
   FaArrowLeft,
+  FaHome, // Importamos nuevo icono para domicilios
 } from "react-icons/fa";
 import "./styles/register.css";
-import { EyeIcon } from "./icons/EyeIcon"; // Import EyeIcon
-import { EyeSlashIcon } from "./icons/EyeSlashIcon"; // Import EyeSlashIcon
+import { EyeIcon } from "./icons/EyeIcon";
+import { EyeSlashIcon } from "./icons/EyeSlashIcon";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -35,10 +36,12 @@ export default function Register() {
     razonSocial: "",
     posicionFiscal: "",
     cuit: "",
+    domicilioFiscal: "", // NUEVO CAMPO
     telefonoMovil: "",
     email: "",
     password: "",
     confirmPassword: "",
+    domicilioEntrega: "", // NUEVO CAMPO
     ciudad: "",
     codigoPostal: "",
     provincia: "",
@@ -107,23 +110,18 @@ export default function Register() {
     e.preventDefault();
     setError(null);
 
-    // Validaciones
+    // Validaciones básicas
     if (!formData.posicionFiscal) {
       return setError("Debes seleccionar una posición fiscal.");
     }
-
     if (!validateCUIT(formData.cuit)) {
       return setError("El CUIT debe tener 11 dígitos.");
     }
-
     if (formData.password !== formData.confirmPassword) {
       return setError("Las contraseñas no coinciden.");
     }
-
     if (!validatePassword(formData.password)) {
-      return setError(
-        "La contraseña no cumple con los requisitos de seguridad."
-      );
+      return setError("La contraseña no cumple con los requisitos de seguridad.");
     }
 
     setLoading(true);
@@ -138,15 +136,17 @@ export default function Register() {
         formData.password
       );
 
-      // Guardar datos en Firestore
+      // Guardar datos en Firestore (Incluye los nuevos campos)
       await addDoc(collection(db, "clients"), {
         nombre: formData.nombre,
         apellido: formData.apellido,
         razonSocial: formData.razonSocial,
         posicionFiscal: formData.posicionFiscal,
         cuit: formData.cuit.replace(/[^0-9]/g, ""),
+        domicilioFiscal: formData.domicilioFiscal, // Guardar
         telefonoMovil: formData.telefonoMovil,
         email: formData.email.toLowerCase(),
+        domicilioEntrega: formData.domicilioEntrega, // Guardar
         ciudad: formData.ciudad,
         codigoPostal: formData.codigoPostal,
         provincia: formData.provincia,
@@ -157,11 +157,8 @@ export default function Register() {
       });
 
       setSuccess(true);
-
-      // Cerrar sesión automáticamente
       await auth.signOut();
 
-      // Redirigir después de 3 segundos
       setTimeout(() => {
         navigate("/login");
       }, 10000);
@@ -307,12 +304,28 @@ export default function Register() {
                   maxLength="13"
                 />
               </div>
+
+              {/* NUEVO: Domicilio Fiscal */}
+              <div className="register-form-group register-form-group-full">
+                <label htmlFor="domicilioFiscal">
+                  <FaBuilding /> Domicilio Fiscal *
+                </label>
+                <input
+                  id="domicilioFiscal"
+                  name="domicilioFiscal"
+                  type="text"
+                  value={formData.domicilioFiscal}
+                  onChange={handleChange}
+                  required
+                  placeholder="Calle, Número, Piso, Dpto (Dirección de facturación)"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Datos de Contacto */}
+          {/* Datos de Contacto y Ubicación */}
           <div className="register-section">
-            <h2 className="register-section-title">Datos de Contacto</h2>
+            <h2 className="register-section-title">Contacto y Ubicación</h2>
             <div className="register-form-grid">
               <div className="register-form-group">
                 <label htmlFor="telefonoMovil">
@@ -343,13 +356,23 @@ export default function Register() {
                   placeholder="tu@email.com"
                 />
               </div>
-            </div>
-          </div>
 
-          {/* Ubicación */}
-          <div className="register-section">
-            <h2 className="register-section-title">Ubicación</h2>
-            <div className="register-form-grid">
+              {/* NUEVO: Domicilio de Entrega */}
+              <div className="register-form-group register-form-group-full">
+                <label htmlFor="domicilioEntrega">
+                  <FaHome /> Domicilio de Entrega *
+                </label>
+                <input
+                  id="domicilioEntrega"
+                  name="domicilioEntrega"
+                  type="text"
+                  value={formData.domicilioEntrega}
+                  onChange={handleChange}
+                  required
+                  placeholder="Calle, Número, Piso, Dpto (Donde recibes el pedido)"
+                />
+              </div>
+
               <div className="register-form-group">
                 <label htmlFor="provincia">
                   <FaMapMarkerAlt /> Provincia *
@@ -411,17 +434,16 @@ export default function Register() {
                 <label htmlFor="password">
                   <FaLock /> Contraseña *
                 </label>
-                {/* Wrap input and icon */}
                 <div className="password-input-wrapper">
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"} // Toggle type
+                    type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleChange}
                     required
                     placeholder="••••••••"
-                    className="register-input" // Add a class if needed, or rely on .form-group input styles
+                    className="register-input"
                   />
                   <span
                     className="password-toggle-icon"
@@ -440,12 +462,12 @@ export default function Register() {
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"} // Toggle type
+                    type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
                     placeholder="••••••••"
-                    className="register-input" // Add a class if needed
+                    className="register-input"
                   />
                   <span
                     className="password-toggle-icon"
@@ -474,7 +496,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Requisitos de contraseña */}
             <div className="register-password-requirements">
               {passwordRequirements.map((req, index) => (
                 <div
