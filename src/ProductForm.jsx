@@ -404,7 +404,7 @@ export default function ProductForm({
         <h3 className="admin-panel-section-title">Precios y stock</h3>
         <div className="admin-panel-form-grid">
           <div className="admin-panel-form-group">
-            <label>Precio Estado 1 *</label>
+            <label>Precio lista 1 *</label>
             <input
               type="number"
               name="price_state1"
@@ -418,7 +418,7 @@ export default function ProductForm({
           </div>
 
           <div className="admin-panel-form-group">
-            <label>Precio Estado 2 *</label>
+            <label>Precio lista 2 *</label>
             <input
               type="number"
               name="price_state2"

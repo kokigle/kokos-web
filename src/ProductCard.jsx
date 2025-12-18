@@ -8,7 +8,7 @@ export default function ProductCard({ p }) {
   const [hovered, setHovered] = useState(null);
   const { user } = useAuth();
 
-  // Precio según estado del usuario
+  // Precio según lista del usuario
   let priceContent;
   if (!user) {
     priceContent = (
