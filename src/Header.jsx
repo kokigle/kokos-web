@@ -5,7 +5,7 @@ import { db } from "./App";
 import { useFirestoreData } from "./contexts/FirestoreContext";
 import logo from "./assets/logo.png";
 import { Search } from "./icons/SearchIcon.jsx";
-import "./styles/header-kokos.css";
+import styles from "./styles/header-kokos.module.css";
 import { ProfileIcon } from "./icons/ProfileIcon";
 import { CartIcon } from "./icons/CartIcon.jsx";
 import { collection, query, orderBy } from "firebase/firestore";
@@ -52,19 +52,19 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
 
   return (
     <div
-      className={`header-submenu-item ${hasChildren ? "has-children" : ""}`}
+      className={`${styles.headerSubmenuItem} ${hasChildren ? styles.hasChildren : ""}`}
     >
       <Link 
         to={linkTo} 
         onClick={handleClick}
-        className="header-submenu-link"
+        className={styles.headerSubmenuLink}
       >
-        <span className="header-submenu-text">
+        <span className={styles.headerSubmenuText}>
           {item.name.replace(/_/g, " ").toUpperCase()}
         </span>
         
         {hasChildren && (
-          <span className="header-submenu-arrow-icon">
+          <span className={styles.headerSubmenuArrowIcon}>
              {window.innerWidth > 768 ? <ChevronRight size={14} /> : (isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
           </span>
         )}
@@ -72,8 +72,8 @@ const SubmenuItem = ({ item, closeMobileMenu, level = 0 }) => {
       
       {hasChildren && (
         <div
-          className={`header-submenu-nested ${
-            isOpen ? "visible" : "" 
+          className={`${styles.headerSubmenuNested} ${
+            isOpen ? styles.visible : "" 
           }`}
         >
           {item.children.map((child) => (
@@ -145,19 +145,19 @@ export default function Header() {
   );
 
   return (
-    <header className="header-kokos-header">
-      <div className="header-kokos-header-top">
-        <div className="header-kokos-logo">
+    <header className={styles.headerKokosHeader}>
+      <div className={styles.headerKokosHeaderTop}>
+        <div className={styles.headerKokosLogo}>
           <Link to="/" onClick={() => setMobileMenuOpen(false)}>
             <img
               src={logo}
               alt="Kokos Logo"
-              className="header-kokos-logo-img"
+              className={styles.headerKokosLogoImg}
             />
           </Link>
         </div>
 
-        <div className="header-kokos-search">
+        <div className={styles.headerKokosSearch}>
           <form onSubmit={handleSearch}>
             <input
               type="text"
@@ -174,60 +174,60 @@ export default function Header() {
           </form>
         </div>
 
-        <div className="header-kokos-actions">
+        <div className={styles.headerKokosActions}>
           {/* BOTÓN CARRITO MODIFICADO */}
           <Link
             to="/cart"
-            className="header-kokos-action-btn header-kokos-cart-btn"
+            className={`${styles.headerKokosActionBtn} ${styles.headerKokosCartBtn}`}
             onClick={() => setMobileMenuOpen(false)}
           >
-            <span className="header-kokos-action-icon">
+            <span className={styles.headerKokosActionIcon}>
               <CartIcon />
               {/* Badge de contador */}
               {cartCount > 0 && (
-                <span className="header-cart-badge">{cartCount}</span>
+                <span className={styles.headerCartBadge}>{cartCount}</span>
               )}
             </span>
-            <span className="header-kokos-action-text">Carrito</span>
+            <span className={styles.headerKokosActionText}>Carrito</span>
           </Link>
 
           {user?.role === "admin" && (
             <Link
               to="/admin"
-              className="header-kokos-action-btn"
+              className={styles.headerKokosActionBtn}
               onClick={() => setMobileMenuOpen(false)}
             >
-              <span className="header-kokos-action-icon">
+              <span className={styles.headerKokosActionIcon}>
                 <Settings size={20} />
               </span>
-              <span className="header-kokos-action-text" style={{ fontWeight: "bold" }}>Panel Admin</span>
+              <span className={styles.headerKokosActionText} style={{ fontWeight: "bold" }}>Panel Admin</span>
             </Link>
           )}
 
           {user ? (
-            <div className="header-kokos-user-dropdown">
-              <button className="header-kokos-action-btn header-kokos-user-btn">
-                <span className="header-kokos-action-icon">
+            <div className={styles.headerKokosUserDropdown}>
+              <button className={`${styles.headerKokosActionBtn} ${styles.headerKokosUserBtn}`}>
+                <span className={styles.headerKokosActionIcon}>
                   <ProfileIcon />
                 </span>
-                <span className="header-kokos-action-text">Mi Cuenta</span>
+                <span className={styles.headerKokosActionText}>Mi Cuenta</span>
               </button>
-              <div className="header-kokos-user-menu">
-                <div className="header-kokos-user-menu-header">
-                  <span className="header-kokos-user-email-display">
+              <div className={styles.headerKokosUserMenu}>
+                <div className={styles.headerKokosUserMenuHeader}>
+                  <span className={styles.headerKokosUserEmailDisplay}>
                     {user.razonSocial}
                   </span>
                 </div>
                 <Link
                   to="/my-account"
-                  className="header-kokos-user-menu-item"
+                  className={styles.headerKokosUserMenuItem}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Mi Cuenta
                 </Link>
                 <Link
                   to="/my-account/orders"
-                  className="header-kokos-user-menu-item"
+                  className={styles.headerKokosUserMenuItem}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Mis Pedidos
@@ -235,7 +235,7 @@ export default function Header() {
 
                 <button
                   onClick={handleLogout}
-                  className="header-kokos-user-menu-item header-kokos-logout"
+                  className={`${styles.headerKokosUserMenuItem} ${styles.headerKokosLogout}`}
                 >
                   Cerrar Sesión
                 </button>
@@ -244,19 +244,19 @@ export default function Header() {
           ) : (
             <Link
               to="/login"
-              className="header-kokos-action-btn header-kokos-login-btn"
+              className={`${styles.headerKokosActionBtn} ${styles.headerKokosLoginBtn}`}
               onClick={() => setMobileMenuOpen(false)}
             >
-              <span className="header-kokos-action-icon">
+              <span className={styles.headerKokosActionIcon}>
                 <ProfileIcon />
               </span>
-              <span className="header-kokos-action-text">Iniciar Sesión</span>
+              <span className={styles.headerKokosActionText}>Iniciar Sesión</span>
             </Link>
           )}
         </div>
 
         <button
-          className="header-kokos-mobile-menu-toggle"
+          className={styles.headerKokosMobileMenuToggle}
           onClick={() => {
             setMobileMenuOpen(!mobileMenuOpen);
             setActiveDropdown(null);
@@ -271,22 +271,22 @@ export default function Header() {
       </div>
 
       <nav
-        className={`header-kokos-menu ${
-          mobileMenuOpen ? "header-kokos-mobile-open" : ""
+        className={`${styles.headerKokosMenu} ${
+          mobileMenuOpen ? styles.headerKokosMobileOpen : ""
         }`}
       >
         <Link
           to="/"
-          className="header-kokos-menu-link"
+          className={styles.headerKokosMenuLink}
           onClick={() => setMobileMenuOpen(false)}
         >
           INICIO
         </Link>
         {jugueteriaNode && (
-          <div className="header-kokos-dropdown-menu">
+          <div className={styles.headerKokosDropdownMenu}>
             <Link
               to={`/products?categoryId=${jugueteriaNode.id}`}
-              className="header-kokos-menu-link"
+              className={styles.headerKokosMenuLink}
               onClick={(e) => {
                 if (
                   window.innerWidth <= 768 &&
@@ -302,8 +302,8 @@ export default function Header() {
               {jugueteriaNode.name.toUpperCase()}
             </Link>
             {jugueteriaNode.children && jugueteriaNode.children.length > 0 && (
-              <div className="header-kokos-submenu">
-                <div className="header-kokos-submenu-content">
+              <div className={styles.headerKokosSubmenu}>
+                <div className={styles.headerKokosSubmenuContent}>
                   {jugueteriaNode.children.map((subItem) => (
                     <SubmenuItem
                       key={subItem.id}
@@ -318,28 +318,28 @@ export default function Header() {
         )}
         <Link
           to="/nosotros"
-          className="header-kokos-menu-link"
+          className={styles.headerKokosMenuLink}
           onClick={() => setMobileMenuOpen(false)}
         >
           NOSOTROS
         </Link>
         <Link
           to="/novedades"
-          className="header-kokos-menu-link"
+          className={styles.headerKokosMenuLink}
           onClick={() => setMobileMenuOpen(false)}
         >
           NOVEDADES
         </Link>
         <Link
           to="/contacto"
-          className="header-kokos-menu-link"
+          className={styles.headerKokosMenuLink}
           onClick={() => setMobileMenuOpen(false)}
         >
           CONTACTO
         </Link>
 
         {mobileMenuOpen && (
-          <div className="header-kokos-mobile-actions">
+          <div className={styles.headerKokosMobileActions}>
             <hr />
             {user ? (
               <>
