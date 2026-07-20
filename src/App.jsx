@@ -1,18 +1,18 @@
 // src/App.jsx
 import "./styles/reset-y-base.css";
 
-import React, { useEffect, useState, createContext, useContext, lazy, Suspense } from "react";
+import React, { useEffect, useState, createContext, useContext, lazy, Suspense, useMemo, useCallback } from "react";
 import { WhatsappIcon } from "./icons/WhatsappIcon";
 import Header from "./Header";
 import Footer from "./Footer";
-import Login from "./Login";
-import ProductsList from "./ProductsList";
-import ProductPage from "./ProductPage";
-import Home from "./Home";
 import ScrollTop from "./ScrollTop";
 import FloatingCartButton from "./FloatingCartButton";
 
 // --- Lazy-loaded components (code splitting) ---
+const Home = lazy(() => import("./Home"));
+const Login = lazy(() => import("./Login"));
+const ProductsList = lazy(() => import("./ProductsList"));
+const ProductPage = lazy(() => import("./ProductPage"));
 const CartPage = lazy(() => import("./CartPage"));
 const AdminPanel = lazy(() => import("./AdminPanel"));
 const NotFound = lazy(() => import("./NotFound"));
@@ -107,7 +107,7 @@ export default function App() {
     localStorage.setItem("wh_cart", JSON.stringify(cart));
   }, [cart]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
       const auth = getAuth();
@@ -135,17 +135,17 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setCart([]); // Limpiar estado del carrito
     localStorage.removeItem("kokos_user");
     localStorage.removeItem("wh_cart"); // Limpiar localStorage
-  };
+  }, []);
 
   // --- FUNCIONES DEL CARRITO ---
-  const addToCart = (product, qty) => {
+  const addToCart = useCallback((product, qty) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
@@ -156,13 +156,13 @@ export default function App() {
         return [...prevCart, { ...product, qty }];
       }
     });
-  };
+  }, []);
 
-  const removeFromCart = (productId) => {
+  const removeFromCart = useCallback((productId) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-  };
+  }, []);
 
-  const changeCartQty = (productId, newQty) => {
+  const changeCartQty = useCallback((productId, newQty) => {
     setCart((prevCart) =>
       prevCart.map((item) => {
         if (item.id === productId) {
@@ -172,13 +172,13 @@ export default function App() {
         return item;
       })
     );
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart([]);
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     login,
     logout,
@@ -189,7 +189,17 @@ export default function App() {
     removeFromCart,
     changeCartQty,
     clearCart,
-  };
+  }), [
+    user,
+    loading,
+    cart,
+    login,
+    logout,
+    addToCart,
+    removeFromCart,
+    changeCartQty,
+    clearCart
+  ]);
 
   return (
     <AuthContext.Provider value={value}>

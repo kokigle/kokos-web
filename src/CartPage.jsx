@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth, db, formatMoney } from "./App";
-import emailjs from "@emailjs/browser";
 import { collection, addDoc } from "firebase/firestore";
 import "./styles/cart-page.css";
 
@@ -51,6 +50,7 @@ export default function CartPage() {
       const docRef = await addDoc(ordersRef, order);
 
       try {
+        const { default: emailjs } = await import("@emailjs/browser");
         await emailjs.send(
           EMAILJS_SERVICE_ID,
           EMAILJS_TEMPLATE_ID,

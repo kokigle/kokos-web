@@ -9,7 +9,9 @@ import "./styles/header-kokos.css";
 import { ProfileIcon } from "./icons/ProfileIcon";
 import { CartIcon } from "./icons/CartIcon.jsx";
 import { collection, query, orderBy } from "firebase/firestore";
-import { ChevronDown, ChevronRight, Settings } from "lucide-react"; // Flechas modernas
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
+import Settings from "lucide-react/dist/esm/icons/settings";
 
 const buildCategoryTree = (categories) => {
   const map = {};

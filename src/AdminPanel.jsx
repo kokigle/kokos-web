@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   collection,
   doc,
@@ -800,22 +800,22 @@ export default function AdminPanel() {
   }, [categoryTree]); // Depender del árbol
 
   // --- Filtrado (movido fuera de useEffect para que esté siempre actualizado) ---
-  const pendingClients = clients.filter(
+  const pendingClients = useMemo(() => clients.filter(
     (c) =>
       c.status === "pendiente" &&
       (c.email?.toLowerCase().includes(clientSearch.toLowerCase()) ||
         c.razonSocial?.toLowerCase().includes(clientSearch.toLowerCase()) ||
         c.nombre?.toLowerCase().includes(clientSearch.toLowerCase()))
-  );
-  const approvedClients = clients.filter(
+  ), [clients, clientSearch]);
+  const approvedClients = useMemo(() => clients.filter(
     (c) =>
       c.status === "aprobado" &&
       (c.email?.toLowerCase().includes(clientSearch.toLowerCase()) ||
         c.razonSocial?.toLowerCase().includes(clientSearch.toLowerCase()) ||
         c.nombre?.toLowerCase().includes(clientSearch.toLowerCase()))
-  );
+  ), [clients, clientSearch]);
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = useMemo(() => products.filter((p) => {
     const searchLower = productSearch.toLowerCase();
     const matchSearch =
       p.name.toLowerCase().includes(searchLower) ||
@@ -833,7 +833,7 @@ export default function AdminPanel() {
     }
 
     return matchSearch && matchCategory;
-  });
+  }), [products, productSearch, filterCategory]);
 
   // --- Renderizado ---
 

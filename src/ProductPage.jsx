@@ -1,7 +1,8 @@
 // src/ProductPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Play, Share2 } from "lucide-react";
+import Play from "lucide-react/dist/esm/icons/play";
+import Share2 from "lucide-react/dist/esm/icons/share-2";
 import { optimizeImageUrl } from "./utils/cloudinaryHelper";
 import {
   doc,

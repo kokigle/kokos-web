@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { FaSearch, FaArrowLeft, FaFilePdf } from "react-icons/fa";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import logo from "../../assets/logo.png";
 const formatMoney = (n) => `${Number(n).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
 
@@ -11,8 +9,10 @@ const AccountOrders = ({ orders, loading, user }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  const downloadOrderAsPDF = (order, client) => {
+  const downloadOrderAsPDF = async (order, client) => {
     try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
       const doc = new jsPDF("p", "mm", "a4");
       const margin = 15;
       const pageWidth = doc.internal.pageSize.getWidth();

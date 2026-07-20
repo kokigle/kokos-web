@@ -7,7 +7,11 @@ import { useFirestoreData } from "./contexts/FirestoreContext";
 import { optimizeImageUrl } from "./utils/cloudinaryHelper";
 import "./styles/products-list.css";
 // Eliminamos FaFolder, FaFolderOpen, FaFile
-import { ChevronLeft, ChevronRight, ArrowUpDown, Filter, ChevronDown } from "lucide-react";
+import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
+import ArrowUpDown from "lucide-react/dist/esm/icons/arrow-up-down";
+import Filter from "lucide-react/dist/esm/icons/filter";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 
 // --- Helper igual ---
 const buildCategoryTree = (categories) => {
@@ -214,7 +218,6 @@ const ProductCard = React.memo(({ p, user }) => {
 export default function ProductsList() {
     const { products, categories, categoriesMap, categoryTree } = useFirestoreData();
     const allCategories = categories; // Alias for backward compatibility
-    const [filtered, setFiltered] = useState([]);
     const [pendingFilters, setPendingFilters] = useState({
       search: "",
       categoryId: "",
@@ -256,7 +259,7 @@ export default function ProductsList() {
 
     }, [location.search]); 
   
-    useEffect(() => {
+    const filtered = React.useMemo(() => {
       let result = [...products];
       const { categoryId, search, minPrice, maxPrice } = appliedFilters;
   
@@ -305,11 +308,13 @@ export default function ProductsList() {
           return (numPriceA - numPriceB) * sortOrder;
         });
       }
+      return result;
+    }, [products, appliedFilters, categoriesMap, sortBy, user]);
   
-      setFiltered(result);
+    useEffect(() => {
       setCurrentPage(1);
-    }, [products, appliedFilters, user, sortBy, categoriesMap]);
-  
+    }, [appliedFilters, sortBy]);
+
     const handleApplyFilters = () => {
       setAppliedFilters({ ...pendingFilters });
       setShowMobileFilters(false);

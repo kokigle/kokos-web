@@ -1,6 +1,5 @@
 // src/Contacto.jsx
 import React, { useState } from "react";
-import emailjs from "@emailjs/browser";
 import {
   FaEnvelope,
   FaUser,
@@ -46,6 +45,7 @@ export default function Contacto() {
     setLoading(true);
 
     try {
+      const { default: emailjs } = await import("@emailjs/browser");
       await emailjs.send(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
