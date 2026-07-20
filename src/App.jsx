@@ -20,7 +20,7 @@ const Nosotros = lazy(() => import("./Nosotros"));
 const Register = lazy(() => import("./Register"));
 const MyAccount = lazy(() => import("./MyAccount"));
 const Contacto = lazy(() => import("./Contacto"));
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -47,6 +47,21 @@ export function useAuth() {
 
 export const formatMoney = (n) =>
   `${Number(n).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
+
+// --- COMPONENTE DE RUTA PROTEGIDA ---
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (requireAdmin && user.role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
 
 // --- COMPONENTE PRINCIPAL DE LA APP ---
 export default function App() {
@@ -179,12 +194,20 @@ export default function App() {
             <Route path="/products" element={<ProductsList />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/cart" element={<CartPage />} />
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin" element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminPanel />
+              </ProtectedRoute>
+            } />
             <Route path="/nosotros" element={<Nosotros />} />
             <Route path="/register" element={<Register />} />
             <Route path="*" element={<NotFound />} />
             <Route path="/contacto" element={<Contacto />} />
-            <Route path="/my-account/*" element={<MyAccount />} />
+            <Route path="/my-account/*" element={
+              <ProtectedRoute>
+                <MyAccount />
+              </ProtectedRoute>
+            } />
           </Routes>
           </Suspense>
           <FloatingCartButton />

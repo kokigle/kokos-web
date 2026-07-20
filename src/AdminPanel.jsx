@@ -18,7 +18,6 @@ import { db } from "./App";
 import { useFirestoreData } from "./contexts/FirestoreContext";
 import ProductForm from "./ProductForm"; // Asumiendo que ProductForm está en src/
 import AdminSidebar from "./components/admin/AdminSidebar";
-import AdminLogin from "./components/admin/AdminLogin";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import AdminClients from "./components/admin/AdminClients";
 import AdminOrders from "./components/admin/AdminOrders";
@@ -38,9 +37,6 @@ import "./styles/admin-panel.css";
 export default function AdminPanel() {
   const mainContentRef = useRef(null);
 
-  // Estados de autenticación
-  const [secret, setSecret] = useState("");
-  const [authed, setAuthed] = useState(false);
 
   // Estados de datos (from context)
   const { 
@@ -123,7 +119,6 @@ export default function AdminPanel() {
 
   // --- Suscripciones a Firestore (como antes) ---
   useEffect(() => {
-    if (!authed) return;
 
     const unsubClients = onSnapshot(collection(db, "clients"), (snap) =>
       setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
@@ -141,18 +136,9 @@ export default function AdminPanel() {
       unsubClients();
       unsubOrders();
     };
-  }, [authed]);
+  }, []);
 
-  // --- Funciones de Lógica (loginAdmin, approveClient, etc. como antes, pero ajustadas para usar showNotification/showConfirm) ---
-  const loginAdmin = () => {
-    if (secret === "admin123") {
-      // Consider securely managing secrets
-      setAuthed(true);
-    } else {
-      showNotification("Clave admin incorrecta", "error");
-    }
-  };
-
+  // --- Funciones de Lógica ---
   const approveClient = async (clientId, state, discount) => {
     showConfirm(
       `¿Aprobar este usuario con Lista ${state} y ${discount}% de descuento?`,
@@ -554,7 +540,7 @@ export default function AdminPanel() {
 
   // Reordenar banner (ajustado para useEffect)
   useEffect(() => {
-    if (!authed || view !== "editHome" || bannerImages.length === 0) return;
+    if (view !== "editHome" || bannerImages.length === 0) return;
 
     const reorderBannerPositions = async () => {
       // Comprobar si realmente necesita reordenar
@@ -585,10 +571,9 @@ export default function AdminPanel() {
       }
     };
 
-    // Usar un pequeño retraso para evitar ejecuciones múltiples rápidas
     const timer = setTimeout(reorderBannerPositions, 500);
     return () => clearTimeout(timer);
-  }, [bannerImages, authed, view]); // Depender de bannerImages completo
+  }, [bannerImages, view]); // Depender de bannerImages completo
 
   const handleDragStart = (index) => {
     setDraggedIndex(index);
@@ -851,16 +836,6 @@ export default function AdminPanel() {
   });
 
   // --- Renderizado ---
-
-  if (!authed) {
-    return (
-      <AdminLogin
-        secret={secret}
-        setSecret={setSecret}
-        loginAdmin={loginAdmin}
-      />
-    );
-  }
 
   return (
     <div className="admin-panel-layout">

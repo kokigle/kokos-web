@@ -215,6 +215,16 @@ export default function Header() {
                 >
                   Mis Pedidos
                 </Link>
+                {user.role === "admin" && (
+                  <Link
+                    to="/admin"
+                    className="header-kokos-user-menu-item"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ color: "#d9534f", fontWeight: "bold" }}
+                  >
+                    Panel Admin
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="header-kokos-user-menu-item header-kokos-logout"
@@ -334,6 +344,15 @@ export default function Header() {
                 >
                   Mis Pedidos
                 </Link>
+                {user.role === "admin" && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ color: "#d9534f", fontWeight: "bold" }}
+                  >
+                    Panel Admin
+                  </Link>
+                )}
                 <button onClick={handleLogout}>Cerrar Sesión</button>
               </>
             ) : (
