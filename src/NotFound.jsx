@@ -1,19 +1,19 @@
 // NotFound.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import "./styles/notfound.css";
+import styles from "./styles/notfound.module.css";
 
 export default function NotFound() {
   return (
-    <div className="notfound-container">
-      <div className="notfound-content">
-        <div className="notfound-animation">
-          <div className="notfound-error-code">
-            <span className="notfound-digit">4</span>
-            <span className="notfound-digit special">0</span>
-            <span className="notfound-digit">4</span>
+    <div className={styles.notfoundContainer}>
+      <div className={styles.notfoundContent}>
+        <div className={styles.notfoundAnimation}>
+          <div className={styles.notfoundErrorCode}>
+            <span className={styles.notfoundDigit}>4</span>
+            <span className={`${styles.notfoundDigit} ${styles.special}`}>0</span>
+            <span className={styles.notfoundDigit}>4</span>
           </div>
-          <div className="notfound-toy-icon">
+          <div className={styles.notfoundToyIcon}>
             <svg
               viewBox="0 0 64 64"
               fill="none"
@@ -40,14 +40,14 @@ export default function NotFound() {
           </div>
         </div>
 
-        <div className="notfound-text">
-          <h1 className="notfound-title">¡Oops! Página no encontrada</h1>
-          <p className="notfound-description">
+        <div className={styles.notfoundText}>
+          <h1 className={styles.notfoundTitle}>¡Oops! Página no encontrada</h1>
+          <p className={styles.notfoundDescription}>
             No te preocupes, podemos ayudarte a encontrar lo que necesitas.
           </p>
 
-          <div className="notfound-actions">
-            <Link to="/" className="notfound-btn-primary">
+          <div className={styles.notfoundActions}>
+            <Link to="/" className={styles.notfoundBtnPrimary}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -60,7 +60,7 @@ export default function NotFound() {
               Volver al Inicio
             </Link>
 
-            <Link to="/products" className="notfound-btn-secondary">
+            <Link to="/products" className={styles.notfoundBtnSecondary}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -74,9 +74,9 @@ export default function NotFound() {
             </Link>
           </div>
 
-          <div className="notfound-suggestions">
-            <p className="notfound-suggestions-title">Tal vez te interese:</p>
-            <div className="notfound-suggestions-links">
+          <div className={styles.notfoundSuggestions}>
+            <p className={styles.notfoundSuggestionsTitle}>Tal vez te interese:</p>
+            <div className={styles.notfoundSuggestionsLinks}>
               <Link to="/novedades">Novedades</Link>
               <Link to="/nosotros">Sobre Nosotros</Link>
               <Link to="/contacto">Contacto</Link>
@@ -85,11 +85,11 @@ export default function NotFound() {
         </div>
       </div>
 
-      <div className="notfound-background">
-        <div className="notfound-floating-shape notfound-shape-1"></div>
-        <div className="notfound-floating-shape notfound-shape-2"></div>
-        <div className="notfound-floating-shape notfound-shape-3"></div>
-        <div className="notfound-floating-shape notfound-shape-4"></div>
+      <div className={styles.notfoundBackground}>
+        <div className={`${styles.notfoundFloatingShape} ${styles.notfoundShape1}`}></div>
+        <div className={`${styles.notfoundFloatingShape} ${styles.notfoundShape2}`}></div>
+        <div className={`${styles.notfoundFloatingShape} ${styles.notfoundShape3}`}></div>
+        <div className={`${styles.notfoundFloatingShape} ${styles.notfoundShape4}`}></div>
       </div>
     </div>
   );
