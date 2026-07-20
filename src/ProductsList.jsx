@@ -144,14 +144,74 @@ const CategoryFilterTree = ({ categoryTree, selectedCategoryId, onSelectCategory
 
 // --- FIN Componente ---
 
+const ProductCard = React.memo(({ p, user }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  let priceContent;
+  if (!user) {
+    priceContent = (
+      <p className="products-list-login-msg">
+        Inicia sesión para ver precios
+      </p>
+    );
+  } else {
+    const price = user.state === 2 ? p.price_state2 : p.price_state1;
+    priceContent = price !== undefined && price !== null ? (
+      <p className="products-list-price">
+        ${price?.toLocaleString()}
+      </p>
+    ) : (
+      <p className="products-list-login-msg">
+        Precio no disponible
+      </p>
+    );
+  }
+
+  const images = p.multimedia?.length > 0 ? p.multimedia : ["https://via.placeholder.com/300"];
+  const mainImg = images[0];
+  const hoverImg = images[1] || mainImg;
+
+  return (
+    <div
+      className="products-list-card"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="products-list-image-container">
+        <Link to={`/product/${p.id}`}>
+          <img
+            src={optimizeImageUrl(isHovered ? hoverImg : mainImg, { width: 400 })}
+            alt={p.name}
+            loading="lazy"
+            className="products-list-image"
+          />
+        </Link>
+        {p.stock === 0 && (
+          <span className="products-list-badge-out-stock">
+            Sin Stock
+          </span>
+        )}
+      </div>
+      <div className="products-list-info">
+        <Link to={`/product/${p.id}`} className="products-list-name">
+          {p.name}
+        </Link>
+        <p className="products-list-code">
+          Código: {p.code}
+        </p>
+        {priceContent}
+      </div>
+      <Link
+        to={`/product/${p.id}`}
+        className={`products-list-btn-view ${p.stock === 0 ? "products-list-disabled" : ""}`}
+      >
+        {p.stock === 0 ? "Sin Stock" : "Ver Producto"}
+      </Link>
+    </div>
+  );
+});
+
 export default function ProductsList() {
-    // ... (El resto de la lógica de ProductsList se mantiene EXACTAMENTE IGUAL)
-    // Solo cambia la sección del render del CategoryFilterTree
-    
-    // Para simplificar, copia todo el contenido desde `const [products, setProducts]...` hasta el final del archivo original.
-    // La única diferencia es que ahora `CategoryFilterTree` ya no usa carpetas.
-    
-    // AQUI COPIO EL CUERPO PRINCIPAL PARA QUE ESTÉ COMPLETO EL ARCHIVO:
     const { products, categories, categoriesMap, categoryTree } = useFirestoreData();
     const allCategories = categories; // Alias for backward compatibility
     const [filtered, setFiltered] = useState([]);
@@ -176,7 +236,6 @@ export default function ProductsList() {
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [hovered, setHovered] = useState(null);
   
     useEffect(() => {
       const params = new URLSearchParams(location.search);
@@ -407,6 +466,7 @@ export default function ProductsList() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
+                  aria-label="Ordenar productos"
                 >
                   <option value="">Relevancia</option>
                   <option value="az">A - Z</option>
@@ -424,81 +484,9 @@ export default function ProductsList() {
             ) : (
               <>
                 <div className="products-list-grid">
-                  {currentProducts.map((p) => {
-                    let priceContent;
-                    if (!user) {
-                      priceContent = (
-                        <p className="products-list-login-msg">
-                          Inicia sesión para ver precios
-                        </p>
-                      );
-                    } else {
-                      const price =
-                        user.state === 2 ? p.price_state2 : p.price_state1;
-                      priceContent =
-                        price !== undefined && price !== null ? (
-                          <p className="products-list-price">
-                            ${price?.toLocaleString()}
-                          </p>
-                        ) : (
-                          <p className="products-list-login-msg">
-                            Precio no disponible
-                          </p>
-                        );
-                    }
-  
-                    const images =
-                      p.multimedia?.length > 0
-                        ? p.multimedia
-                        : ["https://via.placeholder.com/300"];
-                    const mainImg = images[0];
-                    const hoverImg = images[1] || mainImg;
-  
-                    return (
-                      <div
-                        key={p.id}
-                        className="products-list-card"
-                        onMouseEnter={() => setHovered(p.id)}
-                        onMouseLeave={() => setHovered(null)}
-                      >
-                        <div className="products-list-image-container">
-                          <Link to={`/product/${p.id}`}>
-                            <img
-                              src={optimizeImageUrl(hovered === p.id ? hoverImg : mainImg, { width: 400 })}
-                              alt={p.name}
-                              loading="lazy"
-                              className="products-list-image"
-                            />
-                          </Link>
-                          {p.stock === 0 && (
-                            <span className="products-list-badge-out-stock">
-                              Sin Stock
-                            </span>
-                          )}
-                        </div>
-                        <div className="products-list-info">
-                          <Link
-                            to={`/product/${p.id}`}
-                            className="products-list-name"
-                          >
-                            {p.name}
-                          </Link>
-                          <p className="products-list-code">
-                            Código: {p.code}
-                          </p>
-                          {priceContent}
-                        </div>
-                        <Link
-                          to={`/product/${p.id}`}
-                          className={`products-list-btn-view ${
-                            p.stock === 0 ? "products-list-disabled" : ""
-                          }`}
-                        >
-                          {p.stock === 0 ? "Sin Stock" : "Ver Producto"}
-                        </Link>
-                      </div>
-                    );
-                  })}
+                  {currentProducts.map((p) => (
+                    <ProductCard key={p.id} p={p} user={user} />
+                  ))}
                 </div>
   
                 {totalPages > 1 && (

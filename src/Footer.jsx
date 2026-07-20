@@ -11,8 +11,11 @@ import {
 } from "react-icons/fa";
 import "./styles/footer-kokos.css";
 
+import { useAuth } from "./App";
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { user } = useAuth();
 
   return (
     <footer className="kokos-footer">
@@ -56,17 +59,32 @@ export default function Footer() {
           <div className="footer-col">
             <h4>Mi Cuenta</h4>
             <ul className="footer-links">
-              <li>
-                <Link to="/login">Iniciar Sesión</Link>
-              </li>
-              <li>
-                <Link to="/login">Registrarme</Link>
-              </li>
+              {user ? (
+                <>
+                  <li>
+                    <Link to="/my-account">Mi Cuenta</Link>
+                  </li>
+                  <li>
+                    <Link to="/my-account/orders">Mis Pedidos</Link>
+                  </li>
+                  {user.role === "admin" && (
+                    <li>
+                      <Link to="/admin">Panel Admin</Link>
+                    </li>
+                  )}
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link to="/login">Iniciar Sesión</Link>
+                  </li>
+                  <li>
+                    <Link to="/login">Registrarme</Link>
+                  </li>
+                </>
+              )}
               <li>
                 <Link to="/cart">Mi Carrito</Link>
-              </li>
-              <li>
-                <Link to="/my-account/orders">Mis Pedidos</Link>
               </li>
             </ul>
           </div>

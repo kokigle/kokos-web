@@ -354,6 +354,7 @@ export default function Register() {
                   onChange={handleChange}
                   required
                   placeholder="tu@email.com"
+                  autoComplete="username"
                 />
               </div>
 
@@ -444,6 +445,7 @@ export default function Register() {
                     required
                     placeholder="••••••••"
                     className="register-input"
+                    autoComplete="new-password"
                   />
                   <span
                     className="password-toggle-icon"
@@ -468,6 +470,7 @@ export default function Register() {
                     required
                     placeholder="••••••••"
                     className="register-input"
+                    autoComplete="new-password"
                   />
                   <span
                     className="password-toggle-icon"

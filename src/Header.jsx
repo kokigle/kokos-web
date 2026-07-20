@@ -9,7 +9,7 @@ import "./styles/header-kokos.css";
 import { ProfileIcon } from "./icons/ProfileIcon";
 import { CartIcon } from "./icons/CartIcon.jsx";
 import { collection, query, orderBy } from "firebase/firestore";
-import { ChevronDown, ChevronRight } from "lucide-react"; // Flechas modernas
+import { ChevronDown, ChevronRight, Settings } from "lucide-react"; // Flechas modernas
 
 const buildCategoryTree = (categories) => {
   const map = {};
@@ -159,6 +159,8 @@ export default function Header() {
           <form onSubmit={handleSearch}>
             <input
               type="text"
+              id="global-search-input"
+              name="search"
               placeholder="¿Qué estás buscando?"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -186,6 +188,19 @@ export default function Header() {
             </span>
             <span className="header-kokos-action-text">Carrito</span>
           </Link>
+
+          {user?.role === "admin" && (
+            <Link
+              to="/admin"
+              className="header-kokos-action-btn"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="header-kokos-action-icon">
+                <Settings size={20} />
+              </span>
+              <span className="header-kokos-action-text" style={{ fontWeight: "bold" }}>Panel Admin</span>
+            </Link>
+          )}
 
           {user ? (
             <div className="header-kokos-user-dropdown">
@@ -215,16 +230,7 @@ export default function Header() {
                 >
                   Mis Pedidos
                 </Link>
-                {user.role === "admin" && (
-                  <Link
-                    to="/admin"
-                    className="header-kokos-user-menu-item"
-                    onClick={() => setMobileMenuOpen(false)}
-                    style={{ color: "#d9534f", fontWeight: "bold" }}
-                  >
-                    Panel Admin
-                  </Link>
-                )}
+
                 <button
                   onClick={handleLogout}
                   className="header-kokos-user-menu-item header-kokos-logout"

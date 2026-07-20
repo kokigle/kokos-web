@@ -63,32 +63,42 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   return children;
 };
 
+// --- COMPONENTE DE RUTA PARA INVITADOS ---
+const GuestRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (user) {
+    return <Navigate to="/my-account" replace />;
+  }
+  return children;
+};
+
 // --- COMPONENTE PRINCIPAL DE LA APP ---
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [cart, setCart] = useState([]);
-
-  // Cargar usuario y carrito desde localStorage al iniciar
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("kokos_user");
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        return JSON.parse(savedUser);
       } catch {
         localStorage.removeItem("kokos_user");
       }
     }
-
+    return null;
+  });
+  
+  const [loading, setLoading] = useState(false);
+  
+  const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem("wh_cart");
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        return JSON.parse(savedCart);
       } catch {
         localStorage.removeItem("wh_cart");
       }
     }
-  }, []);
+    return [];
+  });
 
   // Guardar carrito en localStorage cada vez que cambie
   useEffect(() => {
@@ -190,7 +200,11 @@ export default function App() {
           <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={
+              <GuestRoute>
+                <Login />
+              </GuestRoute>
+            } />
             <Route path="/products" element={<ProductsList />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/cart" element={<CartPage />} />
@@ -200,7 +214,11 @@ export default function App() {
               </ProtectedRoute>
             } />
             <Route path="/nosotros" element={<Nosotros />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/register" element={
+              <GuestRoute>
+                <Register />
+              </GuestRoute>
+            } />
             <Route path="*" element={<NotFound />} />
             <Route path="/contacto" element={<Contacto />} />
             <Route path="/my-account/*" element={

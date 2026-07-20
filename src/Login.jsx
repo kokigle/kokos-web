@@ -57,11 +57,13 @@ export default function Login() {
                 </label>
                 <input
                   id="email"
+                  name="email"
                   required
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
+                  autoComplete="username"
                 />
               </div>
 
@@ -73,11 +75,13 @@ export default function Login() {
                 <div className="password-input-wrapper">
                   <input
                     id="password"
+                    name="password"
                     required
                     type={showPassword ? "text" : "password"} // Toggle type
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
+                    autoComplete="current-password"
                   />
                   {/* Add the icon toggle */}
                   <span
