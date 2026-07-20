@@ -2,7 +2,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "./App";
-import "./styles/floating-cart-button.css";
+import styles from "./styles/floating-cart-button.module.css";
 
 export default function FloatingCartButton() {
   const { user, cart } = useAuth(); // Obtenemos el carrito directamente del contexto
@@ -23,9 +23,9 @@ export default function FloatingCartButton() {
   return (
     <Link
       to="/cart"
-      className={`floating-cart-button ${
-        uniqueProductsCount > 0 ? "floating-cart-visible" : ""
-      }`}
+      className={`${styles.floatingCartButton} ${
+        uniqueProductsCount > 0 ? styles.floatingCartVisible : ""
+      }`.trim()}
       aria-label={`Ver carrito con ${uniqueProductsCount} productos`}
     >
       <svg
@@ -41,12 +41,12 @@ export default function FloatingCartButton() {
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
       </svg>
       <span
-        className="floating-cart-badge"
+        className={styles.floatingCartBadge}
         title={`${totalUnitsCount} unidades totales`}
       >
         {uniqueProductsCount}
       </span>
-      <span className="floating-cart-text">
+      <span className={styles.floatingCartText}>
         {uniqueProductsCount === 1
           ? "1 producto"
           : `${uniqueProductsCount} productos`}
