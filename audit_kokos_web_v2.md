@@ -71,4 +71,4 @@ Se volvió a correr SquirrelScan contra el build compilado (`npm run preview`), 
 ## 8. Estado de Avance
 - **Lote 1:** Completado y commiteado (Migración de colecciones `clients` y `orders` al identificador `uid`).
 - **Lote 2:** Completado y commiteado (Code-splitting de rutas, implementación global de `useMemo`/`useCallback` en AuthContext, imports dinámicos de `jsPDF`/`emailjs`, optimización de tree-shaking en `lucide-react`, y memoización de filtros en `AdminPanel`).
-- **Lote 3:** En curso. Se confirmó que el `<main>` ya existe en React y que `Home.jsx` sí cuenta con un `<h1>` real. Se propusieron 4 diffs (H1 siempre visible, `robots.txt`, `sitemap.xml` y meta tags en `index.html`), pero **NO se aplicó ninguno** debido a que aún resta definir el dominio de producción, ya que el proyecto sigue en etapa de desarrollo sin dominio asignado.
+- **Lote 3:** Completado y commiteado (H1 siempre visible en Home, robots.txt y sitemap.xml agregados con placeholder de dominio pendiente, meta tags canonical y og:image en index.html).
