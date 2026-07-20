@@ -1,21 +1,21 @@
 // Nosotros.jsx
 import React from "react";
-import "./styles/nosotros.css";
+import styles from "./styles/nosotros.module.css";
 import foto1 from "./assets/nosotros-1.jpg";
 import foto2 from "./assets/nosotros-2.jpg";
 
 export default function Nosotros() {
   return (
-    <div className="nosotros-page">
-      <div className="nosotros-container">
-        <div className="nosotros-header">
-          <h1 className="nosotros-title">Sobre Nosotros</h1>
-          <div className="nosotros-divider"></div>
+    <div className={styles.nosotrosPage}>
+      <div className={styles.nosotrosContainer}>
+        <div className={styles.nosotrosHeader}>
+          <h1 className={styles.nosotrosTitle}>Sobre Nosotros</h1>
+          <div className={styles.nosotrosDivider}></div>
         </div>
 
-        <div className="nosotros-content">
-          <div className="nosotros-text">
-            <div className="nosotros-section">
+        <div className={styles.nosotrosContent}>
+          <div className={styles.nosotrosText}>
+            <div className={styles.nosotrosSection}>
               <h2>Más de 10 años de trayectoria</h2>
               <p>
                 <strong>KOKOS de Argimpex S.A.</strong> es una empresa familiar
@@ -24,7 +24,7 @@ export default function Nosotros() {
               </p>
             </div>
 
-            <div className="nosotros-section">
+            <div className={styles.nosotrosSection}>
               <h2>Compromiso con la calidad</h2>
               <p>
                 Creemos que el crecimiento se construye paso a paso, por eso no
@@ -35,7 +35,7 @@ export default function Nosotros() {
               </p>
             </div>
 
-            <div className="nosotros-section">
+            <div className={styles.nosotrosSection}>
               <h2>Mirando hacia el futuro</h2>
               <p>
                 Hoy continuamos construyendo vínculos de confianza con
@@ -46,30 +46,30 @@ export default function Nosotros() {
               </p>
             </div>
 
-            <div className="nosotros-valores">
-              <div className="nosotros-valor">
-                <div className="valor-icon">🏆</div>
+            <div className={styles.nosotrosValores}>
+              <div className={styles.nosotrosValor}>
+                <div className={styles.valorIcon}>🏆</div>
                 <h3>Calidad</h3>
                 <p>Productos de alta calidad</p>
               </div>
-              <div className="nosotros-valor">
-                <div className="valor-icon">🤝</div>
+              <div className={styles.nosotrosValor}>
+                <div className={styles.valorIcon}>🤝</div>
                 <h3>Confianza</h3>
                 <p>Compromiso con nuestros clientes</p>
               </div>
-              <div className="nosotros-valor">
-                <div className="valor-icon">🚀</div>
+              <div className={styles.nosotrosValor}>
+                <div className={styles.valorIcon}>🚀</div>
                 <h3>Crecimiento</h3>
                 <p>Innovacion y expansión constantes</p>
               </div>
             </div>
           </div>
 
-          <div className="nosotros-images">
-            <div className="nosotros-image-wrapper">
+          <div className={styles.nosotrosImages}>
+            <div className={styles.nosotrosImageWrapper}>
               <img src={foto1} alt="KOKOS - Nuestra empresa" />
             </div>
-            <div className="nosotros-image-wrapper">
+            <div className={styles.nosotrosImageWrapper}>
               <img src={foto2} alt="KOKOS - Nuestro equipo" />
             </div>
           </div>
