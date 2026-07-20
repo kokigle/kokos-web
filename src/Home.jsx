@@ -1,8 +1,8 @@
 import "./styles/home-page.css";
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./App";
+import { useFirestoreData } from "./contexts/FirestoreContext";
 import serviciosEnvios from "./assets/servicio_y_envios-08.jpg";
 import envioAtencion from "./assets/Envio_y_Atencion-08.jpg";
 
@@ -46,54 +46,13 @@ export default function Home() {
   const footerRef = useRef(null);
   const autoPlayTimerRef = useRef(null);
 
-  const [bannerImages, setBannerImages] = useState([]);
-  const [categoryImages, setCategoryImages] = useState({
-    img1: { url: "", redirect: "" },
-    img2: { url: "", redirect: "" },
-    img3: { url: "", redirect: "" },
-  });
+  const { bannerImages, categoryImages } = useFirestoreData();
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [showBannerText, setShowBannerText] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [previousBannerIndex, setPreviousBannerIndex] = useState(null);
-  useEffect(() => {
-    // Cargar imágenes del banner
-    const unsubBanner = onSnapshot(
-      collection(db, "images/banner_images/urls"),
-      (snap) => {
-        const images = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => (a.pos || 0) - (b.pos || 0));
-        setBannerImages(images);
-      }
-    );
 
-    // Cargar imágenes de categorías
-    const loadCategoryImages = async () => {
-      const unsubscribers = [];
-      ["img1", "img2", "img3"].forEach((key) => {
-        const unsub = onSnapshot(collection(db, "images"), (snap) => {
-          snap.docs.forEach((doc) => {
-            if (doc.id === key) {
-              setCategoryImages((prev) => ({
-                ...prev,
-                [key]: doc.data(),
-              }));
-            }
-          });
-        });
-        unsubscribers.push(unsub);
-      });
-
-      return () => unsubscribers.forEach((unsub) => unsub());
-    };
-    loadCategoryImages();
-
-    return () => {
-      unsubBanner();
-    };
-  }, []);
 
   // Timer para ocultar texto del banner
   useEffect(() => {
@@ -214,7 +173,7 @@ export default function Home() {
   const getRedirectPath = (redirect) => {
     if (!redirect || redirect === "ninguno") return null;
     if (redirect === "novedades") return "/novedades";
-    return `/products?category=jugueteria&subcategory=${redirect}`;
+    return `/products?categoryId=${redirect}`;
   };
 
   const handleBannerClick = () => {

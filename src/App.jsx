@@ -1,47 +1,43 @@
 // src/App.jsx
 import "./styles/reset-y-base.css";
 
-import React, { useEffect, useState, createContext, useContext } from "react";
+import React, { useEffect, useState, createContext, useContext, lazy, Suspense } from "react";
 import { WhatsappIcon } from "./icons/WhatsappIcon";
 import Header from "./Header";
 import Footer from "./Footer";
 import Login from "./Login";
 import ProductsList from "./ProductsList";
 import ProductPage from "./ProductPage";
-import CartPage from "./CartPage";
-import AdminPanel from "./AdminPanel";
-import NotFound from "./NotFound";
 import Home from "./Home";
-import Nosotros from "./Nosotros";
 import ScrollTop from "./ScrollTop";
-import Register from "./Register";
-import MyAccount from "./MyAccount";
-import Contacto from "./Contacto";
 import FloatingCartButton from "./FloatingCartButton";
+
+// --- Lazy-loaded components (code splitting) ---
+const CartPage = lazy(() => import("./CartPage"));
+const AdminPanel = lazy(() => import("./AdminPanel"));
+const NotFound = lazy(() => import("./NotFound"));
+const Nosotros = lazy(() => import("./Nosotros"));
+const Register = lazy(() => import("./Register"));
+const MyAccount = lazy(() => import("./MyAccount"));
+const Contacto = lazy(() => import("./Contacto"));
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { initializeApp } from "firebase/app";
 import {
-  getFirestore,
   collection,
   getDocs,
   query,
   where,
 } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { db } from "./firebase";
 
-// --- CONFIGURACIÓN DE FIREBASE ---
-const firebaseConfig = {
-  apiKey: "AIzaSyCum5WobSVztOyPE5fijSt4Edrig2k00v8",
-  authDomain: "kokos-web.firebaseapp.com",
-  projectId: "kokos-web",
-  storageBucket: "kokos-web.firebasestorage.app",
-  messagingSenderId: "714849880120",
-  appId: "1:714849880120:web:ce985c1ce79ab668b33ecd",
-  measurementId: "G-SX009W4G8Z",
-};
+// Re-export db for backward compatibility with existing imports
+export { db } from "./firebase";
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+const LoadingFallback = () => (
+  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', gap: '16px' }}>
+    <p style={{ color: '#888', fontSize: '16px' }}>Cargando...</p>
+  </div>
+);
 
 // --- CONTEXTO DE AUTENTICACIÓN Y CARRITO ---
 export const AuthContext = createContext();
@@ -176,6 +172,7 @@ export default function App() {
         <ScrollTop />
         <Header />
         <main>
+          <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -189,6 +186,7 @@ export default function App() {
             <Route path="/contacto" element={<Contacto />} />
             <Route path="/my-account/*" element={<MyAccount />} />
           </Routes>
+          </Suspense>
           <FloatingCartButton />
           <a
             href="https://wa.me/5491145457891?text=Hola!%20Quisiera%20consultar%20sobre%20sus%20productos."

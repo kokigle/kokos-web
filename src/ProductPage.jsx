@@ -1,6 +1,8 @@
 // src/ProductPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Play, Share2 } from "lucide-react";
+import { optimizeImageUrl } from "./utils/cloudinaryHelper";
 import {
   doc,
   getDoc,
@@ -127,10 +129,10 @@ export default function ProductPage() {
           } else if (data.videos?.length > 0) {
             setMainMedia({ type: "video", url: data.videos[0] });
           }
-          if (data.subcategory) {
+          if (data.categoryId) {
             const q = query(
               collection(db, "products"),
-              where("subcategory", "==", data.subcategory)
+              where("categoryId", "==", data.categoryId)
             );
             const unsub = onSnapshot(q, (snap) => {
               const prods = snap.docs.map((doc) => ({
@@ -265,7 +267,8 @@ export default function ProductPage() {
               {mainMedia?.type === "image" && (
                 <img
                   className="product-page-main-img"
-                  src={mainMedia.url}
+                  src={optimizeImageUrl(mainMedia.url, { width: 800 })}
+                  loading="lazy"
                   alt={product.name}
                 />
               )}
@@ -315,7 +318,8 @@ export default function ProductPage() {
                       return (
                         <img
                           key={idx}
-                          src={t.url}
+                          src={optimizeImageUrl(t.url, { width: 200 })}
+                          loading="lazy"
                           alt={`thumb-${idx}`}
                           className={`product-page-thumb ${
                             mainMedia?.url === t.url

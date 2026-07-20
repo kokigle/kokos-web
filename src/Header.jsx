@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./App";
 import { db } from "./App";
+import { useFirestoreData } from "./contexts/FirestoreContext";
 import logo from "./assets/logo.png";
 import { Search } from "./icons/SearchIcon.jsx";
 import "./styles/header-kokos.css";
 import { ProfileIcon } from "./icons/ProfileIcon";
 import { CartIcon } from "./icons/CartIcon.jsx";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 import { ChevronDown, ChevronRight } from "lucide-react"; // Flechas modernas
 
 const buildCategoryTree = (categories) => {
@@ -99,8 +100,8 @@ const addPathToTree = (nodes, currentPath = []) => {
 };
 
 export default function Header() {
-  const { user, logout, cart } = useAuth(); // [MODIFICADO] Agregamos 'cart'
-  const [categoryTree, setCategoryTree] = useState([]);
+  const { user, logout, cart } = useAuth();
+  const { categoryTree } = useFirestoreData();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -110,16 +111,7 @@ export default function Header() {
   // Calculamos la cantidad de items únicos (igual que en FloatingCartButton)
   const cartCount = cart ? cart.length : 0;
 
-  useEffect(() => {
-    const q = query(collection(db, "categories"), orderBy("name"));
-    const unsub = onSnapshot(q, (snap) => {
-      const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const tree = buildCategoryTree(flatList);
-      const treeWithPath = addPathToTree(tree);
-      setCategoryTree(treeWithPath);
-    });
-    return () => unsub();
-  }, []);
+
 
   const handleSearch = (e) => {
     e.preventDefault();

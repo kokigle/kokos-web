@@ -1,9 +1,10 @@
 // ProductsList.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
-import { useAuth } from "./App";
-import { db } from "./App";
+import { collection, query, orderBy } from "firebase/firestore";
+import { useAuth, db } from "./App";
+import { useFirestoreData } from "./contexts/FirestoreContext";
+import { optimizeImageUrl } from "./utils/cloudinaryHelper";
 import "./styles/products-list.css";
 // Eliminamos FaFolder, FaFolderOpen, FaFile
 import { ChevronLeft, ChevronRight, ArrowUpDown, Filter, ChevronDown } from "lucide-react";
@@ -151,11 +152,9 @@ export default function ProductsList() {
     // La única diferencia es que ahora `CategoryFilterTree` ya no usa carpetas.
     
     // AQUI COPIO EL CUERPO PRINCIPAL PARA QUE ESTÉ COMPLETO EL ARCHIVO:
-    const [products, setProducts] = useState([]);
+    const { products, categories, categoriesMap, categoryTree } = useFirestoreData();
+    const allCategories = categories; // Alias for backward compatibility
     const [filtered, setFiltered] = useState([]);
-    const [allCategories, setAllCategories] = useState([]);
-    const [categoriesMap, setCategoriesMap] = useState({});
-    const [categoryTree, setCategoryTree] = useState([]);
     const [pendingFilters, setPendingFilters] = useState({
       search: "",
       categoryId: "",
@@ -195,26 +194,7 @@ export default function ProductsList() {
   
       setPendingFilters(urlFilters);
       setAppliedFilters(urlFilters);
-  
-      const qCategories = query(collection(db, "categories"), orderBy("name"));
-      const unsubCategories = onSnapshot(qCategories, (snap) => {
-        const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setAllCategories(flatList);
-        const map = {};
-        flatList.forEach((cat) => (map[cat.id] = cat));
-        setCategoriesMap(map);
-        setCategoryTree(buildCategoryTree(flatList));
-      });
-  
-      const qProducts = query(collection(db, "products"), orderBy("name"));
-      const unsubProducts = onSnapshot(qProducts, (snap) => {
-        setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      });
-  
-      return () => {
-        unsubCategories();
-        unsubProducts();
-      };
+
     }, [location.search]); 
   
     useEffect(() => {
@@ -484,8 +464,9 @@ export default function ProductsList() {
                         <div className="products-list-image-container">
                           <Link to={`/product/${p.id}`}>
                             <img
-                              src={hovered === p.id ? hoverImg : mainImg}
+                              src={optimizeImageUrl(hovered === p.id ? hoverImg : mainImg, { width: 400 })}
                               alt={p.name}
+                              loading="lazy"
                               className="products-list-image"
                             />
                           </Link>

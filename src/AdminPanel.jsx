@@ -14,8 +14,8 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { uploadImage } from "./cloudinary";
 import { db } from "./App";
+import { useFirestoreData } from "./contexts/FirestoreContext";
 import ProductForm from "./ProductForm"; // Asumiendo que ProductForm está en src/
 import AdminSidebar from "./components/admin/AdminSidebar";
 import AdminLogin from "./components/admin/AdminLogin";
@@ -42,12 +42,19 @@ export default function AdminPanel() {
   const [secret, setSecret] = useState("");
   const [authed, setAuthed] = useState(false);
 
-  // Estados de datos
+  // Estados de datos (from context)
+  const { 
+    products, 
+    categories, 
+    categoriesMap, 
+    categoryTree,
+    bannerImages,
+    setBannerImages,
+    categoryImages: homeCategories,
+    setCategoryImages: setHomeCategories
+  } = useFirestoreData();
+  
   const [clients, setClients] = useState([]);
-  const [categoriesMap, setCategoriesMap] = useState({});
-  const [categoryTree, setCategoryTree] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]); // Keep flat list for selectors
   const [orders, setOrders] = useState([]);
 
   // Estados de UI
@@ -62,12 +69,6 @@ export default function AdminPanel() {
   const [orderSearch, setOrderSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState("");
-  const [bannerImages, setBannerImages] = useState([]);
-  const [homeCategories, setHomeCategories] = useState({
-    img1: {},
-    img2: {},
-    img3: {},
-  });
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [increasePercentage, setIncreasePercentage] = useState(0);
   const [roundingZeros, setRoundingZeros] = useState(0);
@@ -128,23 +129,6 @@ export default function AdminPanel() {
       setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    const unsubProducts = onSnapshot(
-      query(collection(db, "products"), orderBy("name")),
-      (snap) => setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-
-    const unsubCategories = onSnapshot(
-      query(collection(db, "categories"), orderBy("name")),
-      (snap) => {
-        const flatList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setCategories(flatList); // Guardar lista plana
-        const map = {};
-        flatList.forEach((cat) => (map[cat.id] = cat));
-        setCategoriesMap(map); // Guardar mapa
-        setCategoryTree(buildCategoryTree(flatList)); // Crear árbol
-      }
-    );
-
     const qOrders = query(
       collection(db, "orders"),
       orderBy("createdAt", "desc")
@@ -153,50 +137,9 @@ export default function AdminPanel() {
       setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    // Suscripción al Banner
-    const unsubBanner = onSnapshot(
-      collection(db, "images/banner_images/urls"),
-      (snap) => {
-        const images = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => (a.pos || 0) - (b.pos || 0));
-        setBannerImages(images);
-      }
-    );
-
-    // Carga inicial de Home Categories
-    const loadHomeCategories = async () => {
-      const cats = { img1: {}, img2: {}, img3: {} };
-      try {
-        for (let i = 1; i <= 3; i++) {
-          const docRef = doc(db, "images", `img${i}`);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            cats[`img${i}`] = docSnap.data();
-          } else {
-            cats[`img${i}`] = { url: "", redirect: "" }; // Default empty object
-          }
-        }
-        setHomeCategories(cats);
-      } catch (error) {
-        console.error("Error loading home categories:", error);
-        // Set defaults even if loading fails
-        setHomeCategories({
-          img1: { url: "", redirect: "" },
-          img2: { url: "", redirect: "" },
-          img3: { url: "", redirect: "" },
-        });
-      }
-    };
-    loadHomeCategories();
-
     return () => {
       unsubClients();
-      unsubProducts();
-      unsubCategories();
       unsubOrders();
-      unsubBanner();
-      // No hay unsub para loadHomeCategories ya que es una carga única
     };
   }, [authed]);
 
