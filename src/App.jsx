@@ -24,6 +24,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import {
   collection,
   getDocs,
+  getDoc,
+  doc,
   query,
   where,
 } from "firebase/firestore";
@@ -109,12 +111,10 @@ export default function App() {
     setLoading(true);
     try {
       const auth = getAuth();
-      await signInWithEmailAndPassword(auth, email, password);
-      const q = query(collection(db, "clients"), where("email", "==", email));
-      const querySnapshot = await getDocs(q);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const clientDoc = await getDoc(doc(db, "clients", userCredential.user.uid));
 
-      if (!querySnapshot.empty) {
-        const clientDoc = querySnapshot.docs[0];
+      if (clientDoc.exists()) {
         const clientData = { id: clientDoc.id, ...clientDoc.data() };
 
         if (clientData.status === "pendiente") {

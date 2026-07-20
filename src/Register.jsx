@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { collection, addDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { db } from "./App";
 import {
   FaUser,
@@ -137,7 +137,7 @@ export default function Register() {
       );
 
       // Guardar datos en Firestore (Incluye los nuevos campos)
-      await addDoc(collection(db, "clients"), {
+      await setDoc(doc(db, "clients", userCredential.user.uid), {
         nombre: formData.nombre,
         apellido: formData.apellido,
         razonSocial: formData.razonSocial,
