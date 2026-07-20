@@ -4,7 +4,7 @@ import { useAuth } from "./App";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { FaEnvelope, FaLock, FaUserPlus } from "react-icons/fa";
-import "./styles/login.css";
+import styles from "./styles/login.module.css";
 import { EyeIcon } from "./icons/EyeIcon"; // Import EyeIcon
 import { EyeSlashIcon } from "./icons/EyeSlashIcon"; // Import EyeSlashIcon
 
@@ -40,18 +40,18 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-split">
+    <div className={styles.loginContainer}>
+      <div className={styles.loginCard}>
+        <div className={styles.loginSplit}>
           {/* Left side - Form */}
-          <div className="login-form-section">
-            <div className="form-header">
+          <div className={styles.loginFormSection}>
+            <div className={styles.formHeader}>
               <h1>Bienvenido</h1>
               <p>Ingresa a tu cuenta</p>
             </div>
 
-            <form onSubmit={handleLogin} className="login-form">
-              <div className="form-group">
+            <form onSubmit={handleLogin} className={styles.loginForm}>
+              <div className={styles.formGroup}>
                 <label htmlFor="email">
                   <FaEnvelope /> Correo electrónico
                 </label>
@@ -67,12 +67,12 @@ export default function Login() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className={styles.formGroup}>
                 <label htmlFor="password">
                   <FaLock /> Contraseña
                 </label>
                 {/* Wrap input and icon */}
-                <div className="password-input-wrapper">
+                <div className={styles.passwordInputWrapper}>
                   <input
                     id="password"
                     name="password"
@@ -85,7 +85,7 @@ export default function Login() {
                   />
                   {/* Add the icon toggle */}
                   <span
-                    className="password-toggle-icon"
+                    className={styles.passwordToggleIcon}
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
@@ -93,10 +93,10 @@ export default function Login() {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary" disabled={loading}>
+              <button type="submit" className={styles.btnPrimary} disabled={loading}>
                 {loading ? (
                   <>
-                    <span className="spinner"></span>
+                    <span className={styles.spinner}></span>
                     Verificando...
                   </>
                 ) : (
@@ -106,7 +106,7 @@ export default function Login() {
             </form>
 
             {message && (
-              <div className="alert-message">
+              <div className={styles.alertMessage}>
                 <span>⚠️</span>
                 {message}
               </div>
@@ -114,18 +114,18 @@ export default function Login() {
           </div>
 
           {/* Right side - Actions */}
-          <div className="login-actions-section">
-            <div className="actions-header">
+          <div className={styles.loginActionsSection}>
+            <div className={styles.actionsHeader}>
               <h2>¿No tienes cuenta?</h2>
               <p>Regístrate como cliente mayorista</p>
             </div>
 
-            <div className="action-cards">
-              <Link to="/register" className="action-card">
-                <div className="action-icons">
+            <div className={styles.actionCards}>
+              <Link to="/register" className={styles.actionCard}>
+                <div className={styles.actionIcons}>
                   <FaUserPlus />
                 </div>
-                <div className="action-content">
+                <div className={styles.actionContent}>
                   <h3>Crear Nueva Cuenta</h3>
                   <p>Completa el formulario de registro y empieza a comprar</p>
                 </div>
