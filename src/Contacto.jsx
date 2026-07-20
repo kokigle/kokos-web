@@ -10,7 +10,7 @@ import {
   FaExclamationCircle,
   FaPaperPlane,
 } from "react-icons/fa";
-import "./styles/contact-page.css";
+import styles from "./styles/contact-page.module.css";
 
 const EMAILJS_SERVICE_ID = "service_igan4yb";
 const EMAILJS_TEMPLATE_ID = "template_e8kdsrp";
@@ -78,59 +78,59 @@ export default function Contacto() {
   };
 
   return (
-    <div className="contact-page-container">
-      <div className="contact-hero-section">
-        <h1 className="contact-main-title">Estamos para ayudarte</h1>
-        <p className="contact-main-subtitle">
+    <div className={styles.contactPageContainer}>
+      <div className={styles.contactHeroSection}>
+        <h1 className={styles.contactMainTitle}>Estamos para ayudarte</h1>
+        <p className={styles.contactMainSubtitle}>
           Completa el formulario o contáctanos directamente. Respondemos todas
           las consultas en menos de 24 horas.
         </p>
       </div>
 
-      <div className="contact-layout">
+      <div className={styles.contactLayout}>
         {/* Columna de Formulario - IZQUIERDA */}
-        <div className="contact-form-column">
-          <div className="contact-form-header">
-            <h2 className="contact-form-title">Envíanos un mensaje</h2>
-            <p className="contact-form-subtitle">
+        <div className={styles.contactFormColumn}>
+          <div className={styles.contactFormHeader}>
+            <h2 className={styles.contactFormTitle}>Envíanos un mensaje</h2>
+            <p className={styles.contactFormSubtitle}>
               Completa el formulario y nos pondremos en contacto contigo
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="contact-form-box">
-            <div className="contact-form-row">
-              <div className="contact-form-group">
-                <label htmlFor="nombre" className="contact-label required">
+          <form onSubmit={handleSubmit} className={styles.contactFormBox}>
+            <div className={styles.contactFormRow}>
+              <div className={styles.contactFormGroup}>
+                <label htmlFor="nombre" className={`${styles.contactLabel} ${styles.required}`}>
                   Nombre y Apellido
                 </label>
-                <div className="contact-input-wrapper">
-                  <FaUser className="contact-input-icon" />
+                <div className={styles.contactInputWrapper}>
+                  <FaUser className={styles.contactInputIcon} />
                   <input
                     id="nombre"
                     name="nombre"
                     type="text"
                     value={formData.nombre}
                     onChange={handleChange}
-                    className="contact-input"
+                    className={styles.contactInput}
                     placeholder="Juan Pérez"
                     required
                   />
                 </div>
               </div>
 
-              <div className="contact-form-group">
-                <label htmlFor="email" className="contact-label required">
+              <div className={styles.contactFormGroup}>
+                <label htmlFor="email" className={`${styles.contactLabel} ${styles.required}`}>
                   Correo Electrónico
                 </label>
-                <div className="contact-input-wrapper">
-                  <FaEnvelope className="contact-input-icon" />
+                <div className={styles.contactInputWrapper}>
+                  <FaEnvelope className={styles.contactInputIcon} />
                   <input
                     id="email"
                     name="email"
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="contact-input"
+                    className={styles.contactInput}
                     placeholder="ejemplo@correo.com"
                     required
                   />
@@ -138,27 +138,27 @@ export default function Contacto() {
               </div>
             </div>
 
-            <div className="contact-form-group">
-              <label htmlFor="celular" className="contact-label required">
+            <div className={styles.contactFormGroup}>
+              <label htmlFor="celular" className={`${styles.contactLabel} ${styles.required}`}>
                 Teléfono / WhatsApp
               </label>
-              <div className="contact-input-wrapper">
-                <FaPhone className="contact-input-icon" />
+              <div className={styles.contactInputWrapper}>
+                <FaPhone className={styles.contactInputIcon} />
                 <input
                   id="celular"
                   name="celular"
                   type="tel"
                   value={formData.celular}
                   onChange={handleChange}
-                  className="contact-input"
+                  className={styles.contactInput}
                   placeholder="+54 11 1234-5678"
                   required
                 />
               </div>
             </div>
 
-            <div className="contact-form-group">
-              <label htmlFor="comentarios" className="contact-label">
+            <div className={styles.contactFormGroup}>
+              <label htmlFor="comentarios" className={styles.contactLabel}>
                 Tu Mensaje
               </label>
               <textarea
@@ -166,18 +166,24 @@ export default function Contacto() {
                 name="comentarios"
                 value={formData.comentarios}
                 onChange={handleChange}
-                className="contact-textarea"
+                className={styles.contactTextarea}
                 rows="6"
                 placeholder="Escribe aquí tu consulta, pedido o sugerencia..."
               />
             </div>
 
             {message && (
-              <div className={`contact-alert contact-alert-${message.type}`}>
+              <div
+                className={`${styles.contactAlert} ${
+                  message.type === "success"
+                    ? styles.contactAlertSuccess
+                    : styles.contactAlertError
+                }`}
+              >
                 {message.type === "success" ? (
-                  <FaCheckCircle className="contact-alert-icon" />
+                  <FaCheckCircle className={styles.contactAlertIcon} />
                 ) : (
-                  <FaExclamationCircle className="contact-alert-icon" />
+                  <FaExclamationCircle className={styles.contactAlertIcon} />
                 )}
                 <span>{message.text}</span>
               </div>
@@ -185,12 +191,12 @@ export default function Contacto() {
 
             <button
               type="submit"
-              className="contact-btn-submit"
+              className={styles.contactBtnSubmit}
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <span className="contact-btn-spinner"></span>
+                  <span className={styles.contactBtnSpinner}></span>
                   Enviando...
                 </>
               ) : (
@@ -201,71 +207,71 @@ export default function Contacto() {
               )}
             </button>
 
-            <p className="contact-required-note">
+            <p className={styles.contactRequiredNote}>
               * Todos los campos son obligatorios excepto el mensaje
             </p>
           </form>
         </div>
 
         {/* Columna de Información - DERECHA */}
-        <div className="contact-info-column">
-          <div className="contact-info-card">
-            <h3 className="contact-info-title">Información de Contacto</h3>
-            <p className="contact-info-text">
+        <div className={styles.contactInfoColumn}>
+          <div className={styles.contactInfoCard}>
+            <h3 className={styles.contactInfoTitle}>Información de Contacto</h3>
+            <p className={styles.contactInfoText}>
               Contáctanos por cualquiera de estos medios.
             </p>
 
-            <div className="contact-details-list">
-              <div className="contact-detail-item">
-                <div className="contact-detail-icon-wrapper location">
-                  <FaMapMarkerAlt className="contact-detail-icon" />
+            <div className={styles.contactDetailsList}>
+              <div className={styles.contactDetailItem}>
+                <div className={`${styles.contactDetailIconWrapper} ${styles.location}`}>
+                  <FaMapMarkerAlt className={styles.contactDetailIcon} />
                 </div>
-                <div className="contact-detail-content">
+                <div className={styles.contactDetailContent}>
                   <strong>Nuestra Ubicación</strong>
                   <p>Mariano Santamaria 4392</p>
                   <p>La Tablada, Buenos Aires</p>
                 </div>
               </div>
 
-              <div className="contact-detail-item">
-                <div className="contact-detail-icon-wrapper clock">
-                  <FaClock className="contact-detail-icon" />
+              <div className={styles.contactDetailItem}>
+                <div className={`${styles.contactDetailIconWrapper} ${styles.clock}`}>
+                  <FaClock className={styles.contactDetailIcon} />
                 </div>
-                <div className="contact-detail-content">
+                <div className={styles.contactDetailContent}>
                   <strong>Horario de Atención</strong>
                   <p>Lunes a Viernes</p>
                   <p>08:00 AM - 17:00 PM</p>
                 </div>
               </div>
 
-              <div className="contact-detail-item">
-                <div className="contact-detail-icon-wrapper phone">
-                  <FaPhone className="contact-detail-icon" />
+              <div className={styles.contactDetailItem}>
+                <div className={`${styles.contactDetailIconWrapper} ${styles.phone}`}>
+                  <FaPhone className={styles.contactDetailIcon} />
                 </div>
-                <div className="contact-detail-content">
+                <div className={styles.contactDetailContent}>
                   <strong>Teléfono / WhatsApp</strong>
                   <p>+54 11 4545-7891</p>
                   <a
                     href="https://wa.me/541145457891"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="contact-whatsapp-link"
+                    className={styles.contactWhatsappLink}
                   >
                     Chatear por WhatsApp
                   </a>
                 </div>
               </div>
 
-              <div className="contact-detail-item">
-                <div className="contact-detail-icon-wrapper email">
-                  <FaEnvelope className="contact-detail-icon" />
+              <div className={styles.contactDetailItem}>
+                <div className={`${styles.contactDetailIconWrapper} ${styles.email}`}>
+                  <FaEnvelope className={styles.contactDetailIcon} />
                 </div>
-                <div className="contact-detail-content">
+                <div className={styles.contactDetailContent}>
                   <strong>Correo Electrónico</strong>
                   <p>infokokos@gmail.com</p>
                   <a
                     href="mailto:infokokos@gmail.com"
-                    className="contact-email-link"
+                    className={styles.contactEmailLink}
                   >
                     Enviar email
                   </a>
@@ -277,9 +283,9 @@ export default function Contacto() {
       </div>
 
       {/* Mapa Centrado Abajo */}
-      <div className="contact-map-section">
-        <h3 className="contact-map-title">¿Dónde estamos?</h3>
-        <div className="contact-map-container">
+      <div className={styles.contactMapSection}>
+        <h3 className={styles.contactMapTitle}>¿Dónde estamos?</h3>
+        <div className={styles.contactMapContainer}>
           <iframe
             title="Ubicación de Kokos Argentina"
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3279.791535492194!2d-58.5303798!3d-34.717646!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcce5180f2d9f7%3A0x67d8f541f5a5a1f6!2sMariano%20Santamaria%204392%2C%20B1752DQX%20La%20Tablada%2C%20Provincia%20de%20Buenos%20Aires!5e0!3m2!1ses-419!2sar!4v1714578900000!5m2!1ses-419!2sar"
