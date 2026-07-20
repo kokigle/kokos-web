@@ -18,7 +18,7 @@ import {
   FaArrowLeft,
   FaHome, // Importamos nuevo icono para domicilios
 } from "react-icons/fa";
-import "./styles/register.css";
+import styles from "./styles/register.module.css";
 import { EyeIcon } from "./icons/EyeIcon";
 import { EyeSlashIcon } from "./icons/EyeSlashIcon";
 
@@ -183,9 +183,9 @@ export default function Register() {
 
   if (success) {
     return (
-      <div className="register-container">
-        <div className="register-success-card">
-          <div className="register-success-icon">
+      <div className={styles.registerContainer}>
+        <div className={styles.registerSuccessCard}>
+          <div className={styles.registerSuccessIcon}>
             <FaCheckCircle />
           </div>
           <h1>¡Registro Exitoso!</h1>
@@ -193,7 +193,7 @@ export default function Register() {
             Tu cuenta ha sido creada y está pendiente de aprobación. Te
             notificaremos por correo cuando sea activada.
           </p>
-          <div className="register-success-redirect">
+          <div className={styles.registerSuccessRedirect}>
             Redirigiendo al inicio de sesión...
           </div>
         </div>
@@ -202,22 +202,22 @@ export default function Register() {
   }
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <div className="register-header">
-          <Link to="/login" className="register-back-btn">
+    <div className={styles.registerContainer}>
+      <div className={styles.registerCard}>
+        <div className={styles.registerHeader}>
+          <Link to="/login" className={styles.registerBackBtn}>
             <FaArrowLeft /> Volver
           </Link>
           <h1>Crear Cuenta</h1>
           <p>Completa el formulario para registrarte como cliente mayorista</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="register-form">
+        <form onSubmit={handleSubmit} className={styles.registerForm}>
           {/* Datos Personales */}
-          <div className="register-section">
-            <h2 className="register-section-title">Datos Personales</h2>
-            <div className="register-form-grid">
-              <div className="register-form-group">
+          <div className={styles.registerSection}>
+            <h2 className={styles.registerSectionTitle}>Datos Personales</h2>
+            <div className={styles.registerFormGrid}>
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="nombre">
                   <FaUser /> Nombre *
                 </label>
@@ -232,7 +232,7 @@ export default function Register() {
                 />
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="apellido">
                   <FaUser /> Apellido *
                 </label>
@@ -250,10 +250,10 @@ export default function Register() {
           </div>
 
           {/* Datos Fiscales */}
-          <div className="register-section">
-            <h2 className="register-section-title">Datos Fiscales</h2>
-            <div className="register-form-grid">
-              <div className="register-form-group register-form-group-full">
+          <div className={styles.registerSection}>
+            <h2 className={styles.registerSectionTitle}>Datos Fiscales</h2>
+            <div className={styles.registerFormGrid}>
+              <div className={`${styles.registerFormGroup} ${styles.registerFormGroupFull}`}>
                 <label htmlFor="razonSocial">
                   <FaBuilding /> Razón Social *
                 </label>
@@ -268,7 +268,7 @@ export default function Register() {
                 />
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="posicionFiscal">
                   <FaIdCard /> Posición Fiscal *
                 </label>
@@ -278,7 +278,7 @@ export default function Register() {
                   value={formData.posicionFiscal}
                   onChange={handleChange}
                   required
-                  className="register-select"
+                  className={styles.registerSelect}
                 >
                   <option value="">Seleccionar...</option>
                   {posicionesFiscales.map((pos) => (
@@ -289,7 +289,7 @@ export default function Register() {
                 </select>
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="cuit">
                   <FaIdCard /> CUIT *
                 </label>
@@ -306,7 +306,7 @@ export default function Register() {
               </div>
 
               {/* NUEVO: Domicilio Fiscal */}
-              <div className="register-form-group register-form-group-full">
+              <div className={`${styles.registerFormGroup} ${styles.registerFormGroupFull}`}>
                 <label htmlFor="domicilioFiscal">
                   <FaBuilding /> Domicilio Fiscal *
                 </label>
@@ -324,10 +324,10 @@ export default function Register() {
           </div>
 
           {/* Datos de Contacto y Ubicación */}
-          <div className="register-section">
-            <h2 className="register-section-title">Contacto y Ubicación</h2>
-            <div className="register-form-grid">
-              <div className="register-form-group">
+          <div className={styles.registerSection}>
+            <h2 className={styles.registerSectionTitle}>Contacto y Ubicación</h2>
+            <div className={styles.registerFormGrid}>
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="telefonoMovil">
                   <FaPhone /> Teléfono Móvil *
                 </label>
@@ -342,7 +342,7 @@ export default function Register() {
                 />
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="email">
                   <FaEnvelope /> Correo Electrónico *
                 </label>
@@ -359,7 +359,7 @@ export default function Register() {
               </div>
 
               {/* NUEVO: Domicilio de Entrega */}
-              <div className="register-form-group register-form-group-full">
+              <div className={`${styles.registerFormGroup} ${styles.registerFormGroupFull}`}>
                 <label htmlFor="domicilioEntrega">
                   <FaHome /> Domicilio de Entrega *
                 </label>
@@ -374,7 +374,7 @@ export default function Register() {
                 />
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="provincia">
                   <FaMapMarkerAlt /> Provincia *
                 </label>
@@ -384,7 +384,7 @@ export default function Register() {
                   value={formData.provincia}
                   onChange={handleChange}
                   required
-                  className="register-select"
+                  className={styles.registerSelect}
                 >
                   <option value="">Seleccionar...</option>
                   {provincias.map((prov) => (
@@ -395,7 +395,7 @@ export default function Register() {
                 </select>
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="ciudad">
                   <FaMapMarkerAlt /> Ciudad *
                 </label>
@@ -410,7 +410,7 @@ export default function Register() {
                 />
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="codigoPostal">
                   <FaMailBulk /> Código Postal *
                 </label>
@@ -428,14 +428,14 @@ export default function Register() {
           </div>
 
           {/* Contraseña */}
-          <div className="register-section">
-            <h2 className="register-section-title">Contraseña</h2>
-            <div className="register-form-grid">
-              <div className="register-form-group">
+          <div className={styles.registerSection}>
+            <h2 className={styles.registerSectionTitle}>Contraseña</h2>
+            <div className={styles.registerFormGrid}>
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="password">
                   <FaLock /> Contraseña *
                 </label>
-                <div className="password-input-wrapper">
+                <div className={styles.passwordInputWrapper}>
                   <input
                     id="password"
                     name="password"
@@ -444,11 +444,11 @@ export default function Register() {
                     onChange={handleChange}
                     required
                     placeholder="••••••••"
-                    className="register-input"
+                    className={styles.registerInput}
                     autoComplete="new-password"
                   />
                   <span
-                    className="password-toggle-icon"
+                    className={styles.passwordToggleIcon}
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
@@ -456,11 +456,11 @@ export default function Register() {
                 </div>
               </div>
 
-              <div className="register-form-group">
+              <div className={styles.registerFormGroup}>
                 <label htmlFor="confirmPassword">
                   <FaLock /> Confirmar Contraseña *
                 </label>
-                <div className="password-input-wrapper">
+                <div className={styles.passwordInputWrapper}>
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
@@ -469,11 +469,11 @@ export default function Register() {
                     onChange={handleChange}
                     required
                     placeholder="••••••••"
-                    className="register-input"
+                    className={styles.registerInput}
                     autoComplete="new-password"
                   />
                   <span
-                    className="password-toggle-icon"
+                    className={styles.passwordToggleIcon}
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? <EyeSlashIcon /> : <EyeIcon />}
@@ -481,8 +481,8 @@ export default function Register() {
                 </div>
                 {formData.confirmPassword && (
                   <div
-                    className={`register-match-indicator ${
-                      passwordsMatch ? "register-match" : "register-no-match"
+                    className={`${styles.registerMatchIndicator} ${
+                      passwordsMatch ? styles.registerMatch : styles.registerNoMatch
                     }`}
                   >
                     {passwordsMatch ? (
@@ -499,13 +499,13 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="register-password-requirements">
+            <div className={styles.registerPasswordRequirements}>
               {passwordRequirements.map((req, index) => (
                 <div
                   key={index}
-                  className={`register-requirement-chip ${
+                  className={`${styles.registerRequirementChip} ${
                     formData.password && req.test(formData.password)
-                      ? "register-requirement-met"
+                      ? styles.registerRequirementMet
                       : ""
                   }`}
                 >
@@ -521,7 +521,7 @@ export default function Register() {
           </div>
 
           {error && (
-            <div className="register-error-message">
+            <div className={styles.registerErrorMessage}>
               <span>⚠️</span>
               {error}
             </div>
@@ -529,12 +529,12 @@ export default function Register() {
 
           <button
             type="submit"
-            className="register-btn-primary"
+            className={styles.registerBtnPrimary}
             disabled={loading || !allRequirementsMet || !passwordsMatch}
           >
             {loading ? (
               <>
-                <span className="register-spinner"></span>
+                <span className={styles.registerSpinner}></span>
                 Creando cuenta...
               </>
             ) : (
@@ -542,9 +542,9 @@ export default function Register() {
             )}
           </button>
 
-          <div className="register-footer-text">
+          <div className={styles.registerFooterText}>
             ¿Ya tienes cuenta?{" "}
-            <Link to="/login" className="register-link">
+            <Link to="/login" className={styles.registerLink}>
               Iniciar Sesión
             </Link>
           </div>
