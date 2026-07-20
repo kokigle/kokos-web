@@ -23,7 +23,7 @@ import {
   FaShieldAlt,
   FaSignOutAlt,
 } from "react-icons/fa";
-import "./styles/my-account.css";
+import styles from "./styles/my-account.module.css";
 
 import AccountDashboard from "./components/account/AccountDashboard";
 import AccountOrders from "./components/account/AccountOrders";
@@ -66,24 +66,24 @@ export default function MyAccount() {
   }
 
   return (
-    <div className="my-account-container">
-      <div className="my-account-layout">
-        <aside className="my-account-sidebar">
-          <div className="my-account-user-profile">
-            <FaUserCircle className="my-account-user-avatar" />
-            <div className="my-account-user-info">
+    <div className={styles.myAccountContainer}>
+      <div className={styles.myAccountLayout}>
+        <aside className={styles.myAccountSidebar}>
+          <div className={styles.myAccountUserProfile}>
+            <FaUserCircle className={styles.myAccountUserAvatar} />
+            <div className={styles.myAccountUserInfo}>
               <h4>{user.nombre || user.razonSocial}</h4>
               <p>{user.email}</p>
             </div>
           </div>
-          <nav className="my-account-nav">
+          <nav className={styles.myAccountNav}>
             <NavLink
               to="/my-account"
               end
               className={({ isActive }) =>
                 isActive
-                  ? "my-account-nav-link my-account-nav-link-active"
-                  : "my-account-nav-link"
+                  ? `${styles.myAccountNavLink} ${styles.myAccountNavLinkActive}`
+                  : styles.myAccountNavLink
               }
             >
               <FaUserCircle /> Resumen
@@ -92,8 +92,8 @@ export default function MyAccount() {
               to="/my-account/orders"
               className={({ isActive }) =>
                 isActive
-                  ? "my-account-nav-link my-account-nav-link-active"
-                  : "my-account-nav-link"
+                  ? `${styles.myAccountNavLink} ${styles.myAccountNavLinkActive}`
+                  : styles.myAccountNavLink
               }
             >
               <FaClipboardList /> Mis Pedidos
@@ -102,8 +102,8 @@ export default function MyAccount() {
               to="/my-account/details"
               className={({ isActive }) =>
                 isActive
-                  ? "my-account-nav-link my-account-nav-link-active"
-                  : "my-account-nav-link"
+                  ? `${styles.myAccountNavLink} ${styles.myAccountNavLinkActive}`
+                  : styles.myAccountNavLink
               }
             >
               <FaUserEdit /> Datos de la Cuenta
@@ -112,21 +112,21 @@ export default function MyAccount() {
               to="/my-account/security"
               className={({ isActive }) =>
                 isActive
-                  ? "my-account-nav-link my-account-nav-link-active"
-                  : "my-account-nav-link"
+                  ? `${styles.myAccountNavLink} ${styles.myAccountNavLinkActive}`
+                  : styles.myAccountNavLink
               }
             >
               <FaShieldAlt /> Seguridad
             </NavLink>
             <button
               onClick={handleLogout}
-              className="my-account-nav-link my-account-logout-button"
+              className={`${styles.myAccountNavLink} ${styles.myAccountLogoutButton}`}
             >
               <FaSignOutAlt /> Cerrar Sesión
             </button>
           </nav>
         </aside>
-        <main className="my-account-content">
+        <main className={styles.myAccountContent}>
           <Routes>
             <Route
               index
