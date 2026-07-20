@@ -1,0 +1,5 @@
+# TODO: Reemplazar el placeholder https://PENDIENTE-DEFINIR-DOMINIO.com.ar por el dominio de producción antes del deploy
+User-agent: *
+Allow: /
+
+Sitemap: https://PENDIENTE-DEFINIR-DOMINIO.com.ar/sitemap.xml

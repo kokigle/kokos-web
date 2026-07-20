@@ -54,17 +54,6 @@ export default function Home() {
   const [previousBannerIndex, setPreviousBannerIndex] = useState(null);
 
 
-  // Timer para ocultar texto del banner
-  useEffect(() => {
-    if (!hasInteracted) {
-      const timer = setTimeout(() => {
-        setShowBannerText(false);
-      }, 10000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [hasInteracted]);
-
   // Auto-play del carrusel cada 15 segundos
   useEffect(() => {
     if (bannerImages.length > 1) {
