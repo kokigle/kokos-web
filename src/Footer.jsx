@@ -9,7 +9,7 @@ import {
   FaInstagram,
   FaFacebook,
 } from "react-icons/fa";
-import "./styles/footer-kokos.css";
+import styles from "./styles/footer-kokos.module.css";
 
 import { useAuth } from "./App";
 
@@ -18,26 +18,26 @@ export default function Footer() {
   const { user } = useAuth();
 
   return (
-    <footer className="kokos-footer">
-      <div className="footer-main">
-        <div className="footer-container">
-          <div className="footer-col footer-brand">
-            <div className="footer-logo">
+    <footer className={styles.kokosFooter}>
+      <div className={styles.footerMain}>
+        <div className={styles.footerContainer}>
+          <div className={`${styles.footerCol} ${styles.footerBrand}`}>
+            <div className={styles.footerLogo}>
               <img
                 src={logo}
                 alt="Kokos Argentina - De Argimpex S.A"
-                className="footer-logo-img"
+                className={styles.footerLogoImg}
               />
             </div>
-            <p className="footer-tagline">Venta mayorista de juguetes</p>
-            <p className="footer-description">
+            <p className={styles.footerTagline}>Venta mayorista de juguetes</p>
+            <p className={styles.footerDescription}>
               Calidad, variedad y el mejor servicio para tu negocio.
             </p>
           </div>
 
-          <div className="footer-col">
+          <div className={styles.footerCol}>
             <h4>Navegación</h4>
-            <ul className="footer-links">
+            <ul className={styles.footerLinks}>
               <li>
                 <Link to="/">Inicio</Link>
               </li>
@@ -56,9 +56,9 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="footer-col">
+          <div className={styles.footerCol}>
             <h4>Mi Cuenta</h4>
-            <ul className="footer-links">
+            <ul className={styles.footerLinks}>
               {user ? (
                 <>
                   <li>
@@ -89,46 +89,46 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="footer-col footer-contact">
+          <div className={`${styles.footerCol} ${styles.footerContact}`}>
             <h4>Contacto</h4>
-            <ul className="footer-contact-list">
+            <ul className={styles.footerContactList}>
               <li>
                 <a
                   href="https://wa.me/541145457891"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="contact-item"
+                  className={styles.contactItem}
                 >
-                  <div className="contact-icon whatsapp">
+                  <div className={`${styles.contactIcon} ${styles.whatsapp}`}>
                     <FaWhatsapp />
                   </div>
-                  <div className="contact-info">
-                    <span className="contact-label">WhatsApp</span>
-                    <span className="contact-value">+54 11 4545-7891</span>
+                  <div className={styles.contactInfo}>
+                    <span className={styles.contactLabel}>WhatsApp</span>
+                    <span className={styles.contactValue}>+54 11 4545-7891</span>
                   </div>
                 </a>
               </li>
               <li>
-                <a href="mailto:infokokos@gmail.com" className="contact-item">
-                  <div className="contact-icon email">
+                <a href="mailto:infokokos@gmail.com" className={styles.contactItem}>
+                  <div className={`${styles.contactIcon} ${styles.email}`}>
                     <FaEnvelope />
                   </div>
-                  <div className="contact-info">
-                    <span className="contact-label">Email</span>
-                    <span className="contact-value">infokokos@gmail.com</span>
+                  <div className={styles.contactInfo}>
+                    <span className={styles.contactLabel}>Email</span>
+                    <span className={styles.contactValue}>infokokos@gmail.com</span>
                   </div>
                 </a>
               </li>
-              <li className="contact-item">
-                <div className="contact-icon location">
+              <li className={styles.contactItem}>
+                <div className={`${styles.contactIcon} ${styles.location}`}>
                   <FaMapMarkerAlt />
                 </div>
-                <div className="contact-info">
-                  <span className="contact-label">Ubicación</span>
-                  <span className="contact-value">
+                <div className={styles.contactInfo}>
+                  <span className={styles.contactLabel}>Ubicación</span>
+                  <span className={styles.contactValue}>
                     Mariano Santamaria 4392.
                   </span>
-                  <span className="contact-value">
+                  <span className={styles.contactValue}>
                     La Tablada, Buenos Aires.
                   </span>
                 </div>
@@ -138,13 +138,13 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="footer-bottom">
-        <div className="footer-bottom-content">
-          <p className="copyright">
+      <div className={styles.footerBottom}>
+        <div className={styles.footerBottomContent}>
+          <p className={styles.copyright}>
             © {currentYear} <strong>Kokos Argentina</strong> - De Argimpex S.A.
             Todos los derechos reservados.
           </p>
-          <p className="footer-credits">Venta mayorista de juguetes</p>
+          <p className={styles.footerCredits}>Venta mayorista de juguetes</p>
         </div>
       </div>
     </footer>
