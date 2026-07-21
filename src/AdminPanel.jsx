@@ -32,7 +32,7 @@ import {
   getDescendantIds,
 } from "./utils/categoryutils"; // Importar helpers
 
-import "./styles/admin-panel.css";
+import styles from "./styles/admin-panel.module.css";
 
 export default function AdminPanel() {
   const mainContentRef = useRef(null);
@@ -833,12 +833,12 @@ export default function AdminPanel() {
     }
 
     return matchSearch && matchCategory;
-  }), [products, productSearch, filterCategory]);
+  }), [products, productSearch, selectedFilterCategoryId]);
 
   // --- Renderizado ---
 
   return (
-    <div className="admin-panel-layout">
+    <div className={styles.adminPanelLayout}>
       <AdminNotifications
         notification={notification}
         confirmDialog={confirmDialog}
@@ -853,7 +853,7 @@ export default function AdminPanel() {
         resetProductForm={resetProductForm}
       />
 
-      <main className="admin-panel-content" ref={mainContentRef}>
+      <main className={styles.adminPanelContent} ref={mainContentRef}>
         {view === "dashboard" && (
           <AdminDashboard
             pendingClients={pendingClients}
@@ -902,8 +902,8 @@ export default function AdminPanel() {
         )}
         {(view === "addProduct" ||
           (view === "editProduct" && editingProduct)) && (
-          <div className="admin-panel-card">
-            <h2 className="admin-panel-title">
+          <div className={styles.adminPanelCard}>
+            <h2 className={styles.adminPanelTitle}>
               {editingProduct ? "Editar Producto" : "Agregar Nuevo Producto"}
             </h2>
             <ProductForm

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import styles from "../../styles/admin-panel.module.css";
 
 // Helper para formatear dinero (puedes moverlo a utils si lo usas en más sitios)
 const formatMoney = (n) =>
@@ -28,16 +29,16 @@ const AdminOrders = ({
   });
 
   return (
-    <div className="admin-panel-card">
-      <h2 className="admin-panel-title">Gestión de Pedidos</h2>
+    <div className={styles.adminPanelCard}>
+      <h2 className={styles.adminPanelTitle}>Gestión de Pedidos</h2>
 
       {/* Order Tabs */}
-      <div className="admin-panel-clients-tabs">
+      <div className={styles.adminPanelClientsTabs}>
         {["pending", "in_progress", "completed", "cancelled"].map((status) => (
           <button
             key={status}
-            className={`admin-panel-clients-tab ${
-              ordersTab === status ? "admin-panel-clients-tab-active" : ""
+            className={`${styles.adminPanelClientsTab} ${
+              ordersTab === status ? styles.adminPanelClientsTabActive : ""
             }`}
             onClick={() => {
               setOrdersTab(status);
@@ -51,20 +52,20 @@ const AdminOrders = ({
       </div>
 
       {/* Order Search */}
-      <div className="admin-panel-search-box">
+      <div className={styles.adminPanelSearchBox}>
         <input
           type="text"
           placeholder="🔍 Buscar por N° pedido, razón social o email..."
           value={orderSearch}
           onChange={(e) => setOrderSearch(e.target.value)}
-          className="admin-panel-search-input"
+          className={styles.adminPanelSearchInput}
         />
       </div>
 
       {/* Orders List */}
-      <div className="admin-panel-orders-list">
+      <div className={styles.adminPanelOrdersList}>
         {filteredOrders.length === 0 ? (
-          <div className="admin-panel-empty-state">
+          <div className={styles.adminPanelEmptyState}>
             <p>
               No hay pedidos en estado "{ordersTab.replace("_", " ")}"
               {orderSearch && " que coincidan con la búsqueda"}.
@@ -78,16 +79,16 @@ const AdminOrders = ({
               0
             );
             return (
-              <div key={order.id} className="admin-panel-order-card">
+              <div key={order.id} className={styles.adminPanelOrderCard}>
                 <div
-                  className="admin-panel-order-summary"
+                  className={styles.adminPanelOrderSummary}
                   onClick={() =>
                     setExpandedOrder(
                       expandedOrder === order.id ? null : order.id
                     )
                   }
                 >
-                  <div className="admin-panel-order-main-info">
+                  <div className={styles.adminPanelOrderMainInfo}>
                     <h4>Pedido #{order.id.substring(0, 7).toUpperCase()}</h4>
                     <p>
                       {client?.razonSocial ||
@@ -104,24 +105,29 @@ const AdminOrders = ({
                       })}
                     </span>
                   </div>
-                  <div className="admin-panel-order-meta">
+                  <div className={styles.adminPanelOrderMeta}>
                     <span>{order.items.length} item(s)</span>
                     <strong>{formatMoney(total)}</strong>
                     <div
-                      className={`admin-panel-order-status-badge admin-panel-order-status-${order.status}`}
+                      className={`${styles.adminPanelOrderStatusBadge} ${
+                        order.status === "pending" ? styles.adminPanelOrderStatusPending :
+                        order.status === "in_progress" ? styles.adminPanelOrderStatusInProgress :
+                        order.status === "completed" ? styles.adminPanelOrderStatusCompleted :
+                        order.status === "cancelled" ? styles.adminPanelOrderStatusCancelled : ""
+                      }`}
                     >
                       {order.status.replace("_", " ")}
                     </div>
                   </div>
-                  <div className="admin-panel-expand-icon">
+                  <div className={styles.adminPanelExpandIcon}>
                     {expandedOrder === order.id ? "▲" : "▼"}
                   </div>
                 </div>
 
                 {expandedOrder === order.id && (
-                  <div className="admin-panel-order-details">
+                  <div className={styles.adminPanelOrderDetails}>
                     <h5>Detalle del Cliente</h5>
-                    <div className="admin-panel-order-client-details">
+                    <div className={styles.adminPanelOrderClientDetails}>
                       <p>
                         <strong>Razón Social:</strong>{" "}
                         {client?.razonSocial || "N/A"}
@@ -146,18 +152,18 @@ const AdminOrders = ({
                       </p>
                     </div>
                     <h5>Productos</h5>
-                    <div className="admin-panel-order-items-list">
+                    <div className={styles.adminPanelOrderItemsList}>
                       {order.items.map((item) => (
-                        <div key={item.id} className="admin-panel-order-item">
+                        <div key={item.id} className={styles.adminPanelOrderItem}>
                           <img
                             src={item.image || "placeholder.png"}
                             alt={item.name}
                           />
-                          <div className="admin-panel-order-item-info">
+                          <div className={styles.adminPanelOrderItemInfo}>
                             <span>{item.name}</span>
                             <small>Cod: {item.code}</small>
                           </div>
-                          <div className="admin-panel-order-item-pricing">
+                          <div className={styles.adminPanelOrderItemPricing}>
                             <span>
                               {item.qty} x {formatMoney(item.price)} (
                               {order.discountApplied || 0}% off) ={" "}
@@ -187,12 +193,12 @@ const AdminOrders = ({
                         </p>
                       </>
                     )}
-                    <div className="admin-panel-order-actions">
+                    <div className={styles.adminPanelOrderActions}>
                       <h5>Cambiar Estado</h5>
-                      <div className="admin-panel-order-status-buttons">
+                      <div className={styles.adminPanelOrderStatusButtons}>
                         <button
                           onClick={() => updateOrderStatus(order.id, "pending")}
-                          className="admin-panel-btn-small"
+                          className={styles.adminPanelBtnSmall}
                           disabled={order.status === "pending"}
                         >
                           A Pendiente
@@ -201,7 +207,7 @@ const AdminOrders = ({
                           onClick={() =>
                             updateOrderStatus(order.id, "in_progress")
                           }
-                          className="admin-panel-btn-small"
+                          className={styles.adminPanelBtnSmall}
                           disabled={order.status === "in_progress"}
                         >
                           A En Proceso
@@ -210,7 +216,7 @@ const AdminOrders = ({
                           onClick={() =>
                             updateOrderStatus(order.id, "completed")
                           }
-                          className="admin-panel-btn-small admin-panel-btn-approve"
+                          className={`${styles.adminPanelBtnSmall} ${styles.adminPanelBtnApprove}`}
                           disabled={order.status === "completed"}
                         >
                           A Completado
@@ -219,7 +225,7 @@ const AdminOrders = ({
                           onClick={() =>
                             updateOrderStatus(order.id, "cancelled")
                           }
-                          className="admin-panel-btn-small admin-panel-btn-danger"
+                          className={`${styles.adminPanelBtnSmall} ${styles.adminPanelBtnDanger}`}
                           disabled={order.status === "cancelled"}
                         >
                           A Cancelado

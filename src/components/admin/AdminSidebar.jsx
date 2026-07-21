@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 
 const AdminSidebar = ({ view, setView, resetProductForm }) => {
   const handleSetView = (newView) => {
@@ -9,55 +10,55 @@ const AdminSidebar = ({ view, setView, resetProductForm }) => {
   };
 
   return (
-    <aside className="admin-panel-sidebar">
-      <div className="admin-panel-brand">
+    <aside className={styles.adminPanelSidebar}>
+      <div className={styles.adminPanelBrand}>
         <h3>KOKOS Admin</h3>
       </div>
-      <nav className="admin-panel-nav">
+      <nav className={styles.adminPanelNav}>
         <button
-          className={view === "dashboard" ? "admin-panel-active" : ""}
+          className={view === "dashboard" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("dashboard")}
         >
           📊 Dashboard
         </button>
         <button
-          className={view === "clients" ? "admin-panel-active" : ""}
+          className={view === "clients" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("clients")}
         >
           👥 Clientes
         </button>
         <button
-          className={view === "orders" ? "admin-panel-active" : ""}
+          className={view === "orders" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("orders")}
         >
           🛒 Pedidos
         </button>
         <button
-          className={view === "products" ? "admin-panel-active" : ""}
+          className={view === "products" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("products")}
         >
           📦 Productos
         </button>
         <button
-          className={view === "addProduct" ? "admin-panel-active" : ""}
+          className={view === "addProduct" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("addProduct")}
         >
           ➕ Agregar Producto
         </button>
         <button
-          className={view === "increasePrices" ? "admin-panel-active" : ""}
+          className={view === "increasePrices" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("increasePrices")}
         >
           💲 Aumento de Precios
         </button>
         <button
-          className={view === "categories" ? "admin-panel-active" : ""}
+          className={view === "categories" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("categories")}
         >
           🏷️ Categorías
         </button>
         <button
-          className={view === "editHome" ? "admin-panel-active" : ""}
+          className={view === "editHome" ? styles.adminPanelActive : ""}
           onClick={() => handleSetView("editHome")}
         >
           🏠 Editar inicio

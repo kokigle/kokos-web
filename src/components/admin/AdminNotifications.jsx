@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 
 const AdminNotifications = ({
   notification,
@@ -12,7 +13,11 @@ const AdminNotifications = ({
       {/* Notificaciones */}
       {notification && (
         <div
-          className={`admin-panel-notification admin-panel-notification-${notification.type}`}
+          className={`${styles.adminPanelNotification} ${
+            notification.type === "error" ? styles.adminPanelNotificationError :
+            notification.type === "info" ? styles.adminPanelNotificationInfo :
+            notification.type === "success" ? styles.adminPanelNotificationSuccess : ""
+          }`}
         >
           {notification.message}
         </div>
@@ -20,22 +25,22 @@ const AdminNotifications = ({
 
       {/* Diálogo de Confirmación */}
       {confirmDialog && (
-        <div className="admin-panel-confirm-overlay">
-          <div className="admin-panel-confirm-dialog">
-            <div className="admin-panel-confirm-icon">⚠️</div>
+        <div className={styles.adminPanelConfirmOverlay}>
+          <div className={styles.adminPanelConfirmDialog}>
+            <div className={styles.adminPanelConfirmIcon}>⚠️</div>
             <h3>Confirmación</h3>
             <p>{confirmDialog.message}</p>
-            <div className="admin-panel-confirm-actions">
+            <div className={styles.adminPanelConfirmActions}>
               <button
                 onClick={handleCancel}
-                className="admin-panel-btn-confirm-cancel"
+                className={styles.adminPanelBtnConfirmCancel}
                 disabled={loading}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirm}
-                className="admin-panel-btn-confirm-ok"
+                className={styles.adminPanelBtnConfirmOk}
                 disabled={loading}
               >
                 {loading ? "Confirmando..." : "Confirmar"}
@@ -47,8 +52,8 @@ const AdminNotifications = ({
 
       {/* Loading Overlay Global */}
       {loading && (
-        <div className="admin-panel-loading-overlay">
-          <div className="admin-panel-loading-spinner"></div>
+        <div className={styles.adminPanelLoadingOverlay}>
+          <div className={styles.adminPanelLoadingSpinner}></div>
           <p>Procesando...</p>
         </div>
       )}

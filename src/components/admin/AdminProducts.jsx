@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 import CategoryParentSelector from "./CategoryParentSelector"; // Importar el selector
 // Helper para formatear dinero (puede estar en utils)
 const formatMoney = (n) =>
@@ -18,19 +19,19 @@ const AdminProducts = ({
   deleteProduct,
 }) => {
   return (
-    <div className="admin-panel-card">
-      <h2 className="admin-panel-title">Gestión de Productos</h2>
+    <div className={styles.adminPanelCard}>
+      <h2 className={styles.adminPanelTitle}>Gestión de Productos</h2>
 
       {/* Product Filters */}
-      <div className="admin-panel-filters-section">
+      <div className={styles.adminPanelFiltersSection}>
         <input
           type="text"
           placeholder="🔍 Buscar por nombre, código o descripción..."
           value={productSearch}
           onChange={(e) => setProductSearch(e.target.value)}
-          className="admin-panel-search-input"
+          className={styles.adminPanelSearchInput}
         />
-        <div className="admin-panel-filter-row">
+        <div className={styles.adminPanelFilterRow}>
           <CategoryParentSelector // Usar el componente selector
             categories={categories}
             categoryTree={categoryTree}
@@ -41,7 +42,7 @@ const AdminProducts = ({
           />
           <button
             onClick={() => setSelectedFilterCategoryId("")}
-            className="admin-panel-btn-small"
+            className={styles.adminPanelBtnSmall}
           >
             Quitar Filtro Cat.
           </button>
@@ -49,9 +50,9 @@ const AdminProducts = ({
       </div>
 
       {/* Products List */}
-      <div className="admin-panel-products-list">
+      <div className={styles.adminPanelProductsList}>
         {products.length === 0 ? (
-          <div className="admin-panel-empty-state">
+          <div className={styles.adminPanelEmptyState}>
             <p>
               No hay productos{" "}
               {productSearch || selectedFilterCategoryId
@@ -62,48 +63,48 @@ const AdminProducts = ({
           </div>
         ) : (
           products.map((p) => (
-            <div key={p.id} className="admin-panel-product-card-admin">
-              <div className="admin-panel-product-info">
+            <div key={p.id} className={styles.adminPanelProductCardAdmin}>
+              <div className={styles.adminPanelProductInfo}>
                 <h4>{p.name}</h4>
-                <p className="admin-panel-product-code">
+                <p className={styles.adminPanelProductCode}>
                   Código: {p.code || "N/A"}
                 </p>
-                <p className="admin-panel-product-category">
+                <p className={styles.adminPanelProductCategory}>
                   {p.categoryPath && p.categoryPath.length > 0
                     ? p.categoryPath.join(" > ")
                     : "Sin categoría"}
                 </p>
-                <div className="admin-panel-product-prices">
+                <div className={styles.adminPanelProductPrices}>
                   <span>Lista 1: {formatMoney(p.price_state1)}</span>
                   <span>Lista 2: {formatMoney(p.price_state2)}</span>
                 </div>
               </div>
-              <div className="admin-panel-product-actions">
+              <div className={styles.adminPanelProductActions}>
                 <span
-                  className={`admin-panel-stock-badge ${
+                  className={`${styles.adminPanelStockBadge} ${
                     p.stock === 1
-                      ? "admin-panel-in-stock"
-                      : "admin-panel-out-stock"
+                      ? styles.adminPanelInStock
+                      : styles.adminPanelOutStock
                   }`}
                 >
                   {p.stock === 1 ? "En stock" : "Sin stock"}
                 </span>
-                <div className="admin-panel-action-buttons">
+                <div className={styles.adminPanelActionButtons}>
                   <button
                     onClick={() => toggleStock(p.id, p.stock === 1 ? 0 : 1)}
-                    className="admin-panel-btn-small"
+                    className={styles.adminPanelBtnSmall}
                   >
                     {p.stock === 1 ? "Marcar sin stock" : "Marcar disponible"}
                   </button>
                   <button
                     onClick={() => editProduct(p)}
-                    className="admin-panel-btn-small admin-panel-btn-edit"
+                    className={`${styles.adminPanelBtnSmall} ${styles.adminPanelBtnEdit}`}
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => deleteProduct(p.id)}
-                    className="admin-panel-btn-small admin-panel-btn-danger"
+                    className={`${styles.adminPanelBtnSmall} ${styles.adminPanelBtnDanger}`}
                   >
                     Eliminar
                   </button>

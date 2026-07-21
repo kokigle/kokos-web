@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import styles from "../../styles/admin-panel.module.css";
 import {
   FaFolder,
   FaFolderOpen,
@@ -14,9 +15,9 @@ const CategoryTreeNode = ({ node, level = 0, onEdit, onDelete }) => {
   return (
     <div
       style={{ marginLeft: `${level * 20}px` }}
-      className="admin-panel-category-tree-node"
+      className={styles.adminPanelCategoryTreeNode}
     >
-      <div className="admin-panel-category-tree-item">
+      <div className={styles.adminPanelCategoryTreeItem}>
         <span
           onClick={() => hasChildren && setIsOpen(!isOpen)}
           style={{
@@ -38,7 +39,7 @@ const CategoryTreeNode = ({ node, level = 0, onEdit, onDelete }) => {
           )}
           {node.name}
         </span>
-        <div className="admin-panel-category-tree-actions">
+        <div className={styles.adminPanelCategoryTreeActions}>
           <button onClick={() => onEdit(node)} title="Editar">
             <FaPencilAlt />
           </button>
@@ -48,7 +49,7 @@ const CategoryTreeNode = ({ node, level = 0, onEdit, onDelete }) => {
         </div>
       </div>
       {isOpen && hasChildren && (
-        <div className="admin-panel-category-tree-children">
+        <div className={styles.adminPanelCategoryTreeChildren}>
           {node.children.map((child) => (
             <CategoryTreeNode
               key={child.id}

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import styles from "../../styles/admin-panel.module.css";
 
 // Componente para una Card de Cliente (reutilizable para pendientes y aprobados)
 const ClientCard = ({
@@ -8,24 +9,24 @@ const ClientCard = ({
   children,
   tabSpecificBadges,
 }) => (
-  <div key={client.id} className="admin-panel-client-card-new">
+  <div key={client.id} className={styles.adminPanelClientCardNew}>
     <div
-      className="admin-panel-client-summary"
+      className={styles.adminPanelClientSummary}
       onClick={() =>
         setExpandedClient(expandedClient === client.id ? null : client.id)
       }
     >
-      <div className="admin-panel-client-main-info">
+      <div className={styles.adminPanelClientMainInfo}>
         <h4>{client.razonSocial || client.nombre || "Sin Nombre"}</h4>
-        <p className="admin-panel-client-email">{client.email}</p>
-        <div className="admin-panel-client-badges">
+        <p className={styles.adminPanelClientEmail}>{client.email}</p>
+        <div className={styles.adminPanelClientBadges}>
           {tabSpecificBadges} {/* Renderiza badges específicos del tab */}
-          <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
+          <span className={`${styles.adminPanelAdminBadge} ${styles.adminPanelAdminBadgeInfo}`}>
             {client.posicionFiscal || "N/A"}
           </span>
         </div>
       </div>
-      <div className="admin-panel-expand-icon">
+      <div className={styles.adminPanelExpandIcon}>
         {expandedClient === client.id ? "▲" : "▼"}
       </div>
     </div>
@@ -36,30 +37,30 @@ const ClientCard = ({
 
 // Componente para Detalles del Cliente (reutilizable)
 const ClientDetailsGrid = ({ client }) => (
-  <div className="admin-panel-detail-grid">
-    <div className="admin-panel-detail-item">
+  <div className={styles.adminPanelDetailGrid}>
+    <div className={styles.adminPanelDetailItem}>
       <strong>Nombre:</strong> <span>{client.nombre || "N/A"}</span>
     </div>
-    <div className="admin-panel-detail-item">
+    <div className={styles.adminPanelDetailItem}>
       <strong>Apellido:</strong> <span>{client.apellido || "N/A"}</span>
     </div>
-    <div className="admin-panel-detail-item">
+    <div className={styles.adminPanelDetailItem}>
       <strong>CUIT:</strong> <span>{client.cuit || "N/A"}</span>
     </div>
-    <div className="admin-panel-detail-item">
+    <div className={styles.adminPanelDetailItem}>
       <strong>Teléfono:</strong> <span>{client.telefonoMovil || "N/A"}</span>
     </div>
-    <div className="admin-panel-detail-item">
+    <div className={styles.adminPanelDetailItem}>
       <strong>Provincia:</strong> <span>{client.provincia || "N/A"}</span>
     </div>
-    <div className="admin-panel-detail-item">
+    <div className={styles.adminPanelDetailItem}>
       <strong>Ciudad:</strong> <span>{client.ciudad || "N/A"}</span>
     </div>
-    <div className="admin-panel-detail-item">
+    <div className={styles.adminPanelDetailItem}>
       <strong>Código Postal:</strong>{" "}
       <span>{client.codigoPostal || "N/A"}</span>
     </div>
-    <div className="admin-panel-detail-item">
+    <div className={styles.adminPanelDetailItem}>
       <strong>Registro:</strong>{" "}
       <span>
         {client.createdAt
@@ -103,14 +104,14 @@ const AdminClients = ({
   );
 
   return (
-    <div className="admin-panel-card">
-      <h2 className="admin-panel-title">Gestión de Clientes</h2>
+    <div className={styles.adminPanelCard}>
+      <h2 className={styles.adminPanelTitle}>Gestión de Clientes</h2>
 
       {/* Tabs */}
-      <div className="admin-panel-clients-tabs">
+      <div className={styles.adminPanelClientsTabs}>
         <button
-          className={`admin-panel-clients-tab ${
-            clientsTab === "pendientes" ? "admin-panel-clients-tab-active" : ""
+          className={`${styles.adminPanelClientsTab} ${
+            clientsTab === "pendientes" ? styles.adminPanelClientsTabActive : ""
           }`}
           onClick={() => {
             setClientsTab("pendientes");
@@ -120,8 +121,8 @@ const AdminClients = ({
           ⏳ Pendientes ({pendingClients.length})
         </button>
         <button
-          className={`admin-panel-clients-tab ${
-            clientsTab === "aprobados" ? "admin-panel-clients-tab-active" : ""
+          className={`${styles.adminPanelClientsTab} ${
+            clientsTab === "aprobados" ? styles.adminPanelClientsTabActive : ""
           }`}
           onClick={() => {
             setClientsTab("aprobados");
@@ -133,22 +134,22 @@ const AdminClients = ({
       </div>
 
       {/* Search */}
-      <div className="admin-panel-search-box">
+      <div className={styles.adminPanelSearchBox}>
         <input
           type="text"
           placeholder="🔍 Buscar por email, razón social o nombre..."
           value={clientSearch}
           onChange={(e) => setClientSearch(e.target.value)}
-          className="admin-panel-search-input"
+          className={styles.adminPanelSearchInput}
         />
       </div>
 
       {/* Client Lists */}
       {clientsTab === "pendientes" && (
-        <div className="admin-panel-clients-list">
+        <div className={styles.adminPanelClientsList}>
           {pendingClients.length === 0 ? (
-            <div className="admin-panel-empty-state">
-              <div className="admin-panel-empty-icon">📭</div>
+            <div className={styles.adminPanelEmptyState}>
+              <div className={styles.adminPanelEmptyIcon}>📭</div>
               <p>No hay usuarios pendientes de aprobación</p>
             </div>
           ) : (
@@ -159,25 +160,25 @@ const AdminClients = ({
                 expandedClient={expandedClient}
                 setExpandedClient={setExpandedClient}
                 tabSpecificBadges={
-                  <span className="admin-panel-admin-badge admin-panel-admin-badge-pending">
+                  <span className={`${styles.adminPanelAdminBadge} ${styles.adminPanelAdminBadgePending}`}>
                     Pendiente
                   </span>
                 }
               >
                 {/* Detalles y Acciones para Pendientes */}
-                <div className="admin-panel-client-details">
+                <div className={styles.adminPanelClientDetails}>
                   <ClientDetailsGrid client={c} />
-                  <div className="admin-panel-approval-section">
-                    <div className="admin-panel-approval-header">
+                  <div className={styles.adminPanelApprovalSection}>
+                    <div className={styles.adminPanelApprovalHeader}>
                       <h4>Aprobar Usuario</h4>
                       <p>Selecciona la lista y el descuento</p>
                     </div>
-                    <div className="admin-panel-approval-controls">
-                      <div className="admin-panel-state-selector">
+                    <div className={styles.adminPanelApprovalControls}>
+                      <div className={styles.adminPanelStateSelector}>
                         <button
-                          className={`admin-panel-state-btn ${
+                          className={`${styles.adminPanelStateBtn} ${
                             approvalState === 1
-                              ? "admin-panel-state-btn-active"
+                              ? styles.adminPanelStateBtnActive
                               : ""
                           }`}
                           onClick={() => setApprovalState(1)}
@@ -185,9 +186,9 @@ const AdminClients = ({
                           Lista 1
                         </button>
                         <button
-                          className={`admin-panel-state-btn ${
+                          className={`${styles.adminPanelStateBtn} ${
                             approvalState === 2
-                              ? "admin-panel-state-btn-active"
+                              ? styles.adminPanelStateBtnActive
                               : ""
                           }`}
                           onClick={() => setApprovalState(2)}
@@ -196,7 +197,7 @@ const AdminClients = ({
                         </button>
                       </div>
                       <div
-                        className="admin-panel-form-group"
+                        className={styles.adminPanelFormGroup}
                         style={{ maxWidth: "120px" }}
                       >
                         <label
@@ -209,21 +210,21 @@ const AdminClients = ({
                           value={approvalDiscount}
                           onChange={(e) => setApprovalDiscount(e.target.value)}
                           placeholder="0"
-                          className="admin-panel-login-input"
+                          className={styles.adminPanelLoginInput}
                         />
                       </div>
-                      <div className="admin-panel-approval-actions">
+                      <div className={styles.adminPanelApprovalActions}>
                         <button
                           onClick={() =>
                             approveClient(c.id, approvalState, approvalDiscount)
                           } // Pasar estado local
-                          className="admin-panel-btn-small admin-panel-btn-approve"
+                          className={`${styles.adminPanelBtnSmall} ${styles.adminPanelBtnApprove}`}
                         >
                           ✓ Aprobar
                         </button>
                         <button
                           onClick={() => rejectClient(c.id)}
-                          className="admin-panel-btn-small admin-panel-btn-danger"
+                          className={`${styles.adminPanelBtnSmall} ${styles.adminPanelBtnDanger}`}
                         >
                           ✕ Rechazar
                         </button>
@@ -238,10 +239,10 @@ const AdminClients = ({
       )}
 
       {clientsTab === "aprobados" && (
-        <div className="admin-panel-clients-list">
+        <div className={styles.adminPanelClientsList}>
           {approvedClients.length === 0 ? (
-            <div className="admin-panel-empty-state">
-              <div className="admin-panel-empty-icon">✅</div>
+            <div className={styles.adminPanelEmptyState}>
+              <div className={styles.adminPanelEmptyIcon}>✅</div>
               <p>No hay clientes aprobados aún</p>
             </div>
           ) : (
@@ -254,16 +255,16 @@ const AdminClients = ({
                 tabSpecificBadges={
                   <>
                     <span
-                      className={`admin-panel-admin-badge ${
+                      className={`${styles.adminPanelAdminBadge} ${
                         c.state === 1
-                          ? "admin-panel-admin-badge-state1"
-                          : "admin-panel-admin-badge-state2"
+                          ? styles.adminPanelAdminBadgeState1
+                          : styles.adminPanelAdminBadgeState2
                       }`}
                     >
                       Lista {c.state || 1}
                     </span>
                     {c.descuento > 0 && (
-                      <span className="admin-panel-admin-badge admin-panel-admin-badge-info">
+                      <span className={`${styles.adminPanelAdminBadge} ${styles.adminPanelAdminBadgeInfo}`}>
                         {c.descuento}% OFF
                       </span>
                     )}
@@ -271,29 +272,29 @@ const AdminClients = ({
                 }
               >
                 {/* Detalles y Acciones para Aprobados */}
-                <div className="admin-panel-client-details">
+                <div className={styles.adminPanelClientDetails}>
                   <ClientDetailsGrid client={c} />
-                  <div className="admin-panel-client-actions-section">
+                  <div className={styles.adminPanelClientActionsSection}>
                     <h4>Acciones</h4>
-                    <div className="admin-panel-client-actions">
+                    <div className={styles.adminPanelClientActions}>
                       <button
                         onClick={() => toggleState(c.id, 1)}
-                        className={`admin-panel-btn-small ${
-                          c.state === 1 ? "admin-panel-active" : ""
+                        className={`${styles.adminPanelBtnSmall} ${
+                          c.state === 1 ? styles.adminPanelActive : ""
                         }`}
                       >
                         Lista 1
                       </button>
                       <button
                         onClick={() => toggleState(c.id, 2)}
-                        className={`admin-panel-btn-small ${
-                          c.state === 2 ? "admin-panel-active" : ""
+                        className={`${styles.adminPanelBtnSmall} ${
+                          c.state === 2 ? styles.adminPanelActive : ""
                         }`}
                       >
                         Lista 2
                       </button>
                       <div
-                        className="admin-panel-form-group"
+                        className={styles.adminPanelFormGroup}
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
@@ -312,13 +313,13 @@ const AdminClients = ({
                             updateClientDiscount(c.id, e.target.value)
                           }
                           placeholder="0"
-                          className="admin-panel-login-input"
+                          className={styles.adminPanelLoginInput}
                           style={{ maxWidth: "80px", padding: "8px 10px" }}
                         />
                       </div>
                       <button
                         onClick={() => deleteClient(c.id)}
-                        className="admin-panel-btn-small admin-panel-btn-danger"
+                        className={`${styles.adminPanelBtnSmall} ${styles.adminPanelBtnDanger}`}
                         style={{ marginLeft: "auto" }}
                       >
                         Eliminar

@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 
 const AdminEditHome = ({
   bannerImages,
@@ -19,16 +20,16 @@ const AdminEditHome = ({
   const redirectOptions = getRedirectOptions(); // Obtener opciones dentro del componente
 
   return (
-    <div className="admin-panel-card">
-      <h2 className="admin-panel-title">Editar Página de Inicio</h2>
+    <div className={styles.adminPanelCard}>
+      <h2 className={styles.adminPanelTitle}>Editar Página de Inicio</h2>
 
       {/* Banner Section */}
-      <div className="admin-panel-home-section">
-        <h3 className="admin-panel-section-title">
+      <div className={styles.adminPanelHomeSection}>
+        <h3 className={styles.adminPanelSectionTitle}>
           Banner Principal (Carrusel)
         </h3>
-        <div className="admin-panel-banner-upload-section">
-          <label className="admin-panel-btn-upload">
+        <div className={styles.adminPanelBannerUploadSection}>
+          <label className={styles.adminPanelBtnUpload}>
             📤 Subir Imágenes
             <input
               type="file"
@@ -43,31 +44,31 @@ const AdminEditHome = ({
             Puedes arrastrar las imágenes para reordenarlas.
           </p>
         </div>
-        <div className="admin-panel-banner-images-list">
+        <div className={styles.adminPanelBannerImagesList}>
           {bannerImages.length === 0 ? (
-            <p className="admin-panel-empty-message">
+            <p className={styles.adminPanelEmptyMessage}>
               No hay imágenes en el banner.
             </p>
           ) : (
             bannerImages.map((img, index) => (
               <div
                 key={img.id}
-                className="admin-panel-banner-image-item"
+                className={styles.adminPanelBannerImageItem}
                 draggable
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(index)}
                 style={{ opacity: draggedIndex === index ? 0.5 : 1 }}
               >
-                <div className="admin-panel-drag-handle">⋮⋮</div>
+                <div className={styles.adminPanelDragHandle}>⋮⋮</div>
                 <img src={img.url} alt={`Banner ${index + 1}`} />
-                <div className="admin-panel-banner-controls">
+                <div className={styles.adminPanelBannerControls}>
                   <select
                     value={img.redirect || "ninguno"}
                     onChange={(e) =>
                       updateBannerRedirect(img.id, e.target.value)
                     }
-                    className="admin-panel-redirect-select"
+                    className={styles.adminPanelRedirectSelect}
                   >
                     {redirectOptions.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -77,7 +78,7 @@ const AdminEditHome = ({
                   </select>
                   <button
                     onClick={() => deleteBannerImage(img.id)}
-                    className="admin-panel-btn-remove-inline"
+                    className={styles.adminPanelBtnRemoveInline}
                   >
                     Eliminar
                   </button>
@@ -89,31 +90,31 @@ const AdminEditHome = ({
       </div>
 
       {/* Home Categories Section */}
-      <div className="admin-panel-home-section">
-        <h3 className="admin-panel-section-title">
+      <div className={styles.adminPanelHomeSection}>
+        <h3 className={styles.adminPanelSectionTitle}>
           Categorías Destacadas (3 Imágenes)
         </h3>
-        <div className="admin-panel-home-categories-grid">
+        <div className={styles.adminPanelHomeCategoriesGrid}>
           {["img1", "img2", "img3"].map((key, index) => (
-            <div key={key} className="admin-panel-home-category-card">
+            <div key={key} className={styles.adminPanelHomeCategoryCard}>
               <h4>Categoría {index + 1}</h4>
               {homeCategories[key]?.url ? (
-                <div className="admin-panel-home-category-preview">
+                <div className={styles.adminPanelHomeCategoryPreview}>
                   <img
                     src={homeCategories[key].url}
                     alt={`Categoría Destacada ${index + 1}`}
                   />
                   <button
                     onClick={() => deleteHomeCategoryImage(key)}
-                    className="admin-panel-btn-remove"
+                    className={styles.adminPanelBtnRemove}
                     title="Eliminar imagen"
                   >
                     ×
                   </button>
                 </div>
               ) : (
-                <div className="admin-panel-home-category-empty">
-                  <label className="admin-panel-btn-upload-small">
+                <div className={styles.adminPanelHomeCategoryEmpty}>
+                  <label className={styles.adminPanelBtnUploadSmall}>
                     📤 Subir
                     <input
                       type="file"
@@ -133,7 +134,7 @@ const AdminEditHome = ({
                 onChange={(e) =>
                   updateHomeCategoryRedirect(key, e.target.value)
                 }
-                className="admin-panel-redirect-select-full"
+                className={styles.adminPanelRedirectSelectFull}
                 disabled={!homeCategories[key]?.url || loading}
               >
                 {redirectOptions.map((opt) => (

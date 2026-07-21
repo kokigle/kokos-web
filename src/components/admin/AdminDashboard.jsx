@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 import { getDescendantIds } from "../../utils/categoryutils"; // Asume que creas este archivo
 
 const AdminDashboard = ({
@@ -24,34 +25,34 @@ const AdminDashboard = ({
   };
 
   return (
-    <div className="admin-panel-card">
-      <h2 className="admin-panel-title">Dashboard</h2>
-      <div className="admin-panel-dashboard-stats">
+    <div className={styles.adminPanelCard}>
+      <h2 className={styles.adminPanelTitle}>Dashboard</h2>
+      <div className={styles.adminPanelDashboardStats}>
         {/* Stat Cards */}
-        <div className="admin-panel-stat-card">
-          <div className="admin-panel-stat-icon">⏳</div>
-          <div className="admin-panel-stat-info">
+        <div className={styles.adminPanelStatCard}>
+          <div className={styles.adminPanelStatIcon}>⏳</div>
+          <div className={styles.adminPanelStatInfo}>
             <h3>{pendingClients.length}</h3>
             <p>Usuarios Pendientes</p>
           </div>
         </div>
-        <div className="admin-panel-stat-card">
-          <div className="admin-panel-stat-icon">👥</div>
-          <div className="admin-panel-stat-info">
+        <div className={styles.adminPanelStatCard}>
+          <div className={styles.adminPanelStatIcon}>👥</div>
+          <div className={styles.adminPanelStatInfo}>
             <h3>{approvedClients.length}</h3>
             <p>Clientes Aprobados</p>
           </div>
         </div>
-        <div className="admin-panel-stat-card">
-          <div className="admin-panel-stat-icon">📦</div>
-          <div className="admin-panel-stat-info">
+        <div className={styles.adminPanelStatCard}>
+          <div className={styles.adminPanelStatIcon}>📦</div>
+          <div className={styles.adminPanelStatInfo}>
             <h3>{products.length}</h3>
             <p>Productos</p>
           </div>
         </div>
-        <div className="admin-panel-stat-card">
-          <div className="admin-panel-stat-icon">🛒</div>
-          <div className="admin-panel-stat-info">
+        <div className={styles.adminPanelStatCard}>
+          <div className={styles.adminPanelStatIcon}>🛒</div>
+          <div className={styles.adminPanelStatInfo}>
             <h3>{orders.filter((o) => o.status === "pending").length}</h3>
             <p>Pedidos Pendientes</p>
           </div>
@@ -59,18 +60,18 @@ const AdminDashboard = ({
       </div>
 
       {/* Category Structure Preview */}
-      <div className="admin-panel-dashboard-categories">
+      <div className={styles.adminPanelDashboardCategories}>
         <h3>Estructura de Categorías</h3>
-        <div className="admin-panel-category-list">
+        <div className={styles.adminPanelCategoryList}>
           {categoryTree.length === 0 ? (
-            <p className="admin-panel-empty-message">
+            <p className={styles.adminPanelEmptyMessage}>
               No hay categorías creadas.
             </p>
           ) : (
             categoryTree.map((rootNode) => (
-              <div key={rootNode.id} className="admin-panel-category-item">
+              <div key={rootNode.id} className={styles.adminPanelCategoryItem}>
                 <strong>{rootNode.name}</strong>
-                <span className="admin-panel-badge">
+                <span className={styles.adminPanelBadge}>
                   {/* Usa la función local o importada */}
                   {getDescendantIdsLocal(rootNode.id, categoriesMap).length -
                     1}{" "}

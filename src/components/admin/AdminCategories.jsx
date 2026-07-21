@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 import CategoryTreeNode from "./CategoryTreeNode"; // Importar nodo
 import CategoryParentSelector from "./CategoryParentSelector"; // Importar selector
 
@@ -19,21 +20,21 @@ const AdminCategories = ({
   loading,
 }) => {
   return (
-    <div className="admin-panel-card">
-      <h2 className="admin-panel-title">Gestión de Categorías</h2>
+    <div className={styles.adminPanelCard}>
+      <h2 className={styles.adminPanelTitle}>Gestión de Categorías</h2>
 
       {/* Add/Edit Form */}
       <div
-        className="admin-panel-form-section"
+        className={styles.adminPanelFormSection}
         style={{ marginBottom: "30px" }}
       >
-        <h3 className="admin-panel-section-title">
+        <h3 className={styles.adminPanelSectionTitle}>
           {editingCategory
             ? `Editando "${editingCategory.name}"`
             : "Nueva Categoría"}
         </h3>
-        <div className="admin-panel-form-grid">
-          <div className="admin-panel-form-group">
+        <div className={styles.adminPanelFormGrid}>
+          <div className={styles.adminPanelFormGroup}>
             <label>Nombre *</label>
             <input
               type="text"
@@ -41,10 +42,10 @@ const AdminCategories = ({
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="Nombre de la categoría"
               required
-              className="admin-panel-login-input" // Reusing style
+              className={styles.adminPanelLoginInput} // Reusing style
             />
           </div>
-          <div className="admin-panel-form-group">
+          <div className={styles.adminPanelFormGroup}>
             <label>Categoría Padre</label>
             <CategoryParentSelector // Usar el componente selector
               categories={categories}
@@ -56,12 +57,12 @@ const AdminCategories = ({
             />
           </div>
         </div>
-        <div className="admin-panel-form-actions">
+        <div className={styles.adminPanelFormActions}>
           {editingCategory && (
             <button
               type="button"
               onClick={cancelEditingCategory}
-              className="admin-panel-btn-cancel"
+              className={styles.adminPanelBtnCancel}
               disabled={loading}
             >
               Cancelar Edición
@@ -70,7 +71,7 @@ const AdminCategories = ({
           <button
             type="button"
             onClick={editingCategory ? handleUpdateCategory : handleAddCategory}
-            className="admin-panel-btn-submit"
+            className={styles.adminPanelBtnSubmit}
             disabled={loading || !newCategoryName.trim()}
           >
             {loading
@@ -83,10 +84,10 @@ const AdminCategories = ({
       </div>
 
       {/* Category Tree */}
-      <div className="admin-panel-categories-tree">
-        <h3 className="admin-panel-section-title">Estructura</h3>
+      <div className={styles.adminPanelCategoriesTree}>
+        <h3 className={styles.adminPanelSectionTitle}>Estructura</h3>
         {categoryTree.length === 0 ? (
-          <p className="admin-panel-empty-message">
+          <p className={styles.adminPanelEmptyMessage}>
             No hay categorías creadas.
           </p>
         ) : (

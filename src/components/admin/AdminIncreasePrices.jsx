@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 import CategoryParentSelector from "./CategoryParentSelector"; // Importar selector
 
 // Helper para formatear dinero (puede estar en utils)
@@ -22,12 +23,12 @@ const AdminIncreasePrices = ({
   loading,
 }) => {
   return (
-    <div className="admin-panel-card">
-      <h2 className="admin-panel-title">Aumento de Precios General</h2>
-      <div className="admin-panel-form-section">
-        <h3 className="admin-panel-section-title">Configuración de Aumento</h3>
-        <div className="admin-panel-form-grid">
-          <div className="admin-panel-form-group">
+    <div className={styles.adminPanelCard}>
+      <h2 className={styles.adminPanelTitle}>Aumento de Precios General</h2>
+      <div className={styles.adminPanelFormSection}>
+        <h3 className={styles.adminPanelSectionTitle}>Configuración de Aumento</h3>
+        <div className={styles.adminPanelFormGrid}>
+          <div className={styles.adminPanelFormGroup}>
             <label>Porcentaje de Aumento/Disminución (%)</label>
             <input
               type="number"
@@ -36,12 +37,12 @@ const AdminIncreasePrices = ({
               placeholder="Ej: 15 (aumento), -10 (disminución)"
             />
           </div>
-          <div className="admin-panel-form-group">
+          <div className={styles.adminPanelFormGroup}>
             <label>Redondear a (cantidad de ceros)</label>
             <select
               value={roundingZeros}
               onChange={(e) => setRoundingZeros(Number(e.target.value))}
-              className="admin-panel-filter-select"
+              className={styles.adminPanelFilterSelect}
             >
               <option value={0}>Sin redondeo (ej: $123.45)</option>
               <option value={1}>Terminación en 0 (ej: $120)</option>
@@ -50,7 +51,7 @@ const AdminIncreasePrices = ({
             </select>
           </div>
         </div>
-        <div className="admin-panel-filter-row" style={{ marginTop: "20px" }}>
+        <div className={styles.adminPanelFilterRow} style={{ marginTop: "20px" }}>
           <CategoryParentSelector
             categories={categories}
             categoryTree={categoryTree}
@@ -61,22 +62,22 @@ const AdminIncreasePrices = ({
           />
           <button
             onClick={() => setPriceCategoryFilterId("")} // No resetear preview aquí
-            className="admin-panel-btn-small"
+            className={styles.adminPanelBtnSmall}
           >
             Quitar Filtro Cat.
           </button>
         </div>
-        <div className="admin-panel-form-actions">
+        <div className={styles.adminPanelFormActions}>
           <button
             onClick={handlePricePreview}
-            className="admin-panel-btn-cancel" // Estilo de cancelar para preview
+            className={styles.adminPanelBtnCancel} // Estilo de cancelar para preview
             disabled={loading}
           >
             Previsualizar Cambios
           </button>
           <button
             onClick={handlePriceIncrease}
-            className="admin-panel-btn-submit"
+            className={styles.adminPanelBtnSubmit}
             disabled={loading || pricePreview.length === 0}
           >
             {loading ? "Actualizando..." : "Aplicar Cambios"}
@@ -85,8 +86,8 @@ const AdminIncreasePrices = ({
       </div>
 
       {pricePreview.length > 0 && (
-        <div className="admin-panel-form-section">
-          <h3 className="admin-panel-section-title">
+        <div className={styles.adminPanelFormSection}>
+          <h3 className={styles.adminPanelSectionTitle}>
             Previsualización ({pricePreview.length} productos)
           </h3>
           <div style={{ maxHeight: "400px", overflowY: "auto" }}>
@@ -124,7 +125,7 @@ const AdminIncreasePrices = ({
                         onChange={(e) =>
                           handlePriceChange(p.id, "newPrice1", e.target.value)
                         }
-                        className="admin-panel-price-input"
+                        className={styles.adminPanelPriceInput}
                         style={{
                           textAlign: "right",
                           width: "100px",
@@ -144,7 +145,7 @@ const AdminIncreasePrices = ({
                         onChange={(e) =>
                           handlePriceChange(p.id, "newPrice2", e.target.value)
                         }
-                        className="admin-panel-price-input"
+                        className={styles.adminPanelPriceInput}
                         style={{
                           textAlign: "right",
                           width: "100px",

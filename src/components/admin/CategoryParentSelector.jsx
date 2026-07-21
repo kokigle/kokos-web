@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../../styles/admin-panel.module.css";
 import { getDescendantIds } from "../../utils/categoryutils"; // Asume que creas este archivo
 
 const CategoryParentSelector = ({
@@ -52,7 +53,7 @@ const CategoryParentSelector = ({
     <select
       value={value === null ? "" : value}
       onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
-      className="admin-panel-filter-select"
+      className={styles.adminPanelFilterSelect}
     >
       {options.map((opt) => (
         <option key={opt.id || "root"} value={opt.id === null ? "" : opt.id}>

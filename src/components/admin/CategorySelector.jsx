@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import styles from "../../styles/admin-panel.module.css";
 
 const CategorySelector = ({ categoryTree, selectedCategoryId, onSelect }) => {
   const [openNodes, setOpenNodes] = useState({});
