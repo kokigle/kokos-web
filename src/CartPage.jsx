@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth, db, formatMoney } from "./App";
 import { collection, addDoc } from "firebase/firestore";
-import "./styles/cart-page.css";
+import styles from "./styles/cart-page.module.css";
 
 const EMAILJS_SERVICE_ID = "service_igan4yb";
 const EMAILJS_TEMPLATE_ID = "template_e8kdsrp";
@@ -95,9 +95,9 @@ export default function CartPage() {
   const renderContent = () => {
     if (cart.length === 0) {
       return (
-        <div className="cart-page-empty">
+        <div className={styles.cartPageEmpty}>
           <svg
-            className="cart-page-empty-icon"
+            className={styles.cartPageEmptyIcon}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -107,11 +107,11 @@ export default function CartPage() {
             <circle cx="20" cy="21" r="1" />
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
-          <h3 className="cart-page-empty-title">Tu carrito está vacío</h3>
-          <p className="cart-page-empty-text">
+          <h3 className={styles.cartPageEmptyTitle}>Tu carrito está vacío</h3>
+          <p className={styles.cartPageEmptyText}>
             Agrega productos para comenzar tu compra mayorista
           </p>
-          <Link to="/products" className="cart-page-empty-link">
+          <Link to="/products" className={styles.cartPageEmptyLink}>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -128,9 +128,9 @@ export default function CartPage() {
 
     if (!user) {
       return (
-        <div className="cart-page-login-prompt">
+        <div className={styles.cartPageLoginPrompt}>
           <svg
-            className="cart-page-login-icon"
+            className={styles.cartPageLoginIcon}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -139,14 +139,14 @@ export default function CartPage() {
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          <h3 className="cart-page-login-title">
+          <h3 className={styles.cartPageLoginTitle}>
             Inicia sesión para ver tu carrito
           </h3>
-          <p className="cart-page-login-text">
+          <p className={styles.cartPageLoginText}>
             Los precios y detalles de tu pedido son exclusivos para clientes
             mayoristas.
           </p>
-          <Link to="/login" className="cart-page-login-btn">
+          <Link to="/login" className={styles.cartPageLoginBtn}>
             Iniciar Sesión
           </Link>
         </div>
@@ -154,53 +154,53 @@ export default function CartPage() {
     }
 
     return (
-      <div className="cart-page-content">
-        <div className="cart-page-items-container">
-          <div className="cart-page-sticky-header">
-            <div className="cart-header-image"></div>
-            <div className="cart-header-desc">Cod. y Desc.</div>
-            <div className="cart-header-qty">Cantidad</div>
-            <div className="cart-header-price">Precio Unit.</div>
-            <div className="cart-header-discount">Desc.</div>
-            <div className="cart-header-subtotal">Subtotal</div>
-            <div className="cart-header-actions"></div>
+      <div className={styles.cartPageContent}>
+        <div className={styles.cartPageItemsContainer}>
+          <div className={styles.cartPageStickyHeader}>
+            <div className={styles.cartHeaderImage}></div>
+            <div className={styles.cartHeaderDesc}>Cod. y Desc.</div>
+            <div className={styles.cartHeaderQty}>Cantidad</div>
+            <div className={styles.cartHeaderPrice}>Precio Unit.</div>
+            <div className={styles.cartHeaderDiscount}>Desc.</div>
+            <div className={styles.cartHeaderSubtotal}>Subtotal</div>
+            <div className={styles.cartHeaderActions}></div>
           </div>
-          <div className="cart-page-items">
+          <div className={styles.cartPageItems}>
             {cart.map((it) => {
               const discountedPrice =
                 it.price * (1 - (user?.descuento || 0) / 100);
               const subtotal = discountedPrice * it.qty;
               return (
-                <div key={it.id} className="cart-page-item">
-                  <div className="cart-item-image">
+                <div key={it.id} className={styles.cartPageItem}>
+                  <div className={styles.cartItemImage}>
                     <Link
                       to={`/product/${it.id}`}
-                      className="cart-page-item-image-link"
+                      className={styles.cartPageItemImageLink}
                     >
                       <img
                         src={it.image || DEFAULT_PRODUCT_IMAGE}
                         alt={it.name || "Producto"}
-                        className="cart-page-item-image"
+                        className={styles.cartPageItemImage}
                         onError={(e) => (e.target.src = DEFAULT_PRODUCT_IMAGE)}
                       />
                     </Link>
                   </div>
-                  <div className="cart-item-desc">
+                  <div className={styles.cartItemDesc}>
                     <small>Código: {it.code}</small>
                     <Link
                       to={`/product/${it.id}`}
-                      className="cart-page-item-name-link"
+                      className={styles.cartPageItemNameLink}
                     >
-                      <h3 className="cart-page-item-name">
+                      <h3 className={styles.cartPageItemName}>
                         {it.name || "Cargando..."}
                       </h3>
                     </Link>
                   </div>
 
-                  <div className="cart-item-qty">
-                    <div className="cart-page-quantity-controls">
+                  <div className={styles.cartItemQty}>
+                    <div className={styles.cartPageQuantityControls}>
                       <button
-                        className="cart-page-quantity-btn"
+                        className={styles.cartPageQuantityBtn}
                         onClick={() => changeCartQty(it.id, it.qty - 1)}
                       >
                         −
@@ -210,29 +210,29 @@ export default function CartPage() {
                         min={it.cant_min || 1}
                         value={it.qty}
                         onChange={(e) => changeCartQty(it.id, e.target.value)}
-                        className="cart-page-quantity-input"
+                        className={styles.cartPageQuantityInput}
                       />
                       <button
-                        className="cart-page-quantity-btn"
+                        className={styles.cartPageQuantityBtn}
                         onClick={() => changeCartQty(it.id, it.qty + 1)}
                       >
                         +
                       </button>
                     </div>
                   </div>
-                  <div className="cart-item-price">
+                  <div className={styles.cartItemPrice}>
                     ${formatMoney(it.price)}
                   </div>
-                  <div className="cart-item-discount">
+                  <div className={styles.cartItemDiscount}>
                     {user?.descuento || 0}%
                   </div>
-                  <div className="cart-item-subtotal">
+                  <div className={styles.cartItemSubtotal}>
                     ${formatMoney(subtotal)}
                   </div>
-                  <div className="cart-item-actions">
+                  <div className={styles.cartItemActions}>
                     <button
                       onClick={() => removeFromCart(it.id)}
-                      className="cart-page-remove-btn"
+                      className={styles.cartPageRemoveBtn}
                       title="Eliminar producto"
                     >
                       <svg
@@ -251,9 +251,9 @@ export default function CartPage() {
             })}
           </div>
         </div>
-        <div className="cart-page-summary">
-          <div className="cart-page-summary-card">
-            <h3 className="cart-page-summary-title">
+        <div className={styles.cartPageSummary}>
+          <div className={styles.cartPageSummaryCard}>
+            <h3 className={styles.cartPageSummaryTitle}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -266,7 +266,7 @@ export default function CartPage() {
               Resumen de compra
             </h3>
 
-            <div className="cart-page-summary-row">
+            <div className={styles.cartPageSummaryRow}>
               <span>
                 Subtotal ({cart.length}{" "}
                 {cart.length === 1 ? "producto" : "productos"})
@@ -275,7 +275,7 @@ export default function CartPage() {
             </div>
 
             {user?.descuento > 0 && (
-              <div className="cart-page-discount-badge">
+              <div className={styles.cartPageDiscountBadge}>
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -289,21 +289,21 @@ export default function CartPage() {
               </div>
             )}
 
-            <div className="cart-page-summary-divider"></div>
+            <div className={styles.cartPageSummaryDivider}></div>
 
-            <div className="cart-page-summary-total">
+            <div className={styles.cartPageSummaryTotal}>
               <span>Total</span>
-              <span className="cart-page-total-amount">
+              <span className={styles.cartPageTotalAmount}>
                 ${formatMoney(total)}
               </span>
             </div>
 
-            <div className="cart-page-tax-note">+ IVA</div>
+            <div className={styles.cartPageTaxNote}>+ IVA</div>
 
-            <div className="cart-page-comments-section">
+            <div className={styles.cartPageCommentsSection}>
               <label
                 htmlFor="order-comments"
-                className="cart-page-comments-label"
+                className={styles.cartPageCommentsLabel}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -320,17 +320,17 @@ export default function CartPage() {
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
                 placeholder="Ej: Necesito entrega urgente, horario de recepción preferido, instrucciones especiales..."
-                className="cart-page-comments-textarea"
+                className={styles.cartPageCommentsTextarea}
                 maxLength={500}
               />
-              <div className="cart-page-comments-counter">
+              <div className={styles.cartPageCommentsCounter}>
                 {comments.length}/500 caracteres
               </div>
             </div>
 
             <button
               onClick={handleCheckoutClick}
-              className="cart-page-checkout-btn"
+              className={styles.cartPageCheckoutBtn}
               disabled={isProcessing}
             >
               <svg
@@ -345,7 +345,7 @@ export default function CartPage() {
               {isProcessing ? "Procesando..." : "Finalizar compra"}
             </button>
 
-            <button onClick={shareCart} className="cart-page-share-btn">
+            <button onClick={shareCart} className={styles.cartPageShareBtn}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -367,9 +367,9 @@ export default function CartPage() {
   };
 
   return (
-    <div className="cart-page-container">
-      <div className="cart-page-header">
-        <h2 className="cart-page-title">
+    <div className={styles.cartPageContainer}>
+      <div className={styles.cartPageHeader}>
+        <h2 className={styles.cartPageTitle}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -383,8 +383,8 @@ export default function CartPage() {
           Mi Carrito
         </h2>
         {cart.length > 0 && user && (
-          <div className="cart-page-header-info">
-            <span className="cart-page-items-badge">
+          <div className={styles.cartPageHeaderInfo}>
+            <span className={styles.cartPageItemsBadge}>
               {cart.length} {cart.length === 1 ? "producto" : "productos"}
             </span>
           </div>
@@ -393,7 +393,7 @@ export default function CartPage() {
       {renderContent()}
 
       {showCopyToast && (
-        <div className="cart-page-toast">
+        <div className={styles.cartPageToast}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -407,12 +407,12 @@ export default function CartPage() {
       )}
 
       {showConfirmModal && (
-        <div className="cart-modal-overlay" onClick={cancelCheckout}>
+        <div className={styles.cartModalOverlay} onClick={cancelCheckout}>
           <div
-            className="cart-modal-content"
+            className={styles.cartModalContent}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="cart-modal-header">
+            <div className={styles.cartModalHeader}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -425,47 +425,47 @@ export default function CartPage() {
               </svg>
               <h3>Confirmar pedido</h3>
             </div>
-            <div className="cart-modal-body">
+            <div className={styles.cartModalBody}>
               <p>¿Estás seguro de que querés finalizar este pedido?</p>
-              <div className="cart-modal-summary">
-                <div className="cart-modal-summary-row">
+              <div className={styles.cartModalSummary}>
+                <div className={styles.cartModalSummaryRow}>
                   <span>Total de productos:</span>
                   <strong>{cart.length}</strong>
                 </div>
-                <div className="cart-modal-summary-row">
+                <div className={styles.cartModalSummaryRow}>
                   <span>Monto total:</span>
-                  <strong className="cart-modal-total-highlight">
+                  <strong className={styles.cartModalTotalHighlight}>
                     ${formatMoney(total)} + IVA
                   </strong>
                 </div>
                 {comments.trim() && (
-                  <div className="cart-modal-comments">
+                  <div className={styles.cartModalComments}>
                     <span>Comentarios:</span>
                     <p>"{comments}"</p>
                   </div>
                 )}
               </div>
-              <p className="cart-modal-note">
+              <p className={styles.cartModalNote}>
                 Recibirás un correo de confirmación con los detalles de tu
                 pedido.
               </p>
             </div>
-            <div className="cart-modal-actions">
+            <div className={styles.cartModalActions}>
               <button
                 onClick={cancelCheckout}
-                className="cart-modal-btn-cancel"
+                className={styles.cartModalBtnCancel}
                 disabled={isProcessing}
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmCheckout}
-                className="cart-modal-btn-confirm"
+                className={styles.cartModalBtnConfirm}
                 disabled={isProcessing}
               >
                 {isProcessing ? (
                   <>
-                    <div className="cart-modal-spinner"></div>
+                    <div className={styles.cartModalSpinner}></div>
                     Procesando...
                   </>
                 ) : (
