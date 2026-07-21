@@ -5,7 +5,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useAuth, db } from "./App";
 import { useFirestoreData } from "./contexts/FirestoreContext";
 import { optimizeImageUrl } from "./utils/cloudinaryHelper";
-import "./styles/products-list.css";
+import stylesList from "./styles/products-list.module.css";
 // Eliminamos FaFolder, FaFolderOpen, FaFile
 import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
 import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
@@ -55,15 +55,15 @@ const CategoryTreeNode = ({ node, level, selectedCategoryId, onSelect, openNodes
   const isSelected = selectedCategoryId === node.id;
 
   return (
-    <div className="category-tree-node">
+    <div className={stylesList.categoryTreeNode}>
       <div 
-        className={`category-tree-content ${isSelected ? "selected" : ""}`}
+        className={`${stylesList.categoryTreeContent} ${isSelected ? stylesList.selected : ""}`}
         style={{ paddingLeft: `${level * 12 + 8}px` }} // Indentación sutil
         onClick={() => onSelect(node.id)}
       >
         {/* Botón de expansión solo si tiene hijos */}
         <span 
-          className="category-tree-toggle"
+          className={stylesList.categoryTreeToggle}
           onClick={(e) => {
             if (hasChildren) {
               e.stopPropagation();
@@ -76,11 +76,11 @@ const CategoryTreeNode = ({ node, level, selectedCategoryId, onSelect, openNodes
           )}
         </span>
 
-        <span className="category-tree-label">{node.name}</span>
+        <span className={stylesList.categoryTreeLabel}>{node.name}</span>
       </div>
 
       {hasChildren && isOpen && (
-        <div className="category-tree-children">
+        <div className={stylesList.categoryTreeChildren}>
           {node.children.map(child => (
             <CategoryTreeNode 
               key={child.id} 
@@ -130,7 +130,7 @@ const CategoryFilterTree = ({ categoryTree, selectedCategoryId, onSelectCategory
   }, [selectedCategoryId, categoryTree]);
 
   return (
-    <div className="products-list-category-filter-tree">
+    <div className={stylesList.productsListCategoryFilterTree}>
       {categoryTree.map((node) => (
         <CategoryTreeNode
           key={node.id}
@@ -154,18 +154,18 @@ const ProductCard = React.memo(({ p, user }) => {
   let priceContent;
   if (!user) {
     priceContent = (
-      <p className="products-list-login-msg">
+      <p className={stylesList.productsListLoginMsg}>
         Inicia sesión para ver precios
       </p>
     );
   } else {
     const price = user.state === 2 ? p.price_state2 : p.price_state1;
     priceContent = price !== undefined && price !== null ? (
-      <p className="products-list-price">
+      <p className={stylesList.productsListPrice}>
         ${price?.toLocaleString()}
       </p>
     ) : (
-      <p className="products-list-login-msg">
+      <p className={stylesList.productsListLoginMsg}>
         Precio no disponible
       </p>
     );
@@ -177,37 +177,37 @@ const ProductCard = React.memo(({ p, user }) => {
 
   return (
     <div
-      className="products-list-card"
+      className={stylesList.productsListCard}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="products-list-image-container">
+      <div className={stylesList.productsListImageContainer}>
         <Link to={`/product/${p.id}`}>
           <img
             src={optimizeImageUrl(isHovered ? hoverImg : mainImg, { width: 400 })}
             alt={p.name}
             loading="lazy"
-            className="products-list-image"
+            className={stylesList.productsListImage}
           />
         </Link>
         {p.stock === 0 && (
-          <span className="products-list-badge-out-stock">
+          <span className={stylesList.productsListBadgeOutStock}>
             Sin Stock
           </span>
         )}
       </div>
-      <div className="products-list-info">
-        <Link to={`/product/${p.id}`} className="products-list-name">
+      <div className={stylesList.productsListInfo}>
+        <Link to={`/product/${p.id}`} className={stylesList.productsListName}>
           {p.name}
         </Link>
-        <p className="products-list-code">
+        <p className={stylesList.productsListCode}>
           Código: {p.code}
         </p>
         {priceContent}
       </div>
       <Link
         to={`/product/${p.id}`}
-        className={`products-list-btn-view ${p.stock === 0 ? "products-list-disabled" : ""}`}
+        className={`${stylesList.productsListBtnView} ${p.stock === 0 ? stylesList.productsListDisabled : ""}`}
       >
         {p.stock === 0 ? "Sin Stock" : "Ver Producto"}
       </Link>
@@ -368,39 +368,39 @@ export default function ProductsList() {
     };
   
     return (
-      <div className="products-list-page">
-        <div className="products-list-header">
-          <h1 className="products-list-title">{getCurrentCategoryName()}</h1>
-          <p className="products-list-subtitle">
+      <div className={stylesList.productsListPage}>
+        <div className={stylesList.productsListHeader}>
+          <h1 className={stylesList.productsListTitle}>{getCurrentCategoryName()}</h1>
+          <p className={stylesList.productsListSubtitle}>
             Explora nuestra selección completa
           </p>
         </div>
   
         <button
-          className="products-list-mobile-filter-btn" 
+          className={stylesList.productsListMobileFilterBtn} 
           onClick={() => setShowMobileFilters(true)}
         >
           <Filter size={18} /> Filtrar (
           {Object.values(appliedFilters).filter((v) => v).length})
         </button>
   
-        <div className="products-list-layout">
+        <div className={stylesList.productsListLayout}>
           <aside
-            className={`products-list-filters-sidebar ${
-              showMobileFilters ? "products-list-mobile-visible" : "" 
+            className={`${stylesList.productsListFiltersSidebar} ${
+              showMobileFilters ? stylesList.productsListMobileVisible : "" 
             }`}
           >
             <button
-              className="products-list-mobile-close-btn" 
+              className={stylesList.productsListMobileCloseBtn} 
               onClick={() => setShowMobileFilters(false)}
             >
               ✕
             </button>
   
-            <h3 className="products-list-filters-title">Filtros</h3>
+            <h3 className={stylesList.productsListFiltersTitle}>Filtros</h3>
   
-            <div className="products-list-filters-list">
-              <div className="products-list-filter-group">
+            <div className={stylesList.productsListFiltersList}>
+              <div className={stylesList.productsListFilterGroup}>
                 <label>Categoría</label>
                 <CategoryFilterTree
                   categoryTree={categoryTree}
@@ -411,9 +411,9 @@ export default function ProductsList() {
                 />
               </div>
   
-              <div className="products-list-filter-group products-list-filter-price">
+              <div className={`${stylesList.productsListFilterGroup} ${stylesList.productsListFilterPrice}`}>
                 <label>Precio</label>
-                <div className="products-list-price-inputs">
+                <div className={stylesList.productsListPriceInputs}>
                   <input
                     type="number"
                     placeholder="Mín"
@@ -443,29 +443,29 @@ export default function ProductsList() {
               </div>
             </div>
   
-            <div className="products-list-filters-actions">
+            <div className={stylesList.productsListFiltersActions}>
               <button
                 onClick={handleApplyFilters}
-                className="products-list-btn-apply-filters"
+                className={stylesList.productsListBtnApplyFilters}
               >
                 Aplicar Filtros
               </button>
               <button
                 onClick={handleClearFilters}
-                className="products-list-btn-clear-filters"
+                className={stylesList.productsListBtnClearFilters}
               >
                 Limpiar Todo
               </button>
             </div>
           </aside>
   
-          <div className="products-list-content">
-            <div className="products-list-toolbar">
-              <div className="products-list-results-count">
+          <div className={stylesList.productsListContent}>
+            <div className={stylesList.productsListToolbar}>
+              <div className={stylesList.productsListResultsCount}>
                 Mostrando <strong>{currentProducts.length}</strong> de{" "}
                 <strong>{filtered.length}</strong> productos
               </div>
-              <div className="products-list-sort-section">
+              <div className={stylesList.productsListSortSection}>
                 <ArrowUpDown size={18} />
                 <label>Ordenar:</label>
                 <select
@@ -483,27 +483,27 @@ export default function ProductsList() {
             </div>
   
             {currentProducts.length === 0 ? (
-              <div className="products-list-no-results">
+              <div className={stylesList.productsListNoResults}>
                 <p>No se encontraron productos con los filtros seleccionados</p>
               </div>
             ) : (
               <>
-                <div className="products-list-grid">
+                <div className={stylesList.productsListGrid}>
                   {currentProducts.map((p) => (
                     <ProductCard key={p.id} p={p} user={user} />
                   ))}
                 </div>
   
                 {totalPages > 1 && (
-                  <div className="products-list-pagination">
+                  <div className={stylesList.productsListPagination}>
                     <button
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="products-list-pagination-btn"
+                      className={stylesList.productsListPaginationBtn}
                     >
                       <ChevronLeft size={20} />
                     </button>
-                    <div className="products-list-pagination-numbers">
+                    <div className={stylesList.productsListPaginationNumbers}>
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                         (page) => {
                           if (
@@ -515,9 +515,9 @@ export default function ProductsList() {
                               <button
                                 key={page}
                                 onClick={() => goToPage(page)}
-                                className={`products-list-pagination-number ${
+                                className={`${stylesList.productsListPaginationNumber} ${
                                   page === currentPage
-                                    ? "products-list-active"
+                                    ? stylesList.productsListActive
                                     : ""
                                 }`}
                               >
@@ -531,7 +531,7 @@ export default function ProductsList() {
                             return (
                               <span
                                 key={page}
-                                className="products-list-pagination-ellipsis"
+                                className={stylesList.productsListPaginationEllipsis}
                               >
                                 ...
                               </span>
@@ -544,7 +544,7 @@ export default function ProductsList() {
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="products-list-pagination-btn"
+                      className={stylesList.productsListPaginationBtn}
                     >
                       <ChevronRight size={20} />
                     </button>
@@ -557,7 +557,7 @@ export default function ProductsList() {
   
         {showMobileFilters && (
           <div
-            className="products-list-mobile-filter-overlay"
+            className={stylesList.productsListMobileFilterOverlay}
             onClick={() => setShowMobileFilters(false)}
           ></div>
         )}

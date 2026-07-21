@@ -16,7 +16,7 @@ import { useAuth } from "./App";
 import { db } from "./App";
 import ProductCard from "./ProductCard";
 import FloatingCartButton from "./FloatingCartButton";
-import "./styles/product-page.css";
+import stylesPage from "./styles/product-page.module.css";
 
 export default function ProductPage() {
   const { id } = useParams();
@@ -170,15 +170,15 @@ export default function ProductPage() {
 
   if (!product)
     return (
-      <div className="product-page-loading">
-        <div className="product-page-spinner"></div>
+      <div className={stylesPage.productPageLoading}>
+        <div className={stylesPage.productPageSpinner}></div>
         <p>Cargando producto...</p>
       </div>
     );
 
   if (product === "not-found")
     return (
-      <div className="product-page-not-found">
+      <div className={stylesPage.productPageNotFound}>
         <svg
           width="80"
           height="80"
@@ -193,7 +193,7 @@ export default function ProductPage() {
         </svg>
         <h2>Producto no encontrado</h2>
         <p>El producto que buscas no existe o ha sido eliminado</p>
-        <Link to="/" className="product-page-back-btn">
+        <Link to="/" className={stylesPage.productPageBackBtn}>
           Volver al inicio
         </Link>
       </div>
@@ -249,17 +249,17 @@ export default function ProductPage() {
   };
 
   return (
-    <div className="product-page-container">
+    <div className={stylesPage.productPageContainer}>
       <div
-        className="product-page-wrapper"
+        className={stylesPage.productPageWrapper}
         style={{ opacity: imagesLoaded ? 1 : 0 }}
       >
-        <div className="product-page-main">
-          <div className="product-page-gallery">
-            <div className="product-page-main-media">
+        <div className={stylesPage.productPageMain}>
+          <div className={stylesPage.productPageGallery}>
+            <div className={stylesPage.productPageMainMedia}>
               {thumbs.length > 1 && (
                 <button
-                  className="product-page-main-arrow product-page-main-arrow-left"
+                  className={`${stylesPage.productPageMainArrow} ${stylesPage.productPageMainArrowLeft}`}
                   onClick={prevThumb}
                 >
                   ❮
@@ -267,7 +267,7 @@ export default function ProductPage() {
               )}
               {mainMedia?.type === "image" && (
                 <img
-                  className="product-page-main-img"
+                  className={stylesPage.productPageMainImg}
                   src={optimizeImageUrl(mainMedia.url, { width: 800 })}
                   loading="lazy"
                   alt={product.name}
@@ -283,15 +283,15 @@ export default function ProductPage() {
                   // En lugar de iframe directo, mostramos portada + botón play
                   return (
                     <div 
-                      className="product-page-video-trigger"
+                      className={stylesPage.productPageVideoTrigger}
                       onClick={() => setActiveVideo(mainMedia.url)}
                     >
                        <img 
                          src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
                          alt="Video cover"
-                         className={`product-page-video-cover ${vertical ? 'is-vertical' : ''}`}
+                         className={`${stylesPage.productPageVideoCover} ${vertical ? stylesPage.isVertical : ''}`}
                        />
-                       <div className="product-page-play-overlay-btn">
+                       <div className={stylesPage.productPagePlayOverlayBtn}>
                           <svg viewBox="0 0 24 24" fill="currentColor" height="48" width="48">
                             <path d="M8 5v14l11-7z" />
                           </svg>
@@ -302,7 +302,7 @@ export default function ProductPage() {
               
               {thumbs.length > 1 && (
                 <button
-                  className="product-page-main-arrow product-page-main-arrow-right"
+                  className={`${stylesPage.productPageMainArrow} ${stylesPage.productPageMainArrowRight}`}
                   onClick={nextThumb}
                 >
                   ❯
@@ -312,8 +312,8 @@ export default function ProductPage() {
             
             {/* Carrusel de Miniaturas */}
             {thumbs.length > 0 && (
-              <div className="product-page-thumb-carousel">
-                <div className="product-page-thumb-grid">
+              <div className={stylesPage.productPageThumbCarousel}>
+                <div className={stylesPage.productPageThumbGrid}>
                   {showThumbs.map((t, idx) => {
                     if (t.type === "image") {
                       return (
@@ -322,9 +322,9 @@ export default function ProductPage() {
                           src={optimizeImageUrl(t.url, { width: 200 })}
                           loading="lazy"
                           alt={`thumb-${idx}`}
-                          className={`product-page-thumb ${
+                          className={`${stylesPage.productPageThumb} ${
                             mainMedia?.url === t.url
-                              ? "product-page-thumb-active"
+                              ? stylesPage.productPageThumbActive
                               : ""
                           }`}
                           onClick={() => setMainMedia(t)}
@@ -335,9 +335,9 @@ export default function ProductPage() {
                       return (
                         <div
                           key={idx}
-                          className={`product-page-video-thumb ${
+                          className={`${stylesPage.productPageVideoThumb} ${
                             mainMedia?.url === t.url
-                              ? "product-page-thumb-active"
+                              ? stylesPage.productPageThumbActive
                               : ""
                           }`}
                           onClick={() => setMainMedia(t)}
@@ -346,7 +346,7 @@ export default function ProductPage() {
                             src={`https://img.youtube.com/vi/${vid}/0.jpg`}
                             alt={`video-${idx}`}
                           />
-                          <span className="product-page-play-icon">▶</span>
+                          <span className={stylesPage.productPagePlayIcon}>▶</span>
                         </div>
                       );
                     }
@@ -356,32 +356,32 @@ export default function ProductPage() {
             )}
             
             {product.description && (
-              <div className="product-page-description-box">
-                <h3 className="product-page-description-title">Descripción</h3>
-                <p className="product-page-description">
+              <div className={stylesPage.productPageDescriptionBox}>
+                <h3 className={stylesPage.productPageDescriptionTitle}>Descripción</h3>
+                <p className={stylesPage.productPageDescription}>
                   {product.description}
                 </p>
               </div>
             )}
           </div>
           
-          <div className="product-page-info">
+          <div className={stylesPage.productPageInfo}>
              {/* ... (Todo el contenido de info del producto se mantiene igual) ... */}
-            <div className="product-page-header">
-              <h1 className="product-page-title">{product.name}</h1>
-              <div className="product-page-meta-actions">
-                <div className="product-page-meta">
+            <div className={stylesPage.productPageHeader}>
+              <h1 className={stylesPage.productPageTitle}>{product.name}</h1>
+              <div className={stylesPage.productPageMetaActions}>
+                <div className={stylesPage.productPageMeta}>
                   {product.code && (
-                    <span className="product-page-code">
+                    <span className={stylesPage.productPageCode}>
                       Código: {product.code}
                     </span>
                   )}
                   {product.ean && (
-                    <span className="product-page-ean">EAN: {product.ean}</span>
+                    <span className={stylesPage.productPageEan}>EAN: {product.ean}</span>
                   )}
                 </div>
                 <button
-                  className="product-page-share-btn"
+                  className={stylesPage.productPageShareBtn}
                   onClick={handleShare}
                 >
                   <svg
@@ -402,16 +402,16 @@ export default function ProductPage() {
                 </button>
               </div>
             </div>
-            <div className="product-page-specs">
+            <div className={stylesPage.productPageSpecs}>
               {product.colors && product.colors.length > 0 && (
-                <div className="product-page-spec-item">
-                  <div className="product-page-spec-label">
-                    <span className="product-page-spec-icon">🎨</span>
+                <div className={stylesPage.productPageSpecItem}>
+                  <div className={stylesPage.productPageSpecLabel}>
+                    <span className={stylesPage.productPageSpecIcon}>🎨</span>
                     <span>Colores disponibles</span>
                   </div>
-                  <div className="product-page-colors">
+                  <div className={stylesPage.productPageColors}>
                     {product.colors.map((color, idx) => (
-                      <span key={idx} className="product-page-color-tag">
+                      <span key={idx} className={stylesPage.productPageColorTag}>
                         {color}
                       </span>
                     ))}
@@ -419,73 +419,73 @@ export default function ProductPage() {
                 </div>
               )}
               {product.medidas && product.medidas.length > 0 && (
-                <div className="product-page-spec-item">
-                  <div className="product-page-spec-label">
-                    <span className="product-page-spec-icon">📏</span>
+                <div className={stylesPage.productPageSpecItem}>
+                  <div className={stylesPage.productPageSpecLabel}>
+                    <span className={stylesPage.productPageSpecIcon}>📏</span>
                     <span>Medidas</span>
                   </div>
-                  <div className="product-page-spec-value">
+                  <div className={stylesPage.productPageSpecValue}>
                     {product.medidas.join(" / ")}
                   </div>
                 </div>
               )}
               {product.bulto && (
-                <div className="product-page-spec-item">
-                  <div className="product-page-spec-label">
-                    <span className="product-page-spec-icon">📦</span>
+                <div className={stylesPage.productPageSpecItem}>
+                  <div className={stylesPage.productPageSpecLabel}>
+                    <span className={stylesPage.productPageSpecIcon}>📦</span>
                     <span>Unidades por bulto</span>
                   </div>
-                  <div className="product-page-spec-value">
+                  <div className={stylesPage.productPageSpecValue}>
                     {product.bulto} unidades
                   </div>
                 </div>
               )}
               {product.cant_min && (
-                <div className="product-page-spec-item">
-                  <div className="product-page-spec-label">
-                    <span className="product-page-spec-icon">📊</span>
+                <div className={stylesPage.productPageSpecItem}>
+                  <div className={stylesPage.productPageSpecLabel}>
+                    <span className={stylesPage.productPageSpecIcon}>📊</span>
                     <span>Cantidad mínima de compra</span>
                   </div>
-                  <div className="product-page-spec-value">
+                  <div className={stylesPage.productPageSpecValue}>
                     {product.cant_min} unidades
                   </div>
                 </div>
               )}
             </div>
-            <div className="product-page-purchase">
+            <div className={stylesPage.productPagePurchase}>
               {user ? (
                 <>
-                  <div className="product-page-price-section">
-                    <div className="product-page-price-wrapper">
-                      <span className="product-page-price-label">
+                  <div className={stylesPage.productPagePriceSection}>
+                    <div className={stylesPage.productPagePriceWrapper}>
+                      <span className={stylesPage.productPagePriceLabel}>
                         Precio mayorista
                       </span>
-                      <span className="product-page-price">
+                      <span className={stylesPage.productPagePrice}>
                         ${price.toLocaleString()} + IVA
                       </span>
                     </div>
                     <div
-                      className={`product-page-stock ${
+                      className={`${stylesPage.productPageStock} ${
                         inStock
-                          ? "product-page-stock-available"
-                          : "product-page-stock-unavailable"
+                          ? stylesPage.productPageStockAvailable
+                          : stylesPage.productPageStockUnavailable
                       }`}
                     >
-                      <span className="product-page-stock-dot"></span>
+                      <span className={stylesPage.productPageStockDot}></span>
                       {inStock ? "En stock" : "Sin stock"}
                     </div>
                   </div>
                   {inStock && <AddToCart product={product} />}
                   {!inStock && (
-                    <button disabled className="product-page-btn-disabled">
+                    <button disabled className={stylesPage.productPageBtnDisabled}>
                       Sin stock
                     </button>
                   )}
                 </>
               ) : (
-                <div className="product-page-login-prompt">
+                <div className={stylesPage.productPageLoginPrompt}>
                   <p>Inicia sesión para ver precios y realizar pedidos</p>
-                  <Link to="/login" className="product-page-login-btn">
+                  <Link to="/login" className={stylesPage.productPageLoginBtn}>
                     Iniciar sesión
                   </Link>
                 </div>
@@ -494,27 +494,27 @@ export default function ProductPage() {
           </div>
         </div>
         {related.length > 0 && (
-          <div className="product-page-related">
-            <h2 className="product-page-related-title">
+          <div className={stylesPage.productPageRelated}>
+            <h2 className={stylesPage.productPageRelatedTitle}>
               Productos de la misma categoría
             </h2>
-            <div className="product-page-carousel">
+            <div className={stylesPage.productPageCarousel}>
               {related.length > 4 && (
                 <button
-                  className="product-page-arrow product-page-arrow-left"
+                  className={`${stylesPage.productPageArrow} ${stylesPage.productPageArrowLeft}`}
                   onClick={prevSlide}
                 >
                   ❮
                 </button>
               )}
-              <div className="product-page-related-grid">
+              <div className={stylesPage.productPageRelatedGrid}>
                 {showRelated.map((p, idx) => (
                   <ProductCard key={p.id + idx} p={p} />
                 ))}
               </div>
               {related.length > 4 && (
                 <button
-                  className="product-page-arrow product-page-arrow-right"
+                  className={`${stylesPage.productPageArrow} ${stylesPage.productPageArrowRight}`}
                   onClick={nextSlide}
                 >
                   ❯
@@ -530,15 +530,15 @@ export default function ProductPage() {
       {/* --- MODAL DE VIDEO CORREGIDO --- */}
       {activeVideo && (
         <div 
-          className="product-page-video-modal-overlay" 
+          className={stylesPage.productPageVideoModalOverlay} 
           onClick={closeVideoModal}
         >
            <div 
-             className="product-page-video-modal-content" 
+             className={stylesPage.productPageVideoModalContent} 
              onClick={e => e.stopPropagation()}
            >
               <button 
-                className="product-page-video-modal-close" 
+                className={stylesPage.productPageVideoModalClose} 
                 onClick={closeVideoModal}
               >
                 ×
@@ -551,7 +551,7 @@ export default function ProductPage() {
                   }
 
                   return (
-                    <div className={`product-page-video-frame-container ${vertical ? 'is-vertical-modal' : ''}`}>
+                    <div className={`${stylesPage.productPageVideoFrameContainer} ${vertical ? stylesPage.isVerticalModal : ''}`}>
                       <iframe
                         width="100%"
                         height="100%"
@@ -573,28 +573,28 @@ export default function ProductPage() {
 
       {showShareModal && (
         <div
-          className="product-page-modal-overlay"
+          className={stylesPage.productPageModalOverlay}
           onClick={() => setShowShareModal(false)}
         >
           {/* ... Modal de compartir existente ... */}
            <div
-            className="product-page-modal"
+            className={stylesPage.productPageModal}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="product-page-modal-title">Compartir producto</h3>
-            <p className="product-page-modal-text">
+            <h3 className={stylesPage.productPageModalTitle}>Compartir producto</h3>
+            <p className={stylesPage.productPageModalText}>
               Comparte este producto con otros clientes
             </p>
-            <div className="product-page-modal-url">{window.location.href}</div>
-            <div className="product-page-modal-actions">
+            <div className={stylesPage.productPageModalUrl}>{window.location.href}</div>
+            <div className={stylesPage.productPageModalActions}>
               <button
-                className="product-page-modal-btn-copy"
+                className={stylesPage.productPageModalBtnCopy}
                 onClick={copyToClipboard}
               >
                 Copiar enlace
               </button>
               <button
-                className="product-page-modal-btn-cancel"
+                className={stylesPage.productPageModalBtnCancel}
                 onClick={() => setShowShareModal(false)}
               >
                 Cerrar
@@ -604,7 +604,7 @@ export default function ProductPage() {
         </div>
       )}
       {showCopyToast && (
-        <div className="product-page-toast">
+        <div className={stylesPage.productPageToast}>
           <svg
             width="24"
             height="24"
@@ -644,18 +644,18 @@ function AddToCart({ product }) {
   };
 
   return (
-    <div className="product-page-add-to-cart">
-      <div className="product-page-quantity">
-        <label className="product-page-quantity-label">Cantidad:</label>
-        <div className="product-page-quantity-controls">
+    <div className={stylesPage.productPageAddToCart}>
+      <div className={stylesPage.productPageQuantity}>
+        <label className={stylesPage.productPageQuantityLabel}>Cantidad:</label>
+        <div className={stylesPage.productPageQuantityControls}>
           <button
-            className="product-page-quantity-btn"
+            className={stylesPage.productPageQuantityBtn}
             onClick={() => setQty(Math.max(product.cant_min || 1, qty - 1))}
           >
             −
           </button>
           <input
-            className="product-page-quantity-input"
+            className={stylesPage.productPageQuantityInput}
             value={qty}
             onChange={(e) =>
               setQty(Math.max(product.cant_min || 1, Number(e.target.value)))
@@ -664,7 +664,7 @@ function AddToCart({ product }) {
             min={product.cant_min || 1}
           />
           <button
-            className="product-page-quantity-btn"
+            className={stylesPage.productPageQuantityBtn}
             onClick={() => setQty(qty + 1)}
           >
             +
@@ -672,13 +672,13 @@ function AddToCart({ product }) {
         </div>
       </div>
       {product.cant_min && qty < product.cant_min && (
-        <p className="product-page-min-warning">
+        <p className={stylesPage.productPageMinWarning}>
           ⚠️ Mínimo: {product.cant_min} unidades
         </p>
       )}
       <button
         onClick={handleAddToCart}
-        className="product-page-btn-add"
+        className={stylesPage.productPageBtnAdd}
         disabled={product.cant_min && qty < product.cant_min}
       >
         🛒 Agregar al carrito
